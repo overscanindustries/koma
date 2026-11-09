@@ -1,0 +1,20 @@
+{
+  "meta": {"firmware": "2.40", "block_base": "0x1b000", "block_size": 4096,
+           "magic": {"offset": 0, "bytes": "4d473148"},
+           "checksum": {"algo": "u32-sum-of-u16be", "range": [0, 4092], "offset": 4092, "size": 4, "endian": "big"}},
+  "fields": [
+    {"name": "iso", "label": "ISO SETTING", "page": "shooting", "offset": "0x059", "size": 1,
+     "type": "enum", "values": {"0": "AUTO", "1": "AUTO-HI", "2": "100"},
+     "persist": true, "body_specific": false, "evidence": "test", "confidence": "STATIC"},
+    {"name": "bracket", "label": "BRACKET", "page": "shooting", "offset": "0x05c", "size": 1,
+     "type": "u8", "range": [0, 5], "persist": false, "body_specific": false},
+    {"name": "flags", "label": "FLAGS", "page": "setup", "offset": "0x060", "size": 1,
+     "type": "bitfield", "bits": {"0": "FLAG_A", "1": "FLAG_B", "2": "FLAG_C"}},
+    {"name": "counter", "label": "COUNTER", "page": "setup", "offset": "0x070", "size": 2,
+     "type": "u16", "range": [0, 60000], "body_specific": true},
+    {"name": "trim", "label": "TRIM", "page": "setup", "offset": "0x074", "size": 1,
+     "type": "i8", "range": [-10, 10]},
+    {"name": "blob", "label": "BLOB", "page": "setup", "offset": "0x080", "size": 4, "type": "bytes"}
+  ],
+  "exclude_on_merge": [{"offset": "0x070", "size": 2, "reason": "shutter counter is per body"}]
+}

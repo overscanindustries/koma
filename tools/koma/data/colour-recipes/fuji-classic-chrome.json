@@ -1,0 +1,343 @@
+{
+ "family": "Fuji",
+ "confidence": "M (fit to abpy Classic Chrome LUT)",
+ "target_definition": {
+  "base": "cube:classic_chrome_sRGB"
+ },
+ "tone": {
+  "lut": "luts/fuji-classic-chrome.csv",
+  "lut_pinned": "luts/fuji-classic-chrome-pinned.csv",
+  "sha256_16": "19ebfe49874b05eb",
+  "samples_17": [
+   0,
+   87,
+   370,
+   546,
+   661,
+   737,
+   793,
+   837,
+   874,
+   906,
+   933,
+   956,
+   974,
+   989,
+   1002,
+   1013,
+   1023
+  ],
+  "invariants": {
+   "monotone": true,
+   "t0": 0,
+   "first_nonzero": 173,
+   "t256": 87,
+   "first1023": 4081,
+   "broken": [
+    "black-clip-170",
+    "toe-0..257",
+    "pin-256->64"
+   ]
+  },
+  "pinned_invariants": []
+ },
+ "tiers": {
+  "A0": {
+   "dE00_mean": 4.87,
+   "dE00_max": 9.51,
+   "worst_patch": "magenta",
+   "saturation": 0.779,
+   "C2_cbcr": [
+    [
+     0.7791,
+     0.0
+    ],
+    [
+     0.0,
+     0.7791
+    ]
+   ],
+   "offset_cbcr_codes": [
+    -1.28,
+    -1.74
+   ],
+   "bytes": {
+    "chroma_gain_u8": 100,
+    "iq_unit_s8": {
+     "iry": 64,
+     "iby": 0,
+     "qry": 0,
+     "qby": 64
+    },
+    "iq_folded_s8": {
+     "iry": 50,
+     "iby": 0,
+     "qry": 0,
+     "qby": 50
+    },
+    "offset_cbcr_codes": [
+     -1.3,
+     -1.7
+    ],
+    "icon_qcon_s8": [
+     -2,
+     -2
+    ],
+    "wb_bias_RB": [
+     1.108,
+     1.0
+    ]
+   }
+  },
+  "A": {
+   "dE00_mean": 3.95,
+   "dE00_max": 9.31,
+   "worst_patch": "magenta",
+   "saturation": 0.828,
+   "C2_cbcr": [
+    [
+     0.7328,
+     -0.0477
+    ],
+    [
+     -0.0323,
+     0.9376
+    ]
+   ],
+   "offset_cbcr_codes": [
+    -0.07,
+    -3.43
+   ],
+   "bytes": {
+    "chroma_gain_u8": 106,
+    "iq_unit_s8": {
+     "iry": 72,
+     "iby": -2,
+     "qry": -5,
+     "qby": 57
+    },
+    "iq_folded_s8": {
+     "iry": 60,
+     "iby": -2,
+     "qry": -4,
+     "qby": 47
+    },
+    "offset_cbcr_codes": [
+     -0.1,
+     -3.4
+    ],
+    "icon_qcon_s8": [
+     -5,
+     0
+    ],
+    "wb_bias_RB": [
+     1.059,
+     1.01
+    ]
+   },
+   "pinned_lut_dE00_mean": 4.16
+  },
+  "B": {
+   "dE00_mean": 1.96,
+   "dE00_max": 4.54,
+   "worst_patch": "orange",
+   "saturation": 0.923,
+   "C2_cbcr": [
+    [
+     0.9234,
+     0.0
+    ],
+    [
+     0.0,
+     0.9234
+    ]
+   ],
+   "offset_cbcr_codes": [
+    -0.47,
+    2.2
+   ],
+   "bytes": {
+    "chroma_gain_u8": 118,
+    "iq_unit_s8": {
+     "iry": 64,
+     "iby": 0,
+     "qry": 0,
+     "qby": 64
+    },
+    "iq_folded_s8": {
+     "iry": 59,
+     "iby": 0,
+     "qry": 0,
+     "qby": 59
+    },
+    "offset_cbcr_codes": [
+     -0.5,
+     2.2
+    ],
+    "icon_qcon_s8": [
+     3,
+     -1
+    ],
+    "rgb_matrix_delta_x64": [
+     [
+      9,
+      -15,
+      4
+     ],
+     [
+      3,
+      -7,
+      6
+     ],
+     [
+      3,
+      1,
+      -3
+     ]
+    ],
+    "rgb_matrix_fits_6bit": true
+   },
+   "M_rgb_linear": [
+    [
+     1.1417,
+     -0.2296,
+     0.0643
+    ],
+    [
+     0.0525,
+     0.8893,
+     0.1003
+    ],
+    [
+     0.0432,
+     0.018,
+     0.9579
+    ]
+   ],
+   "M_ycbcr_linear": [
+    [
+     1.0198,
+     0.1752,
+     0.2035
+    ],
+    [
+     -0.0004,
+     0.8555,
+     -0.0879
+    ],
+    [
+     -0.031,
+     0.0126,
+     1.1135
+    ]
+   ]
+  },
+  "C": {
+   "dE00_mean": 1.78,
+   "dE00_max": 3.83,
+   "worst_patch": "purplish blue",
+   "saturation": 0.933,
+   "C2_cbcr": [
+    [
+     0.9108,
+     0.0071
+    ],
+    [
+     -0.0923,
+     0.9549
+    ]
+   ],
+   "offset_cbcr_codes": [
+    0.64,
+    2.45
+   ],
+   "bytes": {
+    "chroma_gain_u8": 119,
+    "iq_unit_s8": {
+     "iry": 66,
+     "iby": -5,
+     "qry": 1,
+     "qby": 62
+    },
+    "iq_folded_s8": {
+     "iry": 61,
+     "iby": -5,
+     "qry": 1,
+     "qby": 58
+    },
+    "offset_cbcr_codes": [
+     0.6,
+     2.5
+    ],
+    "icon_qcon_s8": [
+     3,
+     1
+    ],
+    "rgb_matrix_delta_x64": [
+     [
+      4,
+      -14,
+      7
+     ],
+     [
+      5,
+      -8,
+      5
+     ],
+     [
+      2,
+      1,
+      -4
+     ]
+    ],
+    "rgb_matrix_fits_6bit": true,
+    "pretone_black_offset_idx12": [
+     -7.8,
+     9.0,
+     4.7
+    ]
+   },
+   "M_rgb_linear": [
+    [
+     1.0665,
+     -0.2258,
+     0.1158
+    ],
+    [
+     0.0734,
+     0.8808,
+     0.0765
+    ],
+    [
+     0.0357,
+     0.0131,
+     0.9343
+    ]
+   ],
+   "M_ycbcr_linear": [
+    [
+     1.0031,
+     0.1744,
+     0.1911
+    ],
+    [
+     -0.0113,
+     0.8333,
+     -0.0849
+    ],
+    [
+     -0.0333,
+     0.0773,
+     1.0452
+    ]
+   ],
+   "pretone_black_offset_lin": [
+    -0.00267,
+    0.00312,
+    0.00163
+   ]
+  }
+ },
+ "target_vs_stock_dE00": 5.11,
+ "neutral_tint_spread_ab": 0.49
+}

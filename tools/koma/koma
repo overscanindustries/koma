@@ -1,0 +1,9 @@
+#!/bin/sh
+# koma CLI wrapper: tools/koma/koma [--firmware STOCK] build --features koma01 -o OUT.grmod
+# Python: $KOMA_PYTHON, else the checkout's .venv, else python3 on PATH (needs requirements.txt installed).
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+PY="${KOMA_PYTHON:-}"
+if [ -z "$PY" ]; then
+  if [ -x "$ROOT/.venv/bin/python" ]; then PY="$ROOT/.venv/bin/python"; else PY=python3; fi
+fi
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$ROOT/tools${PYTHONPATH:+:$PYTHONPATH}" exec "$PY" -m koma "$@"

@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# Only used if pytest is installed (it is not in requirements.txt). The supported runner is tools/check.py.
+pythonpath = ["tools", "."]
+python_files = ["test_*.py"]
+testpaths = ["tools"]

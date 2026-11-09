@@ -1,0 +1,23 @@
+# Environments and caches
+.venv
+.venv/
+.codegraph/
+__pycache__/
+*.pyc
+.DS_Store
+.pytest_cache/
+
+# Ricoh files are never committed: supply your own (firmware/README.md)
+firmware/**
+!firmware/README.md
+[qQ][rR][fF][lL][eE][cC][tT]*
+*.exe
+
+# Build outputs (your own koma04.grmod and SHA256SUMS for the Koma Setup page go in build/)
+build/
+*.grmod
+*.grmod.json
+tether-emu/
+
+# Emulator OSD dumps are rendered from Ricoh's firmware; the bridge tests use a synthetic page without them
+tools/komaset/bridge/testdata/osd-*.bin

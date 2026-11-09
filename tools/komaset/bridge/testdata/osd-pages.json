@@ -1,0 +1,68 @@
+{
+ "source": "the emulator of the unmodified 2.40 firmware: ready = after boot, menu = after a MENU/OK tap (code 23), down = then a DOWN tap (code 12). Raw OSD page bytes (4 bpp, high nibble left, stride 180, 360x240) and the raw VEN palette registers 0..15 (index 0 has no register: transparent). Emulator output, not a camera capture.",
+ "width": 360,
+ "height": 240,
+ "stride": 180,
+ "palette_raw": [
+  null,
+  14286848,
+  11599872,
+  33554432,
+  3276800,
+  2097152,
+  0,
+  7143424,
+  7996416,
+  14286848,
+  10009897,
+  13952516,
+  7143424,
+  1648888,
+  8370083,
+  4974410
+ ],
+ "pages": {
+  "ready": {
+   "file": "osd-ready.bin",
+   "state": {
+    "ven_osd_enable": true,
+    "dma_osd_enable": true,
+    "osd_base": 138553344,
+    "osd_stride_words": 45,
+    "vt": 520000105,
+    "app_state": 2,
+    "disp_state": 2,
+    "frames": 7796,
+    "polls": 90
+   }
+  },
+  "menu": {
+   "file": "osd-menu.bin",
+   "state": {
+    "ven_osd_enable": true,
+    "dma_osd_enable": true,
+    "osd_base": 138553344,
+    "osd_stride_words": 45,
+    "vt": 560000117,
+    "app_state": 2,
+    "disp_state": 2,
+    "frames": 8396,
+    "polls": 178
+   }
+  },
+  "down": {
+   "file": "osd-down.bin",
+   "state": {
+    "ven_osd_enable": true,
+    "dma_osd_enable": true,
+    "osd_base": 138553344,
+    "osd_stride_words": 45,
+    "vt": 600000118,
+    "app_state": 2,
+    "disp_state": 2,
+    "frames": 8995,
+    "polls": 265
+   }
+  }
+ }
+}
