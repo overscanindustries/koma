@@ -56,10 +56,6 @@ Komaは、リコーの初代GR DIGITAL（2005年）に後継のGRが備える撮
 
 <sub>Photo: [yoppy](https://commons.wikimedia.org/wiki/File:Ricoh_GR_Digital_-_128675954.jpg), CC BY 2.0</sub>
 
-| カメラ | ファームウェア | 状況 |
-|---|---|---|
-| リコーGR DIGITAL（2005年） | 2.40 | 実機で確認済み。 |
-
 ## インストール
 
 macOS：

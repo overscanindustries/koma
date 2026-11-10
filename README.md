@@ -56,10 +56,6 @@ Koma gives the original Ricoh GR DIGITAL (2005) the shooting features of the GRs
 
 <sub>Photo: [yoppy](https://commons.wikimedia.org/wiki/File:Ricoh_GR_Digital_-_128675954.jpg), CC BY 2.0</sub>
 
-| Camera | Firmware | Status |
-|---|---|---|
-| Ricoh GR DIGITAL (2005) | 2.40 | Tested on real hardware. |
-
 ## Install
 
 macOS:
