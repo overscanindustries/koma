@@ -9,7 +9,7 @@
 - Auto-ISO ceiling and slowest-shutter limit.
 - Highlight alert and focus peaking.
 - Long exposures up to 240 s.
-- 21 looks in IMG SET: ten black-and-white, six colour, STANDARD, SELECT and three custom slots.
+- 21 looks in IMG SET: ten black-and-white, six color, STANDARD, SELECT and three custom slots.
 - Per-look editing: tone curve, contrast, key, shadow, highlight, filter, toning, saturation, warmth, tint, sharpness, grain and vignette.
 - Looks on the ADJ lever, and look preview on the LCD.
 - FAT32 SDHC and SDXC card support.

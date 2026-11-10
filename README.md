@@ -5,7 +5,7 @@
 
 # Koma
 
-Koma gives the original Ricoh GR DIGITAL (2005) the shooting features of the GRs that came after it, fixes two problems it has had for 21 years, and connects it to a desktop app over USB.
+Koma gives the original Ricoh GR DIGITAL (2005) the shooting features of the GRs that came after it, fixes two problems it has had for 21 years, and connects it to a desktop app over USB. Shoot tethered with live view, or use it as the webcam on your next Zoom call.
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/assets/screens/overview-light.png">
@@ -25,7 +25,7 @@ Koma gives the original Ricoh GR DIGITAL (2005) the shooting features of the GRs
 
 ### 21 looks
 
-- Ten black-and-white looks, six colour looks, STANDARD, SELECT (one colour kept, the rest mono) and three custom slots, all in IMG SET.
+- Ten black-and-white looks, six color looks, STANDARD, SELECT (one color kept, the rest mono) and three custom slots, all in IMG SET.
 - Hard and Soft Monotone from the GR III. Bleach Bypass built from a GR DIGITAL IV's.
 - Every look is editable: eight tone curves, contrast, key, shadow, highlight, B&W filter, toning, saturation, warmth, tint, sharpness, grain and vignette.
 - Put the looks you use on the ADJ lever.
