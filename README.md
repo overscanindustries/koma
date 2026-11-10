@@ -9,10 +9,7 @@
 
 Koma gives the original Ricoh GR DIGITAL (2005) the shooting features of the GRs that came after it, fixes two problems it has had for 21 years, and connects it to a desktop app over USB. Shoot tethered with live view, or use it as the webcam on your next Zoom call.
 
-<picture>
-  <source media="(prefers-color-scheme: light)" srcset="docs/assets/screens/overview-light.png">
-  <img src="docs/assets/screens/overview-dark.png" alt="The Koma app's overview: the connected camera, its current look (MONO), firmware and Koma versions, and the last photo" width="800">
-</picture>
+<img src="docs/assets/screens/look-editor.png" alt="Look editor for SHINJUKU: curve, contrast, filter, toning, sharpness and grain controls beside a preview" width="800">
 
 ## What it does
 
@@ -84,8 +81,8 @@ Setup builds Koma on your computer from Ricoh's 2.40 update file ([download from
 
 | | |
 |---|---|
-| <img src="docs/assets/screens/looks.png" alt="Looks: the 21 looks drawn on the last photo, with MONO selected and on the ADJ lever" width="400"> | <img src="docs/assets/screens/look-editor.png" alt="Look editor for SHINJUKU: curve, contrast, filter, toning, sharpness and grain controls beside a preview" width="400"> |
-| Pick a look. The camera shows it in IMG SET. | Edit a look, then apply it to the camera. |
+| <img src="docs/assets/screens/looks.png" alt="Looks: the 21 looks drawn on the last photo, with MONO selected and on the ADJ lever" width="400"> | <img src="docs/assets/screens/overview-dark.png" alt="The Koma app's overview: the connected camera, its current look (MONO), firmware and Koma versions, and the last photo" width="400"> |
+| Pick a look. The camera shows it in IMG SET. | See the camera, its current look and the last photo. |
 | <img src="docs/assets/screens/shoot.png" alt="Shoot: live view from the camera with exposure, ISO and white balance, a shutter button and the photos taken this session" width="400"> | <img src="docs/assets/screens/photos.png" alt="Photos: the camera's photos grouped by day, with an Import button" width="400"> |
 | Shoot tethered with live view. | Import new photos from the card. |
 | <img src="docs/assets/screens/settings.png" alt="Settings: the camera's menu rows with two pending changes and Review and Apply buttons" width="400"> | <img src="docs/assets/screens/webcam.png" alt="Webcam: the camera's picture shown as OBS Virtual Camera, with steps for the call app" width="400"> |

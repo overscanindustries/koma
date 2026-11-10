@@ -9,10 +9,7 @@
 
 Komaは、リコーの初代GR DIGITAL（2005年）に後継のGRが備える撮影機能を加えます。21年間抱えてきた2つの問題を直し、USBでデスクトップアプリとつなぎます。ライブビューを見ながらテザー撮影ができ、次のZoom会議ではWebカメラにもなります。
 
-<picture>
-  <source media="(prefers-color-scheme: light)" srcset="docs/assets/screens/overview-light.png">
-  <img src="docs/assets/screens/overview-dark.png" alt="Komaアプリの概要画面：接続中のカメラ、現在のルック（MONO）、ファームウェアとKomaのバージョン、最後に撮った写真" width="800">
-</picture>
+<img src="docs/assets/screens/look-editor.png" alt="SHINJUKUのルック編集画面：プレビューの横にカーブ、コントラスト、フィルター、調色、シャープネス、粒状感の項目" width="800">
 
 ## できること
 
@@ -84,8 +81,8 @@ koma
 
 | | |
 |---|---|
-| <img src="docs/assets/screens/looks.png" alt="Looks：最後に撮った写真に21種類のルックを適用した一覧。MONOが選択され、ADJレバーに割り当て済み" width="400"> | <img src="docs/assets/screens/look-editor.png" alt="SHINJUKUのルック編集画面：プレビューの横にカーブ、コントラスト、フィルター、調色、シャープネス、粒状感の項目" width="400"> |
-| ルックを選びます。カメラのIMG SETに表示されます。 | ルックを編集して、カメラに適用します。 |
+| <img src="docs/assets/screens/looks.png" alt="Looks：最後に撮った写真に21種類のルックを適用した一覧。MONOが選択され、ADJレバーに割り当て済み" width="400"> | <img src="docs/assets/screens/overview-dark.png" alt="Komaアプリの概要画面：接続中のカメラ、現在のルック（MONO）、ファームウェアとKomaのバージョン、最後に撮った写真" width="400"> |
+| ルックを選びます。カメラのIMG SETに表示されます。 | カメラ、現在のルック、最後に撮った写真を確認します。 |
 | <img src="docs/assets/screens/shoot.png" alt="Shoot：カメラのライブビュー、露出・ISO・ホワイトバランス、シャッターボタン、このセッションで撮った写真" width="400"> | <img src="docs/assets/screens/photos.png" alt="Photos：日付ごとにまとめたカメラ内の写真とImportボタン" width="400"> |
 | ライブビューでテザー撮影します。 | カードから新しい写真を取り込みます。 |
 | <img src="docs/assets/screens/settings.png" alt="Settings：カメラのメニュー項目、保留中の変更2件、ReviewボタンとApplyボタン" width="400"> | <img src="docs/assets/screens/webcam.png" alt="Webcam：OBS Virtual Cameraとして表示されたカメラの映像と、通話アプリ側の手順" width="400"> |
