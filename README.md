@@ -88,6 +88,10 @@ Setup builds Koma on your computer from Ricoh's 2.40 update file ([download from
 | <img src="docs/assets/screens/settings.png" alt="Settings: the camera's menu rows with two pending changes and Review and Apply buttons" width="400"> | <img src="docs/assets/screens/webcam.png" alt="Webcam: the camera's picture shown as OBS Virtual Camera, with steps for the call app" width="400"> |
 | Change camera settings and back them up. | Use the camera as a webcam. |
 
+## Why "Koma"
+
+コマ (*koma*) is Japanese for a single frame of film. The name comes from the camera itself: Ricoh's 2.40 firmware counts photos in koma, and its debug strings still say so, with names like `f_cur_koma_no`, `f_dcim_new_koma` and `Rec Koma NO`. The logo is コマ in katakana.
+
 ## Documentation
 
 [Install](docs/install.md) · [User guide](docs/user-guide.md) · [Limitations](docs/limitations.md) · [Host tools](docs/host-tools.md) · [How it works](docs/how-it-works.md) · [Building](docs/building.md) · [Versions](docs/versioning.md) · [Internals](docs/internals/README.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)

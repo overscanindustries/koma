@@ -88,6 +88,10 @@ koma
 | <img src="docs/assets/screens/settings.png" alt="Settings：カメラのメニュー項目、保留中の変更2件、ReviewボタンとApplyボタン" width="400"> | <img src="docs/assets/screens/webcam.png" alt="Webcam：OBS Virtual Cameraとして表示されたカメラの映像と、通話アプリ側の手順" width="400"> |
 | カメラの設定を変更し、バックアップします。 | カメラをWebカメラとして使います。 |
 
+## なぜ「Koma」か
+
+コマは、フィルムの1コマを指す言葉です。この名前はカメラ自身に由来します。リコーの2.40ファームウェアは写真をコマ単位で数えていて、`f_cur_koma_no`、`f_dcim_new_koma`、`Rec Koma NO`といったデバッグ文字列が今も残っています。ロゴはカタカナの「コマ」です。
+
 ## ドキュメント
 
 [インストール](docs/ja/install.md) · [ユーザーガイド](docs/ja/user-guide.md) · [制限事項](docs/ja/limitations.md) · [ホストツール](docs/ja/host-tools.md) · [仕組み](docs/ja/how-it-works.md) · [ビルド](docs/ja/building.md) · [バージョン](docs/ja/versioning.md) · [内部資料（英語）](docs/internals/README.md) · [変更履歴](docs/ja/changelog.md) · [コントリビューション（英語）](CONTRIBUTING.md)
