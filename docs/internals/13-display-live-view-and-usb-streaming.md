@@ -4,7 +4,7 @@
 
 Tags: HW, EMU, STATIC, INFERRED, defined in [features](evidence-ledger.md). Addresses are firmware 2.40 runtime addresses.
 
-Related: [01 Hardware and memory map](01-hardware-and-memory-map.md), [04 Application architecture](04-application-architecture.md), [06 Image pipeline and colour](06-image-pipeline-and-colour.md), [07 USB protocol](07-usb-protocol.md) (command table, verbs, reply codes, `-CCTL` subcommands, Koma verbs), [10 Emulator and tooling](10-emulator-and-tooling.md), [11 Modification playbook](11-modification-playbook.md).
+Related: [01 Hardware and memory map](01-hardware-and-memory-map.md), [04 Application architecture](04-application-architecture.md), [06 Image pipeline and color](06-image-pipeline-and-color.md), [07 USB protocol](07-usb-protocol.md) (command table, verbs, reply codes, `-CCTL` subcommands, Koma verbs), [10 Emulator and tooling](10-emulator-and-tooling.md), [11 Modification playbook](11-modification-playbook.md).
 
 ## Key addresses
 
@@ -50,7 +50,7 @@ There are three frames, each with a Y and a C plane: six plane pointers, not six
 
 The ring frames carry no OSD, because the OSD is a separate page `INFERRED`. There is no standing LCD-resolution copy: the display scans the 640x244 slot and scales in the display path. No monitor RAW or larger buffer exists in SDRAM during live view; every larger buffer is a `CMEM_STILL_*` buffer written only by a capture, so 640x244 is the largest live picture available `STATIC`.
 
-C is a second plane with the same footprint and stride as Y, which points to 4:2:2 with interleaved CbCr `INFERRED`. The hardware JPEG encoder accepts the resize engine's output, and the resize engine uses one C-format flag for source and destination. Mode 1 frames decode with plausible colour on hardware, so the encoder handles the ring's own C layout `INFERRED, strong`. The raw CbCr byte order and signedness have not been read from a slot dump.
+C is a second plane with the same footprint and stride as Y, which points to 4:2:2 with interleaved CbCr `INFERRED`. The hardware JPEG encoder accepts the resize engine's output, and the resize engine uses one C-format flag for source and destination. Mode 1 frames decode with plausible color on hardware, so the encoder handles the ring's own C layout `INFERRED, strong`. The raw CbCr byte order and signedness have not been read from a slot dump.
 
 ## Which states run the monitor
 
@@ -238,7 +238,7 @@ Package koma04w (build `747F061F`: tether 1.8, liveview 1.3, stallfix 1.0) on ge
 |---|---|---|
 | Self-test live view, 30 pulls each of modes 0 / 1 / 2 (host caps pulls at 30/s) | 28.1 / 27.6 / 29.0 fps, 0 torn | `HW 2026-11-08 main` (2 GB card) |
 | Same, spare | 21.9 / 21.7 / 28.3 fps | `HW 2026-11-08 spare` |
-| Mode 1 in earlier self-tests | 26.9-28.8 fps; frames decode with natural proportions and plausible colour | `HW 2026-11-07 main` |
+| Mode 1 in earlier self-tests | 26.9-28.8 fps; frames decode with natural proportions and plausible color | `HW 2026-11-07 main` |
 | Mode 2 in state 9 (tether not arming, older build) | answered at 29 fps while modes 0/1 answered `451`; the page decoded all white | `HW 2026-11-07 main` |
 | Mode 3 (`komacam --mode 3`) | 60 valid frames at about 12.9 fps | `HW 2026-11-08 main` |
 | `komacam --lcd-off` (mode 1) | 10.9 fps; LCD dark while streaming, restored at stop | `HW 2026-11-08 main` |

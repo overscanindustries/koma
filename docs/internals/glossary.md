@@ -2,7 +2,7 @@
 
 Terms used in the internals chapters and the Koma tools. Each entry gives a definition, the chapter that treats it, and one tag (`HW`, `EMU`, `STATIC`, `INFERRED`, defined in [features](evidence-ledger.md)). Addresses are firmware 2.40 runtime addresses unless stated; the [address index](address-index.md) lists them all.
 
-Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-boot-chain-and-monitor.md) boot chain and Monitor, [03](03-firmware-image-and-update-format.md) image and update format, [04](04-application-architecture.md) application architecture, [05](05-settings-and-adjustment-store.md) settings and adjustment store, [06](06-image-pipeline-and-colour.md) image pipeline and colour, [07](07-usb-protocol.md) USB protocol, [08](08-card-scripts-and-service-terminal.md) card scripts and service terminal, [09](09-recovery-and-failure-modes.md) recovery and failure modes, [10](10-emulator-and-tooling.md) emulator and tooling, [11](11-modification-playbook.md) modification playbook, [12](12-version-history.md) version history, [13](13-display-live-view-and-usb-streaming.md) display, live view and USB streaming.
+Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-boot-chain-and-monitor.md) boot chain and Monitor, [03](03-firmware-image-and-update-format.md) image and update format, [04](04-application-architecture.md) application architecture, [05](05-settings-and-adjustment-store.md) settings and adjustment store, [06](06-image-pipeline-and-color.md) image pipeline and color, [07](07-usb-protocol.md) USB protocol, [08](08-card-scripts-and-service-terminal.md) card scripts and service terminal, [09](09-recovery-and-failure-modes.md) recovery and failure modes, [10](10-emulator-and-tooling.md) emulator and tooling, [11](11-modification-playbook.md) modification playbook, [12](12-version-history.md) version history, [13](13-display-live-view-and-usb-streaming.md) display, live view and USB streaming.
 
 ## Koma firmware and package
 
@@ -42,10 +42,10 @@ Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-b
 | KOMA rows | Menu rows declared as data and stored one byte each in `0x1b8b5..0x1b8cf` | 05, 11 | `EMU` |
 | KOMA FEATURES | Row byte `0x1b8bc`: FULL, or ESSENTIALS (only menu5, settingsio, settingsio-menu, telemetry, tether, liveview, stallfix install) | 05 | `EMU` |
 | `Rev024M`, `240K2` | MakerNote tag 2 text written by generation 1 and generation 2 Koma firmware: the `Rev%4.4x` format string at `0x112578` is changed in the body, so the tag proves which body code runs. Stock 2.40 writes `Rev0240` | 06, 12 | `HW` |
-| Recipe, look | A stored combination of tone curve, contrast, key, shadow, highlight, filter or colour settings, sharpness and grain/vignette, chosen in the KOMA RECIPE row. Kept in the `RCP6` store at `0x1b900`. Not an IMG SET value: a recipe sets IMG SET to a stock value | 05, 06 | `HW` |
-| SELECT | Selective-colour recipe: mono except one hue band, applied as a YUV pass hooked at `0x117382` | 06 | `HW` |
+| Recipe, look | A stored combination of tone curve, contrast, key, shadow, highlight, filter or color settings, sharpness and grain/vignette, chosen in the KOMA RECIPE row. Kept in the `RCP6` store at `0x1b900`. Not an IMG SET value: a recipe sets IMG SET to a stock value | 05, 06 | `HW` |
+| SELECT | Selective-color recipe: mono except one hue band, applied as a YUV pass hooked at `0x117382` | 06 | `HW` |
 | Develop passes | The two per-shot processing passes; Koma hooks pass 1 at `0x96436` and pass 2 at `0xafd3e`, after stock register writes | 06, 11 | `HW` |
-| Colour probe | A package that writes one colour-register value per shot, keyed to a shot counter, to measure hardware effects in one power-on | 11 | `HW` |
+| Color probe | A package that writes one color-register value per shot, keyed to a shot counter, to measure hardware effects in one power-on | 11 | `HW` |
 | Full-press snap | A shutter pressed straight through focuses at the SNAP distance instead of running AF. Koma `fullpress` hooks the RL1 focus handler `0x956a0` | 11 | `EMU` |
 | `widefs` | Package feature that mounts SDHC/SDXC FAT32 cards at full capacity; needs generation 2 Koma firmware. 64 GB cards work on both bodies | 01, 11 | `HW` |
 | `PARAM.DAT` | Card file the `settingsio` feature imports once at boot: a 4,096-byte settings block, checked (magic, checksum, Koma settings version) and copied over `0x1b000` minus per-body bytes; then consumed, with `PARAM.OK` or `PARAM.BAD` written | 05 | `HW` |
@@ -91,7 +91,7 @@ Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-b
 | Replace table (REP) | Flash structure in blocks `1..0xc` mapping failed blocks to spares; 10 entries | 03, 09 | `EMU` |
 | M66592 | The Renesas USB device controller family at `0x10200000`, identified by register map | 01, 07 | `INFERRED` |
 | SD host | The card controller at `0x12044000` (TMIO family by inference). Stock 2.40 initialises SD 1.x/2.0 SDSC cards; generation 2 adds SDHC/SDXC | 01 | `STATIC` |
-| CC1, CC2 | Firmware names for two image-pipeline register blocks; both receive tone-table uploads, and CC2 holds the colour stage (chroma gain, matrix, coring) | 06 | `STATIC` |
+| CC1, CC2 | Firmware names for two image-pipeline register blocks; both receive tone-table uploads, and CC2 holds the color stage (chroma gain, matrix, coring) | 06 | `STATIC` |
 | LUT, tone table | A 4096-entry big-endian u16 table (values 0..1023) uploaded to CC1/CC2 | 06 | `STATIC` |
 | KernPool | The `0x70000`-byte kernel pool at `0x36adec..0x3dadec`. Largest free block on the camera with a 29.8 KB package body loaded: 3.9 KB, which is why current packages use a static resident | 01, 11 | `HW` |
 | SMC | Self-modifying code; coherent on the camera | 11 | `HW` |
@@ -197,7 +197,7 @@ Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-b
 | Black-clip index | The table input at which output first leaves 0: 170 on all five GR tables | 06 | `STATIC` |
 | B&W mode byte | `0x1b030` image setting (3 = B&W, 6 = B&W (TE)) | 05, 06 | `HW` |
 | TE, SETTING1/2 | B&W with toning (2.40, in 2.30 SEPIA's slot); two custom setting banks | 06, 12 | `STATIC` |
-| Colour matrix | Rows `0x12018104/108/10c` written every shot (zero in stock); live on the camera | 06, 11 | `HW` |
+| Color matrix | Rows `0x12018104/108/10c` written every shot (zero in stock); live on the camera | 06, 11 | `HW` |
 | Chroma gain | `0x12018004`; 0 gives a grey frame | 06, 11 | `HW` |
 | IQ stage | Hue matrix, chroma clip and chroma offset (`0x12018028/2c/30`) with no caller in 2.40; no effect when written | 06, 11 | `HW` |
 | Live-view ring | Three YCbCr frames of 640 x 244 (stride 672) at `0x8470000`, rotated at 30 fps; the source for `-LVFR` and peaking | 06, 13 | `STATIC` |
@@ -216,7 +216,7 @@ Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-b
 | Silent fix | A change Ricoh's notes do not mention, such as the 1.09 boot-sync flag | 12 | `STATIC` |
 | Boot-sync flag | `0x1bd3a8`: set when the file task is ready; 1.09 and later wait for it before the update scan, and the loader waits for it too | 11, 12 | `STATIC` |
 | SEPIA | 2.30 image setting (IMG SET value 6) that switched on a dormant fixed-tint mode; replaced by B&W (TE) in 2.40 | 12 | `STATIC` |
-| CL-BKT | 2.30 colour bracket: one exposure developed three times by the WB-BKT loop | 12 | `STATIC` |
+| CL-BKT | 2.30 color bracket: one exposure developed three times by the WB-BKT loop | 12 | `STATIC` |
 | INFO DISP, FLASH EXPO. COMP., GT-1 | 2.40 items: information display mode (`0x1b1a6`), flash exposure compensation (`0x1b1a5`), and GT-1 tele conversion lens support (`0x719bc`) | 05, 12 | `STATIC` |
 | `*rflect3`, `*launch3` | Ricoh's ARM big-endian (GR DIGITAL, R3, 500G wide, GX8, R2) and Renesas M32R (R5 onward, GR DIGITAL II/III) firmware generations | 12 | `STATIC` |
 | 500G wide, R3, GX8 | The GR's closest firmware relatives: 44%, 42% and 26% payload overlap; the 500G wide carries all five GR tone tables | 06, 12 | `STATIC` |

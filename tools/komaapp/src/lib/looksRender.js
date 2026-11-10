@@ -9,16 +9,16 @@
 //             (Q16 against the stock head's R x 16/25, B x 16/25), then the fixed Cb/Cr of TONING: the stock TE rows,
 //             10-bit register values, read as 8-bit chroma x 4 (the firmware's own packer shifts 8-bit chroma left
 //             by 2). INFERRED: that the luma word forms Y.
-//   colour    WARMTH as WB on linear light (R x (1 + 0.035 s), B x (1 - 0.035 s)), the look's matrix words with
-//             TINT on the G row and SATURATION's chroma gain through the colour-stage model v2 (fitted to the
-//             camera's colour probes 2 and 3, gain before the matrix), Y untouched.
+//   color    WARMTH as WB on linear light (R x (1 + 0.035 s), B x (1 - 0.035 s)), the look's matrix words with
+//             TINT on the G row and SATURATION's chroma gain through the color-stage model v2 (fitted to the
+//             camera's color probes 2 and 3, gain before the matrix), Y untouched.
 //   SELECT    chroma gain, then selcolour's cell classes: keep inside the band, halve in the 8-degree soft edge,
 //             grey elsewhere and below |Cb| + |Cr| = 12.
 //   finish    SHARPNESS as an unsharp mask on Y, GRAIN as fx's uniform noise on Y in 16..239, VIGNETTE as fx's
 //             (1 - k tx^2)(1 - k ty^2). Sharpening and grain are scaled to the preview size, the way they would
 //             average out when the 8-megapixel photo is shown that small.
 //
-// What it cannot do: undo the matrix, saturation or filter of the look the photo was made with; give colour back
+// What it cannot do: undo the matrix, saturation or filter of the look the photo was made with; give color back
 // to a black and white photo.
 import {LOOKS_DATA as D} from './looksData.js';
 import {P, TYPE} from './looksStore.js';
@@ -110,7 +110,7 @@ function channelLut(tone, k) {
   return out;
 }
 
-// ---------------------------------------------------------------- colour stage (model v2)
+// ---------------------------------------------------------------- color stage (model v2)
 function smb(b) { const m = b & 0x3f; return b & 0x80 ? -m : m; }
 function tintWord(w, t) {
   const bs = [0, 1, 2, 3].map(k => (w >>> (8 * k)) & 0xff);
@@ -133,12 +133,12 @@ function matrixDelta(words) {
   return any ? d : null;
 }
 
-// SELECT: selcolour's 32 x 32 cell classes (0 grey, 1 keep, 2 half) for COLOUR 1..6 and RANGE 0/1.
+// SELECT: selcolour's 32 x 32 cell classes (0 grey, 1 keep, 2 half) for COLOR 1..6 and RANGE 0/1.
 const selCache = new Map();
-function selTable(colour, range) {
-  const key = colour + ':' + range;
+function selTable(color, range) {
+  const key = color + ':' + range;
   if (selCache.has(key)) return selCache.get(key);
-  const band = D.bands[String(colour)] || D.bands['1'];
+  const band = D.bands[String(color)] || D.bands['1'];
   const c = band[0], w = band[1 + (range ? 1 : 0)], soft = D.select.soft, thr = D.select.thr;
   const t = new Uint8Array(1024);
   for (let i = 0; i < 32; i++) for (let j = 0; j < 32; j++) {
@@ -154,7 +154,7 @@ function selTable(colour, range) {
 
 // ---------------------------------------------------------------- plan: everything a render needs, built once
 // target: {p, kind, g, v, te?}; source: the state the photo was made with (or null: STANDARD). mono: the photo has no
-// colour of its own (a black and white or toned photo): colour looks then start from its grey, not from its tint.
+// color of its own (a black and white or toned photo): color looks then start from its grey, not from its tint.
 // cast: that black and white photo carries a tone. A target equal to the source is drawn as the photo is, except
 // when the photo's tone is one the target does not make (a toned photo read as the untoned stock B&W setting): the
 // B&W pass then sets the target's own tone.
@@ -178,9 +178,9 @@ export function makePlan(target, source, mono = false, cast = false) {
     plan.cb = cc[0] / 4; plan.cr = cc[1] / 4;
     return plan;
   }
-  const srcSat = sc === TYPE.colour ? D.sat[src.p[P.s5]] : sc === TYPE.select ? D.sat[src.p[P.s7]] : 1;
-  if (t === TYPE.colour) {
-    const s = (target.p[P.s6] - 3) - (sc === TYPE.colour ? src.p[P.s6] - 3 : 0);
+  const srcSat = sc === TYPE.color ? D.sat[src.p[P.s5]] : sc === TYPE.select ? D.sat[src.p[P.s7]] : 1;
+  if (t === TYPE.color) {
+    const s = (target.p[P.s6] - 3) - (sc === TYPE.color ? src.p[P.s6] - 3 : 0);
     plan.lr = channelLut(tone, 1 + D.warm * s); plan.lg = channelLut(tone, 1); plan.lb = channelLut(tone, 1 - D.warm * s);
     plan.gain = D.sat[target.p[P.s5]] / srcSat;
     const words = D.matrix[target.kind >> 4] || [0, 0, 0];
@@ -297,9 +297,9 @@ export function castOf(st) {
   return cc ? Math.hypot(cc[0], cc[1]) / 4 : 0;
 }
 
-// How much colour a photo has: the spread of its chroma (mono: none), and the cast a toned black and white photo
+// How much color a photo has: the spread of its chroma (mono: none), and the cast a toned black and white photo
 // carries (cast: its mean chroma, in 8-bit codes, is past 2).
-export function colourOf(src, n) {
+export function colorOf(src, n) {
   let sb = 0, sr = 0, sbb = 0, srr = 0, k = 0;
   const step = Math.max(1, Math.floor(n / 20000));
   for (let i = 0; i < n; i += step) {

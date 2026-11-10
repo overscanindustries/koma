@@ -1,9 +1,9 @@
 /* Koma app: design tokens and base styles ("GR instrument").
-   Views never define sizes, colours, radii or durations of their own: they take them from here. Token changes are one
+   Views never define sizes, colors, radii or durations of their own: they take them from here. Token changes are one
    commit prefixed "tokens:". Shared components live in src/components/ui (README there). */
 
 :root {
-  /* colour, dark (default) */
+  /* color, dark (default) */
   --bg: #161718;          /* page, nav column, rails, pinned bars */
   --surf: #1d1e20;        /* sheets and the instrument strip only */
   --raise: #25262a;       /* controls */
@@ -313,7 +313,7 @@ details.details pre {
 
 /* A bordered panel. Allowed only for the instrument strip, a sheet and a photo frame; nothing nests inside it. */
 .panel { background: var(--surf); border: 1px solid var(--line); border-radius: var(--r-panel); }
-/* A plain statement with a hairline rule beside it: no fill, no colour. Status uses StatusLine instead. */
+/* A plain statement with a hairline rule beside it: no fill, no color. Status uses StatusLine instead. */
 .notice {
   border-left: 1px solid var(--line-strong);
   padding: 2px 0 2px var(--s3);
@@ -322,7 +322,7 @@ details.details pre {
   max-width: 60ch;
 }
 .notice.bad { border-left-color: var(--bad); }
-/* Error text stays ink; the StatusLine dot carries the colour. */
+/* Error text stays ink; the StatusLine dot carries the color. */
 .err { color: var(--ink); font-size: var(--fs-body); line-height: var(--lh-body); }
 /* An indeterminate wait: a 6 px dot, still. (No spinners.) */
 .spinner { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); flex: none; }

@@ -1,6 +1,8 @@
-# The koma-gr Python package (the `koma` command): build the wheel and sdist, install the wheel into a fresh venv on
-# each OS and Python 3.10 and 3.13, and smoke-test it against the simulated camera (packaging/smoke.py). Publishes
-# nothing. Runs on pushes to main and pull requests that touch what the wheel carries, and by hand.
+# The koma-gr Python package (the `koma` command): build the wheel and sdist, install each into a fresh venv on each OS
+# and Python 3.10 and 3.13 (pipx installs the wheel; Homebrew builds from the sdist), and smoke-test it against the
+# simulated camera (packaging/smoke.py). Ricoh's 2.40 file is never here, so the smoke test checks the fresh-install
+# state: the package delta is the recorded one and the package waits for the user's Ricoh file. Publishes nothing.
+# Runs on pushes to main and pull requests that touch what the wheel carries, and by hand.
 name: Koma package
 
 on:
@@ -62,7 +64,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, macos-14, windows-2022]
+        os: [ubuntu-24.04, macos-latest, windows-2022]   # macos-14 is retired: its jobs never start
         python: ["3.10", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
@@ -89,3 +91,13 @@ jobs:
       - name: Smoke test (simulated camera)
         shell: bash
         run: python packaging/smoke.py "$KOMA" --port 9718
+      - name: Install the sdist into another fresh venv (what Homebrew builds from)
+        shell: bash
+        run: |
+          python -m venv venv-sdist
+          if [ "$RUNNER_OS" = Windows ]; then BIN=venv-sdist/Scripts; else BIN=venv-sdist/bin; fi
+          $BIN/python -m pip install dist/*.tar.gz
+          echo "KOMA_SDIST=$BIN/koma" >> "$GITHUB_ENV"
+      - name: Smoke test the sdist install
+        shell: bash
+        run: python packaging/smoke.py "$KOMA_SDIST" --port 9716

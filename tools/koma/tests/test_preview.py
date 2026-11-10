@@ -2,7 +2,7 @@
 where noted). Built together with bwrecipes, whose tables and leaf routines it shares.
 
 Covered: install and records (5 Thumb BL hooks; level C: 2 veneer pointers); at each of the four monitor sites the
-recipe registers are the last write after the stock write (colour: chroma = tapped stock monitor word x SATURATION,
+recipe registers are the last write after the stock write (color: chroma = tapped stock monitor word x SATURATION,
 matrix + TINT; SELECT: chroma only; B&W: filter luma weights, toning word through the TE setter; no WB writes); the
 chroma tap runs the real 0x922bc; OFF and IMG-SET-mismatch leave stock values (luma weights put back after a filter
 recipe); level A never uploads a LUT; level B streams the recipe curve into CC2 and CC1 at start / resume only, sets
@@ -126,9 +126,9 @@ def scaled(word, step):
     return int.from_bytes(bytes(min(0xFF, (b * q) >> 8) for b in word.to_bytes(4, "big")), "big")
 
 
-def colour_want(name, word):
+def color_want(name, word):
     p, kind = B.RECIPES[TB.rid(name) - 1]["params"], B.RECIPES[TB.rid(name) - 1]["type"]
-    if kind & 3 == B.TYPE_COLOUR:
+    if kind & 3 == B.TYPE_COLOR:
         mr, mg, mb = B.LOOK_MATRIX[kind >> 4]
         return {"12018004": "%08x" % scaled(word, p[B.P_SAT]), "12018104": "%08x" % mr,
                 "12018108": "%08x" % B.tint_word(mg, p[B.P_TINT] - 3), "1201810c": "%08x" % mb}
@@ -148,11 +148,11 @@ def test_install_records_and_size():
     link([B.make({}), P.make({"live": "off"})])
 
 
-def test_colour_recipe_at_every_site():
+def test_color_recipe_at_every_site():
     for name in ("POSITIVE", "BLEACH", "SLIDE 50", "WARM NEG"):
         u = unit(name)
         w = stock_chroma(u)
-        want = colour_want(name, w)
+        want = color_want(name, w)
         for site in SITES:
             last, log = run_site(u, site, mono=0)
             assert {a: last[a] for a in want} == want, (name, hex(site), last, want)
@@ -165,7 +165,7 @@ def test_colour_recipe_at_every_site():
 def test_select_recipe_chroma_only():
     u = unit("SELECT")
     w = stock_chroma(u)
-    want = colour_want("SELECT", w)
+    want = color_want("SELECT", w)
     for site in SITES:
         last, _ = run_site(u, site, mono=0)
         assert last["12018004"] == want["12018004"] and last["12018104"] == "00000000", (hex(site), last)
@@ -218,7 +218,7 @@ def test_bw_filter_and_toning_at_every_site():
             assert {a: v for a, v in log if a in ("12018004", "12018104")} == {"12018104": "00000000"}
 
 
-def test_bw_recipe_with_monitor_in_colour_is_stock():
+def test_bw_recipe_with_monitor_in_color_is_stock():
     u = unit("SHINJUKU")
     last, log = run_site(u, P.SITE_START, mono=0)
     assert log == list(STOCK.items()) and not u.te

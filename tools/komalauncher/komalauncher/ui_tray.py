@@ -145,7 +145,10 @@ class StartupWindow:
                                   ("<KP_Enter>", self._activate), ("<space>", self._activate),
                                   ("<Tab>", lambda _e: self._cycle(1)), ("<Shift-Tab>", lambda _e: self._cycle(-1)),
                                   ("<ISO_Left_Tab>", lambda _e: self._cycle(-1))):
-            root.bind(sequence, handler)
+            try:
+                root.bind(sequence, handler)
+            except tk.TclError:  # ISO_Left_Tab (X11's Shift-Tab) is not a keysym that Tk knows on Windows or macOS
+                pass
 
     # measurements -------------------------------------------------------------
 
@@ -309,7 +312,7 @@ class StartupWindow:
 
     def _press(self, _event):
         self.pressed = True
-        self.canvas.move("button", 0, 1)   # pressed: 1 px down, no colour change
+        self.canvas.move("button", 0, 1)   # pressed: 1 px down, no color change
 
     def _release(self, event):
         if not self.pressed:

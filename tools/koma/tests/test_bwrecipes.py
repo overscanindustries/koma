@@ -1,13 +1,13 @@
-"""bwrecipes v4 (Koma 0.2: B&W + SELECT + colour): unit-emulated checks (Unicorn on the 2.40 payload, firmware callees
+"""bwrecipes v4 (Koma 0.2: B&W + SELECT + color): unit-emulated checks (Unicorn on the 2.40 payload, firmware callees
 faked).
 
 Covered: install; the list (IMG SET / ADJ / KOMA RECIPE order and the label text in the module); defaults of every
 look and of CUSTOM 1..3 (= MONO); menu commit / load; ADJ stepping across the new list with live apply (bases 1/3/6);
 every curve stream against the host reference; filter / toning / sharpness of every B&W look; chroma gain / matrix /
-WB of every colour look and SELECT in both passes; every editor sub-setting of each type committed through the exported
+WB of every color look and SELECT in both passes; every editor sub-setting of each type committed through the exported
 on_change (record + shot effect); SAVE TO CUSTOM (kind kept); RESET (base follows); the RCP2 v3 reset, the RCP4 v4 and
 RCP5 v5 -> RCP6 v6 migrations (active id cleared, F3); GRAIN / VIGNETTE (FX table: commit, SAVE TO CUSTOM, RESET,
-published +11 / +12); kind validation; SELECT's published COLOUR / RANGE; the matrices against matrix_model (derivation,
+published +11 / +12); kind validation; SELECT's published COLOR / RANGE; the matrices against matrix_model (derivation,
 encode round trip, TINT direction); menu5's per-type editor rows.
 """
 from __future__ import annotations
@@ -40,7 +40,7 @@ SPEC = {"MONO": ("R3", 0, 0, 0, 0, "OFF", "OFF", 3, 1),
         "DENSE": ("SOFT MONO", 1, -1, 0, 0, "OFF", "OFF", 3, 1),
         "NOIR": ("HI-CONT", 2, -2, 0, 0, "RED", "OFF", 3, 1),
         "MATTE": ("STANDARD", -3, 0, 3, -2, "OFF", "OFF", 3, 0)}
-# colour looks: con, key, shd, hil, SAT, WARMTH, TINT, sharp, matrix src. POSITIVE / BLEACH: GRD IV firmware refit
+# color looks: con, key, shd, hil, SAT, WARMTH, TINT, sharp, matrix src. POSITIVE / BLEACH: GRD IV firmware refit
 # (v4.1); the other four: PROPOSAL section 2 starting values, checked against B.REFS in v4.2 (NEGATIVE, WARM NEG). Base STANDARD except BLEACH (CBASE).
 CSPEC = {"POSITIVE": (2, 2, -3, -3, -1, 0, 0, 0, "grd4:positive-film"),
          "NEGATIVE": (-1, 1, 2, 0, -1, 0, 0, 0, "gr-negative-film"),
@@ -186,10 +186,10 @@ def kind_of(name):
 
 def expect_shot(u, p, name="", kind=0):
     """One pass-1 shot (+ pass 2) with params p active: curve and sharpness; B&W: filter word, red tilt, toning word;
-    colour / SELECT: chroma gain (+ matrix, WB) in both passes, nothing of the B&W path."""
+    color / SELECT: chroma gain (+ matrix, WB) in both passes, nothing of the B&W path."""
     if kind & 3:
         assert u.u8(0x1B030) == 1, name
-        want = {"%08x" % a: "%08x" % v for a, v in B.colour_regs(p, kind).items()}
+        want = {"%08x" % a: "%08x" % v for a, v in B.color_regs(p, kind).items()}
         for pass_ in (1, 2):
             m = shot(u, mono=0, pass_=pass_)
             assert {a: v for a, v in m.items() if a in CREGS} == want, (name, pass_, m, want)
@@ -293,7 +293,7 @@ def test_list_order_and_labels():
         "SAVE TO CUSTOM", "RESET", "GRAIN", "VIGNETTE", "ADJ LEVER"]
     per_type = [[r["variants"]["alts"][t][0] for r in B.ROWS if "variants" in r] for t in range(3)]
     assert per_type == [["FILTER EFF.", "TONING", "TONE LEVEL"], ["SATURATION", "WARMTH", "TINT"],
-                        ["COLOUR", "RANGE", "SATURATION"]]
+                        ["COLOR", "RANGE", "SATURATION"]]
     assert all(r["variants"]["sel"] == B.SELB for r in B.ROWS if "variants" in r)
 
 
@@ -305,7 +305,7 @@ def test_defaults_of_every_look():
         r = B.RECIPES[rid(name) - 1]
         assert r["params"] == [B.B[CBASE.get(name, "STANDARD")], con + 4, key + 4, shd + 4, hil + 4, sat + 3, warm + 3, tint + 3,
                                sharp + 2], name
-        assert r["type"] == B.TYPE_COLOUR | (look << 4) and r["src"] == src, name
+        assert r["type"] == B.TYPE_COLOR | (look << 4) and r["src"] == src, name
     sel = B.RECIPES[rid("SELECT") - 1]
     assert sel["type"] == B.TYPE_SEL and sel["params"] == [B.B["R3"], 4, 4, 4, 4, 0, 0, 3, 3]   # RED NARROW x1.0 +1
     for i in range(1, 4):
@@ -480,7 +480,7 @@ def test_imgset_right_opens_the_editor_and_standard_normalises():
     assert right(GHOST) == 0 and right(0) == 0 and right(3, row=B.IMG_ROWS[0] - 12) == 0
     assert u.u8(B.ACT) == rid("HARD MONO")
     assert right(pos("STANDARD")) == 1                            # STANDARD: an editable look while editing
-    assert (u.u8(B.ACT), u.u8(0x1B030), u.u8(B.SELB)) == (B.STD, 1, B.TYPE_COLOUR)
+    assert (u.u8(B.ACT), u.u8(0x1B030), u.u8(B.SELB)) == (B.STD, 1, B.TYPE_COLOR)
     assert list(u.read(B.EB, B.NPARAM)) == B.STANDARD["params"]
     u.on_change(B.EB + B.P_CON, 5)                                # CONTRAST +1
     u.on_change(B.EB + B.P_CON, 4)                                # and back: still in the session, id kept
@@ -540,13 +540,13 @@ def test_every_look_shot():
     assert hashlib.sha256(struct.pack(">4096H", *r3)).hexdigest().startswith(B.R3_SHA)
     u.on_change(B.ACT, rid("SHINJUKU"))
     shot(u)
-    m = shot(u, mono=0)                                           # develop says colour: weights restored, no tilt
+    m = shot(u, mono=0)                                           # develop says color: weights restored, no tilt
     assert m == {"1201800c": "4008993a"} and len(u.cc2) == 16
     u.on_change(B.ACT, 0)
     assert shot(u) == {} and not u.cc2                            # no recipe: stock shot
 
 
-def test_colour_regs_values():
+def test_color_regs_values():
     """POSITIVE (GRD IV refit): chroma x0.85 of stock 8470697c (each byte rounded half to even), its matrix rows;
     BLEACH: chroma x0.55, stock-zero matrix rows, WARMTH COOL 3; RETRO (WARM 2) also the WB words from the AWB values
     185/64/172: R 185*16/25*1.07, G 64, B 172*16/25*0.93 (unit-emu == host model)."""
@@ -610,10 +610,10 @@ def test_every_subsetting_commits_and_applies():
         assert list(u.read(B.EB, B.NPARAM)) == p
 
 
-def test_every_colour_subsetting_commits_and_applies():
-    """Colour editor rows: CURVE (any of the 8 bases), CONTRAST..HIGHLIGHT, SATURATION (chroma gain), WARMTH (WB), TINT
+def test_every_color_subsetting_commits_and_applies():
+    """Color editor rows: CURVE (any of the 8 bases), CONTRAST..HIGHLIGHT, SATURATION (chroma gain), WARMTH (WB), TINT
     (G row), SHARPNESS: record kind = the look's (type 1 + look index), the shot writes the new values in both passes;
-    IMG SET stays 1. Out-of-range values for the colour limits are repaired."""
+    IMG SET stays 1. Out-of-range values for the color limits are repaired."""
     u = unit()
     i = select(u, "BLEACH")
     kind = kind_of("BLEACH")
@@ -621,18 +621,18 @@ def test_every_colour_subsetting_commits_and_applies():
              (B.P_SAT, 6), (B.P_SAT, 0), (B.P_WARM, 0), (B.P_WARM, 6), (B.P_WARM, 3), (B.P_TINT, 0), (B.P_TINT, 6),
              (B.P_TINT, 4), (B.P_SHARP, 4)]
     p = _commit_steps(u, i, steps, kind)
-    assert u.u8(0x1B030) == 1 and u.u8(B.SELB) == B.TYPE_COLOUR
+    assert u.u8(0x1B030) == 1 and u.u8(B.SELB) == B.TYPE_COLOR
     for j, bad in ((B.P_SAT, 7), (B.P_WARM, 9), (B.P_TINT, 0xFF), (B.P_CURVE, B.NB)):
         u.on_change(B.EB + j, bad)
         assert list(u.read(B.EB, B.NPARAM)) == p
-    u.on_change(B.ACT, rid("MONO"))                               # colour -> B&W -> colour: base follows, edits stay
+    u.on_change(B.ACT, rid("MONO"))                               # color -> B&W -> color: base follows, edits stay
     assert u.u8(0x1B030) == 3 and u.u8(B.SELB) == B.TYPE_BW
     u.on_change(B.ACT, i)
     assert u.u8(0x1B030) == 1 and list(u.read(B.EB, B.NPARAM)) == p
 
 
-def test_colour_base_and_off_restores_stock():
-    """A colour recipe holds 0x1b030 = 1 (NORMAL) and writes the colour registers; OFF leaves plain NORMAL and the next
+def test_color_base_and_off_restores_stock():
+    """A color recipe holds 0x1b030 = 1 (NORMAL) and writes the color registers; OFF leaves plain NORMAL and the next
     shot is stock (no module writes, no LUT); IMG SET moved away (e.g. VIVID) -> the recipe does not apply."""
     u = unit(imgset=3)
     select(u, "NEGATIVE")
@@ -647,8 +647,8 @@ def test_colour_base_and_off_restores_stock():
 
 
 def test_select_params_stored_and_published():
-    """SELECT: COLOUR (p5) / RANGE (p6) / SATURATION (p7) are editor rows stored in its record (no settings byte of
-    their own: 0x1b8cb is RESET); sync publishes COLOUR+1 / RANGE at 0x1b909/0x1b90a only while SELECT applies; the
+    """SELECT: COLOR (p5) / RANGE (p6) / SATURATION (p7) are editor rows stored in its record (no settings byte of
+    their own: 0x1b8cb is RESET); sync publishes COLOR+1 / RANGE at 0x1b909/0x1b90a only while SELECT applies; the
     shot writes the chroma gain only (no matrix, no WB)."""
     from koma.features import selcolour as SC
     assert (SC.COLB, SC.RNGB) == (B.SELCOL, B.SELRNG) and B.RST == 0x1B8CB
@@ -684,10 +684,10 @@ def test_reset_restores_defaults():
     u.on_change(B.EB + B.P_KEY, 8)
     u.on_change(B.RST, 1)
     assert list(u.read(B.EB, B.NPARAM)) == B.RECIPES[rid("MONO") - 1]["params"] and u.rec(c)[10] != B.VALID
-    select(u, "WARM NEG")                                         # colour saved to CUSTOM 2, then RESET there:
+    select(u, "WARM NEG")                                         # color saved to CUSTOM 2, then RESET there:
     u.on_change(B.SAVE, 2)                                        # back to MONO (B&W): IMG SET follows 1 -> 3
     c2 = select(u, "CUSTOM 2")
-    assert u.u8(0x1B030) == 1 and u.u8(B.SELB) == B.TYPE_COLOUR
+    assert u.u8(0x1B030) == 1 and u.u8(B.SELB) == B.TYPE_COLOR
     u.on_change(B.RST, 1)
     assert u.u8(0x1B030) == 3 and u.u8(B.SELB) == B.TYPE_BW and u.rec(c2)[10] != B.VALID
     expect_shot(u, B.RECIPES[rid("MONO") - 1]["params"], "CUSTOM 2 reset", B.TYPE_BW)
@@ -718,7 +718,7 @@ def test_save_to_custom_copies_and_returns_to_off():
     assert u.u8(B.SAVE) == 0 and u.rec(rid("CUSTOM 3"))[10] != B.VALID
 
 
-def test_save_colour_to_custom_keeps_kind_and_matrix():
+def test_save_color_to_custom_keeps_kind_and_matrix():
     u = unit()
     s = select(u, "SLIDE 50")
     u.on_change(B.EB + B.P_TINT, 5)                               # GREEN 2
@@ -728,7 +728,7 @@ def test_save_colour_to_custom_keeps_kind_and_matrix():
     rec = u.rec(c3)
     assert list(rec[:9]) == p and rec[9] == kind_of("SLIDE 50") and xor_ok(rec)
     u.on_change(B.ACT, c3)
-    assert u.u8(0x1B030) == 1 and u.u8(B.SELB) == B.TYPE_COLOUR
+    assert u.u8(0x1B030) == 1 and u.u8(B.SELB) == B.TYPE_COLOR
     expect_shot(u, p, "CUSTOM 3 = SLIDE 50", kind_of("SLIDE 50"))
     assert shot(u, mono=0)["12018108"] == "%08x" % B.tint_word(B.LOOK_MATRIX[5][1], 2)
     assert list(u.rec(s)[:9]) == p                                # the source keeps its edit
@@ -779,7 +779,7 @@ def test_store_v3_resets_to_v5_defaults():
 
 def test_store_v4_migrates_to_v5():
     """Koma 0.2 B&W store (RCP4 v4, 13 records): B&W edits stay on ids 1..10, CUSTOM 1..3 move to ids 18..20; SELECT
-    and the colour looks start at their defaults; the active id is cleared (every migration does, F3)."""
+    and the color looks start at their defaults; the active id is cleared (every migration does, F3)."""
     mono = rid("MONO")
     mono_p = [5, 8, 4, 4, 4, 3, 0, 2, 4]                          # FINE 100 curve, contrast +4, RED, sharp +2
     cust_p = [3, 2, 4, 6, 4, 0, 1, 4, 0]                          # a user CUSTOM 2 (sepia 5)
@@ -792,7 +792,7 @@ def test_store_v4_migrates_to_v5():
     assert list(u.rec(mono)[:9]) == mono_p and u.rec(mono)[10] == B.VALID
     assert list(u.rec(c2)[:9]) == cust_p and xor_ok(u.rec(c2))
     assert list(u.read(B.EB, B.NPARAM)) == cust_p and u.u8(0x1B030) == 6
-    for k in range(11, 18):                                       # SELECT + colour: empty -> defaults
+    for k in range(11, 18):                                       # SELECT + color: empty -> defaults
         assert u.rec(k)[10] != B.VALID
     assert u.rec(rid("CUSTOM 1"))[:9] == bytes([9] * 9)         # moved as is; out of range -> read as MONO
     u.on_change(B.ACT, rid("CUSTOM 1"))
@@ -804,8 +804,8 @@ def test_store_v4_migrates_to_v5():
 
 
 def test_kind_validation():
-    """Record byte 9 is the kind: type (low 2 bits) <= 2 and colour look < 6, else the look's default is used; a valid
-    colour kind on a CUSTOM slot applies that look's matrix."""
+    """Record byte 9 is the kind: type (low 2 bits) <= 2 and color look < 6, else the look's default is used; a valid
+    color kind on a CUSTOM slot applies that look's matrix."""
     u = unit()
     i = select(u, "MATTE")
     u.on_change(B.EB + B.P_CON, 8)
@@ -868,7 +868,7 @@ def test_sharpness():
     select(u, "SOFT MONO")
     assert call_site(u, B.SITES_SHARP[1]) == 2                    # -1 -> stock 2 (EXIF site)
     select(u, "BLEACH")
-    assert call_site(u, B.SITES_SHARP[1]) == 4                    # colour: +1 -> 4
+    assert call_site(u, B.SITES_SHARP[1]) == 4                    # color: +1 -> 4
     u.on_change(B.ACT, 0)
     assert call_site(u, B.SITES_SHARP[1]) == 3                    # stock value passes through
 
@@ -1000,7 +1000,7 @@ def test_grd4_refit_curves_match_the_fitted_tables():
 BLEACH_SHA = "44acb3be"
 
 
-def test_grd4_colour_defaults_and_matrix():
+def test_grd4_color_defaults_and_matrix():
     """POSITIVE's matrix = grd4_matrix(group C) with its SATURATION (re-derived from data/grd4 through model v2) and
     beats SATURATION alone; encode/decode round trip; grey stays near neutral. SATURATION defaults = the step nearest
     the GRD IV mean sector gain (C 0.82 -> x0.85; B 0.43 -> floor x0.55); BLEACH: no matrix, WARMTH COOL 3 (the
@@ -1025,7 +1025,7 @@ def test_grd4_colour_defaults_and_matrix():
     assert np.allclose(MM.predict_ycc(grey, {}, chroma_gain=B.SAT_STEPS[ble[B.P_SAT]]), grey)
     for name in ("POSITIVE", "BLEACH"):
         r = B.RECIPES[rid(name) - 1]
-        assert all(0 <= x < lim for x, lim in zip(r["params"], B.LIMITS[B.TYPE_COLOUR])), name
+        assert all(0 <= x < lim for x, lim in zip(r["params"], B.LIMITS[B.TYPE_COLOR])), name
         assert r["src"].startswith("grd4:"), name
 
 
@@ -1090,7 +1090,7 @@ def test_store_rcp6_needs_exactly_n():
 
 
 def test_grain_vignette_commit_save_reset_publish():
-    """GRAIN (0x1b8cc) / VIGNETTE (0x1b8cd) on a B&W, a colour and the SELECT look: the recipe's FX byte holds them
+    """GRAIN (0x1b8cc) / VIGNETTE (0x1b8cd) on a B&W, a color and the SELECT look: the recipe's FX byte holds them
     (0x50 | g | v << 2), the record is untouched, sync publishes them at store +11 / +12 only while the recipe applies;
     each look keeps its own; SAVE TO CUSTOM copies them; RESET puts them back to OFF; out of range is repaired."""
     u = unit()
@@ -1163,7 +1163,7 @@ def test_unity_wb_wrap_reapplies_warmth_and_red_tilt():
 
 
 def test_estimate_looks_have_published_sources():
-    """v4.2: every colour look without a GRD IV firmware source cites published sources (bwrecipes.md, Koma 0.3)."""
+    """v4.2: every color look without a GRD IV firmware source cites published sources (bwrecipes.md, Koma 0.3)."""
     for r in B.CLOOKS:
         if not r["src"].startswith("grd4:"):
             assert B.REFS.get(r["name"]) and all(u.startswith("https://") for u in B.REFS[r["name"]]), r["name"]

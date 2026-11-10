@@ -1,9 +1,9 @@
-"""selcolour: selective colour. The picture goes mono except one chosen hue band, which keeps its colour.
+"""selcolour: selective color. The picture goes mono except one chosen hue band, which keeps its color.
 
 Hardware fact it rests on: the IQ hue stage is dead, so the hue selection is done in software on the finished master UV plane.
 
-Driven by the recipes' SELECT look (bwrecipes type 2: base NORMAL, COLOUR / RANGE are its p5 / p6). bwrecipes
-publishes them per shot in its 'RCP6' store header: +9 COLOUR 1..6 (0 = no SELECT shot), +10 RANGE. No rows of its own.
+Driven by the recipes' SELECT look (bwrecipes type 2: base NORMAL, COLOR / RANGE are its p5 / p6). bwrecipes
+publishes them per shot in its 'RCP6' store header: +9 COLOR 1..6 (0 = no SELECT shot), +10 RANGE. No rows of its own.
 
 Hook: 0x117382 `bl 0x1173e8` (r0 = cp) at the tail of CamStillRecGenMasterYUV 0x11703c, reached on every path of the
 function that produced a master plane (all five callers pass r1 = 0). By then the master resize 0x5e8f0 has returned
@@ -14,12 +14,12 @@ Plane (D): cp+0x58 = master UV (0x8f40e00 at 8 MP), interleaved 4:2:2 Cb,Cr byte
 Y stride; cp+0x5c u16 stride, cp+0x5e u16 width (final, set after the resize succeeded), cp+0x60 u16 lines. Byte order
 inside a pair is I (Cb first, the JPEG component order); option order=crcb swaps it.
 
-Settings (read at use, out of range = OFF): only while the store header at 0x1b900 reads 'RCP6': 0x1b909 COLOUR 0 OFF
+Settings (read at use, out of range = OFF): only while the store header at 0x1b900 reads 'RCP6': 0x1b909 COLOR 0 OFF
 1 RED 2 ORANGE 3 YELLOW 4 GREEN 5 BLUE 6 MAGENTA; 0x1b90a RANGE 0 NARROW 1 WIDE. Also skipped when the develop mode
 byte 0x23b08a (cp+0x22) is not 0 (B&W / toning: the plane is already flat).
 
 Algorithm: a 1 KiB class table of 32 x 32 cells, indexed by (first byte >> 3) << 5 | (second byte >> 3) of a UV pair
-(8-code cells; 0.1 used a 16 KiB table of 256 x 64 cells), built in Thumb at first use and again only when (COLOUR,
+(8-code cells; 0.1 used a 16 KiB table of 256 x 64 cells), built in Thumb at first use and again only when (COLOR,
 RANGE) changes. A cell is classified at its centre (cb, cr in -124..124): neutral if |cb|+|cr| <= THR, else KEEP if
 inside the core sector [a, b] of the band (cross(a,p) >= 0 and cross(p,b) >= 0, integer vectors at 64 scale: multiplies
 and compares only), else HALF (chroma halved) if inside the soft sector (core widened by SOFT degrees each side), else
@@ -39,21 +39,21 @@ from .. import firmware as fw
 from ..feature import Check, Feature, Hook
 
 NAME = "selcolour"
-SUMMARY = "selective colour: mono except one hue band (the SELECT recipe; bytes 0x1b909 colour, 0x1b90a range)"
-OPTIONS = {"chroma": "minimum |cb|+|cr| for a pixel to keep colour (default 12)",
+SUMMARY = "selective color: mono except one hue band (the SELECT recipe; bytes 0x1b909 color, 0x1b90a range)"
+OPTIONS = {"chroma": "minimum |cb|+|cr| for a pixel to keep color (default 12)",
            "soft": "soft-edge width in degrees each side of the band, chroma halved there (default 8; 0 = hard edge)",
            "order": "cbcr (default) | crcb: byte order of the interleaved UV pair",
-           "force": "0 (default): COLOUR from 0x1b909. 1..6 or a colour name: fixed COLOUR, for a card test without "
+           "force": "0 (default): COLOR from 0x1b909. 1..6 or a color name: fixed COLOR, for a card test without "
                     "the recipes (RANGE from 0x1b90a when the store header is 'RCP6', else NARROW)"}
 VERSION = "2.0"
 
-STB, STMAGIC = 0x1B900, b"RCP6"     # bwrecipes store header (bwrecipes.MAGIC); +9 COLOUR, +10 RANGE (bwrecipes.publish)
+STB, STMAGIC = 0x1B900, b"RCP6"     # bwrecipes store header (bwrecipes.MAGIC); +9 COLOR, +10 RANGE (bwrecipes.publish)
 STMAGIC5 = b"RCP5"                  # Koma 0.2.x header, same +9 / +10; accepted too
 COLB, RNGB = STB + 9, STB + 10
-MODEB = 0x23B08A                    # cp+0x22: develop mode 0 colour, 1 B&W, 2 toning
-COLOURS = ["OFF", "RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "MAGENTA"]
+MODEB = 0x23B08A                    # cp+0x22: develop mode 0 color, 1 B&W, 2 toning
+COLORS = ["OFF", "RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "MAGENTA"]
 RANGES = ["NARROW", "WIDE"]
-ROWS = []                           # no rows of its own: COLOUR / RANGE are SELECT recipe parameters
+ROWS = []                           # no rows of its own: COLOR / RANGE are SELECT recipe parameters
 
 SITE, TARGET = 0x117382, 0x1173E8
 SDLO, SDHI = 0x08000000, 0x0C000000
@@ -82,7 +82,7 @@ def _vec(deg):
 
 
 def vectors(soft=8):
-    """12 entries (key = 2*(colour-1) + range) of 8 signed bytes: core a, core b, soft a, soft b (x = cb, y = cr)."""
+    """12 entries (key = 2*(color-1) + range) of 8 signed bytes: core a, core b, soft a, soft b (x = cb, y = cr)."""
     out = []
     for c in range(1, 7):
         centre, n, w = BANDS[c]
@@ -158,7 +158,7 @@ apply:
     movs r7, r0                 @ cp
     ldr r6, =state
     movs r5, #@RES_OFF@
-    ldr r0, =STB                @ COLOUR / RANGE from the recipe store header, only when it is 'RCP6'
+    ldr r0, =STB                @ COLOR / RANGE from the recipe store header, only when it is 'RCP6'
     ldr r3, [r0, #0]
     ldr r2, =STMAGIC
     movs r1, #0
@@ -458,14 +458,14 @@ def source(thr=12, soft=8, order="cbcr", force=0):
     for k in range(12):
         b = [c for xy in v[4 * k:4 * k + 4] for c in xy]
         vec_lines.append("    .byte " + ", ".join(str(x & 0xFF) for x in b) +
-                         f"    @ {COLOURS[k // 2 + 1]} {RANGES[k % 2]}")
+                         f"    @ {COLORS[k // 2 + 1]} {RANGES[k % 2]}")
     hi, lo = ("r3", "r4") if order == "cbcr" else ("r4", "r3")
     rep = dict(STB=hex(STB), STMAGIC="0x" + STMAGIC.hex(), STMAGIC5="0x" + STMAGIC5.hex(), MODEB=hex(MODEB), THR=str(thr), LUTN=hex(LUTN), LUTM1=hex(LUTN - 1), SDLO=hex(SDLO), SDHI=hex(SDHI),
                RES_OFF=str(RES_OFF), RES_MODE=str(RES_MODE), RES_NOLUT=str(RES_NOLUT), RES_GEOM=str(RES_GEOM),
                RES_RAN=str(RES_RAN), O_LUT=str(O_LUT), O_KEY=str(O_KEY), O_RUNS=str(O_RUNS), O_RES=str(O_RES),
                O_UV=str(O_UV), O_END=str(O_END), O_STRIDE=str(O_STRIDE), O_WIDTH=str(O_WIDTH), O_LINES=str(O_LINES),
                HIREG=hi, LOREG=lo, VEC="\n".join(vec_lines),
-               FORCE=f"    movs r1, #{force}             @ force={COLOURS[force]}: build option" if force else "")
+               FORCE=f"    movs r1, #{force}             @ force={COLORS[force]}: build option" if force else "")
     s = SRC
     for k, val in rep.items():
         s = s.replace(f"@{k}@", val)
@@ -500,9 +500,9 @@ def make(opts):
     soft = int(opts.get("soft", 8))
     order = str(opts.get("order", "cbcr")).lower()
     force = str(opts.get("force", 0)).upper()
-    force = COLOURS.index(force) if force in COLOURS else int(force) if force.isdigit() else -1
+    force = COLORS.index(force) if force in COLORS else int(force) if force.isdigit() else -1
     if not 0 <= thr <= 200 or not 0 <= soft <= 20 or order not in ("cbcr", "crcb") or not 0 <= force <= 6:
-        raise ValueError("selcolour: chroma 0..200, soft 0..20, order cbcr|crcb, force 0..6 or a colour name")
+        raise ValueError("selcolour: chroma 0..200, soft 0..20, order cbcr|crcb, force 0..6 or a color name")
     return Feature(
         name=NAME, version=VERSION, summary=SUMMARY, options=dict(chroma=thr, soft=soft, order=order, force=force),
         source=source(thr, soft, order, force), init="koma_init", checks=_checks(),
@@ -574,7 +574,7 @@ UV8, STRIDE8, WIDTH8, LINES8 = 0x8F40E00, 3328, 3264, 2448
 
 def smoke_checks(obs):
     """The smoke stops at the develop step (before the master YUV step), so run the installed, relocated pass here on
-    the stopped machine: fake cp with the 8 MP geometry, synthetic full UV plane at 0x8f40e00, COLOUR RED (poked)."""
+    the stopped machine: fake cp with the 8 MP geometry, synthetic full UV plane at 0x8f40e00, COLOR RED (poked)."""
     from unicorn.arm_const import UC_ARM_REG_CPSR, UC_ARM_REG_PC, UC_ARM_REG_R0, UC_ARM_REG_SP
     m = obs._m
     fr = inspect.currentframe().f_back
@@ -631,7 +631,7 @@ def smoke_checks(obs):
     out.append(("plane == reference pass", after == exp, ""))
     first = after[:STRIDE8]
     kept = [n for i, (n, rgb) in enumerate(PATCHES) if first[i * band:i * band + 2] != b"\x80\x80"]
-    out.append(("only the red patch kept colour", kept == ["red"], f"kept={kept}"))
+    out.append(("only the red patch kept color", kept == ["red"], f"kept={kept}"))
     out.append(("stride padding untouched", all(after[ln * STRIDE8 + WIDTH8:(ln + 1) * STRIDE8] ==
                                                  b"\x5a" * (STRIDE8 - WIDTH8) for ln in (0, LINES8 // 2, LINES8 - 1)), ""))
     pairs = WIDTH8 * LINES8 // 2

@@ -100,7 +100,7 @@ def _copy_windows(text: str) -> bool:
 
 def tray_is_dark() -> bool:
     """Whether the taskbar or panel the tray icon sits on is dark (the icon is then drawn light).
-    Windows: SystemUsesLightTheme. Linux: the GNOME colour scheme when it says so; panels are dark by default."""
+    Windows: SystemUsesLightTheme. Linux: the GNOME color scheme when it says so; panels are dark by default."""
     if sys.platform.startswith("win"):
         try:
             import winreg

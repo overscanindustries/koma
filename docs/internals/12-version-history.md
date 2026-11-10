@@ -4,7 +4,7 @@
 
 Tags: HW, EMU, STATIC, INFERRED, defined in [features](evidence-ledger.md). Addresses are runtime addresses in the named version; "2.40 =" gives the counterpart in 2.40.
 
-Related: [03 Firmware image and update format](03-firmware-image-and-update-format.md), [05 Settings and adjustment store](05-settings-and-adjustment-store.md), [06 Image pipeline and colour](06-image-pipeline-and-colour.md), [07 USB protocol](07-usb-protocol.md), [09 Recovery and failure modes](09-recovery-and-failure-modes.md), [11 Modification playbook](11-modification-playbook.md).
+Related: [03 Firmware image and update format](03-firmware-image-and-update-format.md), [05 Settings and adjustment store](05-settings-and-adjustment-store.md), [06 Image pipeline and color](06-image-pipeline-and-color.md), [07 USB protocol](07-usb-protocol.md), [09 Recovery and failure modes](09-recovery-and-failure-modes.md), [11 Modification playbook](11-modification-playbook.md).
 
 ## The seven recovered versions
 

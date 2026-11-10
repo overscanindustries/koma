@@ -29,6 +29,7 @@ import os
 import shutil
 import signal
 import socket
+import socketserver
 import subprocess
 import sys
 import threading
@@ -1232,10 +1233,19 @@ def make_handler(out: Outputs, port: int):
     return Handler
 
 
+class _Server(ThreadingHTTPServer):
+    """ThreadingHTTPServer without HTTPServer.server_bind's DNS lookup of the bound address (socket.getfqdn), which
+    holds the port unanswered for 30 s or more where DNS does not answer. Nothing here uses server_name."""
+
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = str(self.server_address[0]), self.server_address[1]
+
+
 def start_mjpeg_server(out: Outputs, host: str, port: int) -> ThreadingHTTPServer:
     if host not in ("127.0.0.1", "localhost", "::1"):
         raise SystemExit("komacam serves loopback only (127.0.0.1)")
-    server = ThreadingHTTPServer((host, port), make_handler(out, port))
+    server = _Server((host, port), make_handler(out, port))
     server.daemon_threads = True
     threading.Thread(target=server.serve_forever, daemon=True, name="mjpeg").start()
     return server
@@ -1520,7 +1530,7 @@ def build_parser():
                          "(reads the display mode with -PEEK; needs ksettings v1.4)")
     ap.add_argument("--ev", type=parse_ev, help="exposure compensation -2.0..+2.0 in 1/3 steps (-KSET 0x053)")
     ap.add_argument("--img-set", choices=sorted(IMG_SETS), help="IMG SET over -KSET 0x030 (bw = camera B&W)")
-    ap.add_argument("--te-tone", choices=sorted(TE_TONES), help="B&W (TE) toning colour over -KSET 0x1a9")
+    ap.add_argument("--te-tone", choices=sorted(TE_TONES), help="B&W (TE) toning color over -KSET 0x1a9")
     ap.add_argument("--health-every", type=float, default=60.0,
                     help="seconds between -KSTA health reads (battery, APO, LCD); 0 = off")
     ap.add_argument("--no-caffeinate", dest="caffeinate", action="store_false",

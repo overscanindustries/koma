@@ -639,6 +639,26 @@ class Terminal(unittest.TestCase):
             (Path(d) / "70-koma-gr.rules").write_text((paths.ASSETS / "70-koma-gr.rules").read_text())
             self.assertTrue(doctor.udev_rule_present((Path(d),)))
 
+    def test_package_row(self):
+        """A fresh install has the delta but not Ricoh's file: fine. Only a delta that is not the recorded one is not."""
+        from komalauncher import doctor
+        sys.path.insert(0, str(paths.BRIDGE_PY.parent))
+        import komainstall
+        base = {"name": "koma-1.0.0.grmod", "version": "1.0.0", "delta_sha256": "a" * 64,
+                "delta_published_sha256": "a" * 64}
+        orig = komainstall.package_info
+        try:
+            for info, want in ((dict(base, ready=True), "koma-1.0.0.grmod, Koma 1.0"),
+                               (dict(base, ready=False), "koma-1.0.0.grmod, Koma 1.0, built from Ricoh's 2.40 file "
+                                                         "when you set up a card"),
+                               (dict(base, ready=False, delta_sha256="b" * 64),
+                                "koma-1.0.0.grmod, Koma 1.0, not the recorded build"),
+                               (None, "missing")):
+                komainstall.package_info = lambda info=info: info
+                self.assertEqual(doctor._package(), want)
+        finally:
+            komainstall.package_info = orig
+
     def test_help_lists_what_people_use(self):
         from komalauncher.__main__ import parser
         text = parser().format_help()

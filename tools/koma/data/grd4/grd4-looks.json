@@ -2446,7 +2446,7 @@
   }
  },
  "vividness": {
-  "_note": "Level map 0x20122380: UI -4..+4 -> 0..8 (UI 0 = 4, Vivid +2 = 6) (O). In the CMAT setup 0x20122abc it only feeds the TE tint function 0x20129fc4 (constant for colour looks) (O); CMAT id bits 13-15 are light index + 1, not vividness (O). Chroma gain per level: not found (U).",
+  "_note": "Level map 0x20122380: UI -4..+4 -> 0..8 (UI 0 = 4, Vivid +2 = 6) (O). In the CMAT setup 0x20122abc it only feeds the TE tint function 0x20129fc4 (constant for color looks) (O); CMAT id bits 13-15 are light index + 1, not vividness (O). Chroma gain per level: not found (U).",
   "chroma_gain_per_level": null
  },
  "retro": {

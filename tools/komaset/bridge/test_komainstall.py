@@ -81,6 +81,7 @@ class Server(unittest.TestCase):
         self.assertEqual(p["published_sha256"], sums["koma-1.0.0.grmod"])   # the recorded build
         self.assertEqual(hashlib.sha256(KI.PACKAGE_DELTA.read_bytes()).hexdigest(), KI.PACKAGE_DELTA_SHA256)
         self.assertEqual(KI.PACKAGE_DELTA_SHA256, sums["koma-1.0.0.grmod.delta"])
+        self.assertEqual((p["delta_sha256"], p["delta_published_sha256"]), (KI.PACKAGE_DELTA_SHA256,) * 2)
         self.assertEqual(p["supersedes"], ["747F061F", "896AEBBC", "4113C2A7", "D4208A4F", "64CE9496", "898B5C3D"])
         self.assertEqual((p["version"], p["min_firmware_gen"], p["build_id"], p["bytes"]),
                          ("1.0.0", 1, "094F6569", 61784))
@@ -109,6 +110,16 @@ class Server(unittest.TestCase):
             self.assertEqual((status, d["code"]), (409, "no_stock"))
         finally:
             KI.REPO = orig
+
+    def test_a_changed_delta_is_reported_and_not_ready(self):
+        orig = KI.PACKAGE_DELTA_SHA256
+        KI.PACKAGE_DELTA_SHA256 = "0" * 64
+        try:
+            p = self.jreq("GET", "/install")[1]["package"]
+            self.assertNotEqual(p["delta_sha256"], p["delta_published_sha256"])
+            self.assertFalse(p["ready"])
+        finally:
+            KI.PACKAGE_DELTA_SHA256 = orig
 
     @unittest.skipUnless(HAVE_STOCK, "Ricoh's 2.40 qrflect3 is not in this checkout")
     def test_package_refused_unless_it_is_the_recorded_build(self):

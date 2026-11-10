@@ -6,7 +6,7 @@ Tags: `HW` (seen on a camera or in files a camera wrote), `EMU` (original firmwa
 
 **Address spaces.** Unless a row says otherwise, an address is a 2.40 application runtime address (image loaded at `0x1c000`; `qrflect3` file offset = runtime - `0x1be00`, payload offset = runtime - `0x1c000`). Values below `0x10000` in [Monitor code](#monitor-code) are Monitor addresses. `0x08xxxxxx` is SDRAM, `0x10xxxxxx`-`0x12xxxxxx` MMIO, `+0x..` a header or store offset. Flash blocks are 64 KiB. Names are descriptive, not firmware symbols. Addresses from other firmware versions appear only in [Same function across versions](#same-function-across-versions) or with the version named.
 
-Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-boot-chain-and-monitor.md) boot chain, [03](03-firmware-image-and-update-format.md) image and update format, [04](04-application-architecture.md) application, [05](05-settings-and-adjustment-store.md) settings and adjustment store, [06](06-image-pipeline-and-colour.md) image pipeline and colour, [07](07-usb-protocol.md) USB protocol, [08](08-card-scripts-and-service-terminal.md) card scripts and service terminal.
+Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-boot-chain-and-monitor.md) boot chain, [03](03-firmware-image-and-update-format.md) image and update format, [04](04-application-architecture.md) application, [05](05-settings-and-adjustment-store.md) settings and adjustment store, [06](06-image-pipeline-and-color.md) image pipeline and color, [07](07-usb-protocol.md) USB protocol, [08](08-card-scripts-and-service-terminal.md) card scripts and service terminal.
 
 ## Monitor code
 
@@ -255,7 +255,7 @@ Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-b
 | `0x63e9c`, `0x63f94` | Extended-data writers | `STATIC` |
 | `0x64524` | Status/IO: polls GPIO57; tests the error bit first | `STATIC` |
 | `0x64228` | `/IROM` self-test ([01](01-hardware-and-memory-map.md)) | `STATIC` |
-| `0x641ec` | The firmware's only `rand()`-like routine (not a grain source) ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x641ec` | The firmware's only `rand()`-like routine (not a grain source) ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x645c0`, `0x6490c` | ECC status (uncorrectable only) | `STATIC` |
 | `0x64614`, `0x6462c` | Chip-ID read; device ID compare only; cache `0x1bec28` | `STATIC` |
 | `0x646a4`, `0x64764`, `0x647c8` | Range check; lock one block; unlock one block (one target block per operation) ([fn table](../../analysis/sibling-arm-diff/feature-table.md)) | `STATIC` |
@@ -276,18 +276,18 @@ Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-b
 | `0x23950` | CC1 line-3 frame ISR | `EMU` |
 | `0x2398c`, `0x239c0` | JPEG ISR (line 5); HISR `camJPGhr` | `EMU` |
 | `0x23a30`, `0x5e834` | Resize ISR (line 12); HISR callback releasing `0x1bd9d0` | `EMU` |
-| `0x54bd0`, `0x54d84`, `0x54f3c`, `0x5509e` | Capture-message builders by drive type; store mode in `cp+0x22` (also `0x334cc`, a caller of `0x6e588`) ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x54bd0`, `0x54d84`, `0x54f3c`, `0x5509e` | Capture-message builders by drive type; store mode in `cp+0x22` (also `0x334cc`, a caller of `0x6e588`) ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x5df84` | Image decoder wrapper (semaphore `0x2bfccc`, timeout 2000) | `EMU` |
 | `0x5df54`, `0x5df6c` | JPEG success / error callbacks | `EMU` |
 | `0x5e7ce`, `0x1714e4` | Resize wait; resize start | `STATIC` |
 | `0x68ab0`, `0x69354` | CCD window 3320 x 2475; RAW packer chooser (`0xde6d8`, `0x94484`, `0xde12c`) ([pixel access](../../analysis/pixel-access/README.md)) | `STATIC` |
 | `0x6e164` | Bracket getter/validator | `STATIC` |
-| `0x6e588` | Mono mode getter: 0 colour, 1 B&W, 2 TE | `STATIC` |
+| `0x6e588` | Mono mode getter: 0 color, 1 B&W, 2 TE | `STATIC` |
 | `0x8e3d0` | Stock image load (menu header art, shutdown image `(5)`); waits on `0x2a2f4` | `STATIC`; art `HW` |
 | `0x8ff0e` | Mono/TE writer of `0x12018038`; TE table in 2.40 | `STATIC` |
 | `0x8ffc8` | Tone-table upload `(selector, arg)`; contrast 1..5 -> `0x1e..0x22` | `STATIC`, `HW` |
-| `0x90554`, `0x90604`, `0x906cc`, `0x907b4`, `0x90938`, `0x90ac0`, `0x90ba8`, `0x90c74`, `0x90d70`, `0x90e48`, `0x91032`, `0x910d4`, `0x91184` | Enhancer parameter selectors (store groups `0x08010b04..` to registers; `0x90e48` knee via `0x16d8e8`) ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
-| `0x91634` | Lens-index term added to the ENH gain ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x90554`, `0x90604`, `0x906cc`, `0x907b4`, `0x90938`, `0x90ac0`, `0x90ba8`, `0x90c74`, `0x90d70`, `0x90e48`, `0x91032`, `0x910d4`, `0x91184` | Enhancer parameter selectors (store groups `0x08010b04..` to registers; `0x90e48` knee via `0x16d8e8`) ([06](06-image-pipeline-and-color.md)) | `STATIC` |
+| `0x91634` | Lens-index term added to the ENH gain ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x900f4` | Loads the CC1 LUT when `cp+0x40` = 1 | `STATIC` |
 | `0x90278`, `0x90408` | CC2 LUT load; capture upload step | `STATIC`, `EMU` |
 | `0x90322` | Selector-cache compare | `STATIC` |
@@ -311,40 +311,40 @@ Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-b
 | `0x96242`, `0x9b54c` | WB gain writers | `STATIC` |
 | `0x96350` | Still develop pass 1; CCD to SDRAM 16-bit raw | `EMU` |
 | `0x96436` | Pass-1 per-shot hook (`bl 0x8ff0e`) | `HW 2026-11-06 main` |
-| `0x964b8` | WB-reset branch (`0x9b7e0`) after the pass-1 hook ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
-| `0x96bc8`, `0x9fb20`, `0x9fcf4`, `0xa0144` | Callers of defect repair `0xdd888` ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x964b8` | WB-reset branch (`0x9b7e0`) after the pass-1 hook ([06](06-image-pipeline-and-color.md)) | `STATIC` |
+| `0x96bc8`, `0x9fb20`, `0x9fcf4`, `0xa0144` | Callers of defect repair `0xdd888` ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x9665e` | `bl 0x91e78`; enhancer override point | `STATIC` |
 | `0x9670c` | Semaphore wait on `[0x1f4dd8]` (timeout 500) | `EMU` |
 | `0x9733a` | Normal shot; full-press call at `0x973e4` | `EMU` |
 | `0x97694`, `0x9e3dc` | VD wait loop; per-iteration wait. `0x97694` and `0xa0650` are further callers of the upload path `0x90278` ([code map](../../analysis/feature-code-map/README.md)) | `STATIC` |
-| `0x97aee` | Long-exposure dark frame (two frames when `cp+0xa` > 4); second capture `0x1199b4` (DMA subtract `0x16e4e4`), hot-pixel pass `0x119e18` ([06](06-image-pipeline-and-colour.md), [pixel access](../../analysis/pixel-access/README.md)) | `STATIC` |
-| `0x99988` | Fills the live-view ring pointer tables (Y `0x2cf640`, CbCr `0x2cf658`) ([06](06-image-pipeline-and-colour.md), [live-view frames](../../analysis/liveview/frames/README.md)) | `STATIC` |
-| `0x9af40` | Manual WB R/B clamp, `0x10..0x310` (`0x1b074`, `0x1b076`) ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
-| `0x34004` | Post-shot resume dispatch into `0x95cd0` ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
-| `0x825c8` | Stock histogram; reads the live-view ring ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x97aee` | Long-exposure dark frame (two frames when `cp+0xa` > 4); second capture `0x1199b4` (DMA subtract `0x16e4e4`), hot-pixel pass `0x119e18` ([06](06-image-pipeline-and-color.md), [pixel access](../../analysis/pixel-access/README.md)) | `STATIC` |
+| `0x99988` | Fills the live-view ring pointer tables (Y `0x2cf640`, CbCr `0x2cf658`) ([06](06-image-pipeline-and-color.md), [live-view frames](../../analysis/liveview/frames/README.md)) | `STATIC` |
+| `0x9af40` | Manual WB R/B clamp, `0x10..0x310` (`0x1b074`, `0x1b076`) ([06](06-image-pipeline-and-color.md)) | `STATIC` |
+| `0x34004` | Post-shot resume dispatch into `0x95cd0` ([06](06-image-pipeline-and-color.md)) | `STATIC` |
+| `0x825c8` | Stock histogram; reads the live-view ring ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x985a0`, `0x33670` | Callers: `0x33670` -> `0x985a0` -> `0x92050` -> `0x8ffc8(0x22)` | `EMU` |
 | `0x9dfb5`, `0x9e058`, `0x9e0ec` | Frame callback; clear / set `0x12014044` bit 0 with INTC bit 3 | `STATIC` |
 | `0xa0840` | WB/CL-BKT one-exposure, three-develop loop | `STATIC` |
 | `0xa0650..0xa1056` | AE-bracket block holding the CL-BKT loop `0xa0840` ([code map](../../analysis/feature-code-map/README.md)) | `STATIC` |
 | `0x40518` | AE-bracket step setter ([code map](../../analysis/feature-code-map/README.md)) | `STATIC` |
 | `0xa32dc`, `0xa343c`, `0xa3644`, `0xa39bc` | Lens shading: apply, upsample, fallback, WB-bracket gate | `STATIC` |
-| `0xafd20` | Second develop pass; rewrites colour registers | `STATIC`, `HW` |
+| `0xafd20` | Second develop pass; rewrites color registers | `STATIC`, `HW` |
 | `0xafd3e` | Pass-2 hook (-> `0x8ff0e`) | `HW 2026-11-06 main` |
 | `0xde6d8`, `0xde12c` | RAW packers (16 -> 12 bit ARM; `KizRawArrange`) | `STATIC` |
 | `0xdf10c`, `0x690f8` | DNG re-develop (`RIMG0001.DNG` + `.PRM`) | `STATIC` |
 | `0x10f984` | JPEG rate control (adaptive scale, floor `0x14`) | `STATIC` |
 | `0x10f1dc`, `0x10f2ec`, `0x10f3cc`, `0x10f5d4` | Rate-control helpers; `0x10f2ec` maps (size, quality) to bits per pixel x 10 from the store; `0x10f5d4` nominal bpp ([JPEG quality](../../analysis/jpeg-quality/README.md), [fn table](../../analysis/sibling-arm-diff/feature-table.md)) | `STATIC` |
-| `0x10fb50`, `0x110110` | JPEG scale-floor sites ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
-| `0x110464`, `0x1104d8` | JPEG fast-path test; header-size producers ([06](06-image-pipeline-and-colour.md), [writers](../../analysis/emu-writers/README.md)) | `STATIC` |
+| `0x10fb50`, `0x110110` | JPEG scale-floor sites ([06](06-image-pipeline-and-color.md)) | `STATIC` |
+| `0x110464`, `0x1104d8` | JPEG fast-path test; header-size producers ([06](06-image-pipeline-and-color.md), [writers](../../analysis/emu-writers/README.md)) | `STATIC` |
 | `0x11194c`, `0x111bf6`, `0x201ec8` | Post-encode size setters; flag ([writers](../../analysis/emu-writers/README.md)) | `STATIC` |
 | `0x112120` | MakerNote builder | `STATIC` |
-| `0x1120e4`, `0x11294a` | MakerNote globals init; tag `0x1001` 48-byte record builder (IMG SET into byte 40 via `0x6f768`) ([fn table](../../analysis/sibling-arm-diff/feature-table.md), [06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x1120e4`, `0x11294a` | MakerNote globals init; tag `0x1001` 48-byte record builder (IMG SET into byte 40 via `0x6f768`) ([fn table](../../analysis/sibling-arm-diff/feature-table.md), [06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x112746` | Zero-length memset that leaves Camera Info entry `0x10` unwritten ([fn table](../../analysis/sibling-arm-diff/feature-table.md)) | `STATIC` |
 | `0x112578` | `Rev%4.4x` formatter | `STATIC` |
 | `0x11257b` (file `0xf677b`) | Marker patch site (`Rev024M`) | `HW` |
 | `0x112b00` | Playback resize (decode, resize, re-encode) | `STATIC` |
 | `0x116dbc`, `0x116fb8` | Software chroma NR; its gate (`cp+0x22` = 0 only) | `STATIC` |
-| `0x11703c` | Master YUV (`CamStillRecGenMasterYUV`); shading `0x11705c`, gate veneer `0x117052`, date imprint `0x117372`; Koma SELECT pass hook `0x117382` (`HW`) ([ISP](../../analysis/isp-capabilities/README.md), [06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x11703c` | Master YUV (`CamStillRecGenMasterYUV`); shading `0x11705c`, gate veneer `0x117052`, date imprint `0x117372`; Koma SELECT pass hook `0x117382` (`HW`) ([ISP](../../analysis/isp-capabilities/README.md), [06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x117dc0` | JPEG dimension helper (aspect 2 latent) | `STATIC` |
 | `0x1181ba` | Second date-imprint call (path `0x118074`, gated at `0x118192`) ([pixel access](../../analysis/pixel-access/README.md)) | `STATIC` |
 | `0x13f0b4`, `0x13f8a0` | Date-imprint entry; glyph writer into Y/UV | `STATIC` |
@@ -358,18 +358,18 @@ Chapters: [01](01-hardware-and-memory-map.md) hardware and memory map, [02](02-b
 | `0x193a80` | Source of the second MakerNote date | `STATIC` |
 | `0x936c0`, `0x93718` | JPEG parameter block builder ([writers](../../analysis/emu-writers/README.md)) | `STATIC` |
 | `0x93128`, `0x93222`, `0x9355a` | EXIF part (date, AE copy); MakerNote part; finaliser ([writers](../../analysis/emu-writers/README.md)) | `STATIC` |
-| `0x84c64`, `0x84c88`, `0x8564c`, `0x1c3264` | JPEG header builder; APP1/MakerNote length builder; Adobe RGB variant; end pointer ([writers](../../analysis/emu-writers/README.md), [06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x84c64`, `0x84c88`, `0x8564c`, `0x1c3264` | JPEG header builder; APP1/MakerNote length builder; Adobe RGB variant; end pointer ([writers](../../analysis/emu-writers/README.md), [06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x86180`, `0x86778` | EXIF writers on shot paths ([fn table](../../analysis/sibling-arm-diff/feature-table.md)) | `STATIC` |
 | `0x86eb0` | YUV/TIFF writer ([writers](../../analysis/emu-writers/README.md)) | `STATIC` |
 | `0x89d30`, `0x89ed4` | UserComment; PrintIM ([writers](../../analysis/emu-writers/README.md)) | `STATIC` |
 | `0x68a88`, `0x938f8`, `0x87830` | DNG parameters; DNG/TIFF writer ([writers](../../analysis/emu-writers/README.md)) | `STATIC` |
-| `0x9d980` | Camera Info tag 1 WB source ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x9d980` | Camera Info tag 1 WB source ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x8909c` | AVI writer ([code map](../../analysis/feature-code-map/README.md)) | `STATIC` |
 | `0x719bc` | GT-1 lens correction, slot-1 path (flag `0x23a8a0`) ([code map](../../analysis/feature-code-map/README.md)) | `STATIC` |
 
 ## ISP registers
 
-CC2 colour stage at `0x12018000`. Liveness from register writes in both develop passes, judged from JPEGs.
+CC2 color stage at `0x12018000`. Liveness from register writes in both develop passes, judged from JPEGs.
 
 | Register | Meaning | Tag |
 |---|---|---|
@@ -388,7 +388,7 @@ CC2 colour stage at `0x12018000`. Liveness from register writes in both develop 
 | `0x12018104`, `0x12018108`, `0x1201810c` | `MatR`, `MatG`, `MatB` (mask `0xbfbfbfbf`, 0 in stock). Live; works on 8-bit gamma values; sign-magnitude (bit 7 sign, bit 6 ignored, bits 5..0 magnitude); byte 3 = R input, bytes 2 and 1 G-like, byte 0 = B; entries add; linear in magnitude | `HW 2026-11-06 main` |
 | `0x12018110`, `0x12018114` | WB gains R, B | `STATIC` |
 | `0x12018120`, `0x12018124`, `0x12018128`, `0x1201812c` | ColorNR; YH threshold; YH gain 1, 2 | `STATIC` |
-| `0x12018130..0x1201814c` | Knee registers (via `0x16d8e8`) ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x12018130..0x1201814c` | Knee registers (via `0x16d8e8`) ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x12018150`, `0x12018154`, `0x12018170` | LowPass 1, 2; interpolation | `STATIC` |
 | `0x12018160..0x1201816c` | Four Q14 unity gains (`0x4000`) | `STATIC` |
 | `0x12018174` | From store `0x080113fc` at monitor start | `STATIC` |
@@ -449,7 +449,7 @@ CC2 colour stage at `0x12018000`. Liveness from register writes in both develop 
 | `0x5c95c` | Version screen builder | `STATIC` |
 | `0x5c2f4` | RIGHT + WIDE diagnostic-log display (log `0x1b2f8`) ([hidden modes](../../analysis/hidden-modes/README.md)) | `STATIC` |
 | `0x5b7e4`, `0x5b89c` | Detail screen load (first field `0x1c2e2e`) and store, B&W and TE ([tone modes](../../analysis/tone-mode-mapping/README.md)) | `STATIC` |
-| `0x7e626`, `0x79346` | Mode -> detail-screen dispatcher; B&W/TE detail route ([tone modes](../../analysis/tone-mode-mapping/README.md), [06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x7e626`, `0x79346` | Mode -> detail-screen dispatcher; B&W/TE detail route ([tone modes](../../analysis/tone-mode-mapping/README.md), [06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x7e714..0x7e780` (`0x7e738`) | DIAL DIRECTION wrappers ([code map](../../analysis/feature-code-map/README.md)) | `STATIC` |
 | `0x7fa48` | OSD size label; special-cases aspect flag 1 only ([frontier 2](../../analysis/emu-frontier-2/README.md)) | `STATIC` |
 | `0x80740` | OSD element name list (`APLCAP_OSD_OVER_*`) ([code map](../../analysis/feature-code-map/README.md)) | `STATIC` |
@@ -531,8 +531,8 @@ CC2 colour stage at `0x12018000`. Liveness from register writes in both develop 
 | `0x1a91ac..0x1a91f0` | Still-page row-index map | `STATIC` |
 | `0x1bd3e4`, `0x1bd3ef`, `0x1bd3fa`, `0x1bd3f5` | Quality menu tables; N3:2 flag | `STATIC` |
 | `0x1bd42b` | AUTO BRACKET cursor -> value | `STATIC` |
-| `0x1bd452` | IMG SET cursor -> value `00 01 02 03 06 04 05` (2.31: `0x1bacda`) ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
-| `0x1b1670` | u8 table of 32,768 entries, companding-like; role unknown ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x1bd452` | IMG SET cursor -> value `00 01 02 03 06 04 05` (2.31: `0x1bacda`) ([06](06-image-pipeline-and-color.md)) | `STATIC` |
+| `0x1b1670` | u8 table of 32,768 entries, companding-like; role unknown ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x1c1ec4` | Nine tab-name words | `EMU` |
 | `0x1c224c` + 12k | SETUP rows (k = 0..29) | `STATIC` |
 | `0x1c23b9` | Menu tab byte | `STATIC` |
@@ -597,7 +597,7 @@ CC2 colour stage at `0x12018000`. Liveness from register writes in both develop 
 | `0x23a8a0` | GT-1 lens-correction flag | `STATIC` |
 | `0x23b068` | `cp` shooting parameters; `cp+0x1d` special state, `cp+0x22` mode, `cp+0x40` CC1 select | `STATIC` |
 | `0x23b085` | Special state: 1, 3, 4 force selector `0x20` | `STATIC` |
-| `0x23b08a` | Colour / B&W / TE (0/1/2) | `STATIC` |
+| `0x23b08a` | Color / B&W / TE (0/1/2) | `STATIC` |
 | `0x2b9d30`, `0x2b9d34`, `0x2b9d38`, `0x2b9d39` | Dial state; `0x2b9d39` virtual dial | `STATIC` |
 | `0x2b9d84`, `0x2b9dae` | Key state array; copy tested by `0x32540(0)` | `STATIC` |
 | `0x2b9dd8` | Injected key actions (no upper bound) | `STATIC` |
@@ -653,7 +653,7 @@ Byte meanings and values in [05](05-settings-and-adjustment-store.md); the machi
 | `0x1b060` | SHARPNESS (1.x item, still passed to capture) ([05](05-settings-and-adjustment-store.md)) | `STATIC` |
 | `0x1b068` | Quality ([05](05-settings-and-adjustment-store.md)) | `EMU` |
 | `0x1b06f` | FLASH mode ([05](05-settings-and-adjustment-store.md)) | `STATIC` |
-| `0x1b074`, `0x1b076` | Manual WB R, B (clamped `0x10..0x310` at `0x9af40`) ([06](06-image-pipeline-and-colour.md)) | `STATIC` |
+| `0x1b074`, `0x1b076` | Manual WB R, B (clamped `0x10..0x310` at `0x9af40`) ([06](06-image-pipeline-and-color.md)) | `STATIC` |
 | `0x1b080` | Copy of the copyright literal (not read by the writers) ([writers](../../analysis/emu-writers/README.md)) | `STATIC` |
 | `0x1b09c` | Display mode (advanced by DISP) ([05](05-settings-and-adjustment-store.md)) | `EMU` |
 | `0x1b0a6` | WB DETAIL step (index into `0x080103a0`/`0x080103c4`) ([05](05-settings-and-adjustment-store.md)) | `STATIC` |
@@ -686,7 +686,7 @@ Byte meanings and values in [05](05-settings-and-adjustment-store.md); the machi
 | `0x1b8c0`, `0x1b8c1..0x1b8c9` | Active recipe id; EDIT RECIPE p0..p8 ([05](05-settings-and-adjustment-store.md)) | `HW` |
 | `0x1b8ca`, `0x1b8cb`, `0x1b8cc`, `0x1b8cd` | SAVE TO CUSTOM; RESET; GRAIN; VIGNETTE ([05](05-settings-and-adjustment-store.md)) | `EMU` |
 | `0x1b8d0..0x1b8dc` | Settings-file header `KSIO`: version `0x1b8d4`, firmware tag `0x1b8d5..0x1b8db`, last-import status `0x1b8dc` ([05](05-settings-and-adjustment-store.md), [settingsio.py](../../tools/koma/features/settingsio.py)) | `HW` |
-| `0x1b900..0x1bbff` | Koma recipe store `RCP6` v6 (header, 20 records of 12 B from `0x1b910`; SELECT colour / range `0x1b909` / `0x1b90a`) ([05](05-settings-and-adjustment-store.md), [bwrecipes.py](../../tools/koma/features/bwrecipes.py)) | `EMU` |
+| `0x1b900..0x1bbff` | Koma recipe store `RCP6` v6 (header, 20 records of 12 B from `0x1b910`; SELECT color / range `0x1b909` / `0x1b90a`) ([05](05-settings-and-adjustment-store.md), [bwrecipes.py](../../tools/koma/features/bwrecipes.py)) | `EMU` |
 | `0x1ba00..0x1ba13` | `RCP6` FX table: one byte per recipe, `0x50 \| grain \| vignette << 2` ([05](05-settings-and-adjustment-store.md)) | `EMU` |
 | `0x1bffc..0x1bfff` | Checksum: big-endian u32, the sum of big-endian u16 words over `0x000..0xffb` (computed by `0x3d9b8`, stored by `0x4949c`) ([05](05-settings-and-adjustment-store.md)) | `HW` |
 
@@ -725,10 +725,10 @@ Earlier analyses described the checksum as a u16 sum; it is the u32 above.
 | `0x08010a04..0x08010af7` | Filter parameter table | `STATIC` |
 | `0x08010b04..0x08010c54` | YH, ENH, knee, ColorNR, RGB filter, interpolation, LowPass groups | `STATIC` |
 | `0x08010c74`, `0x08010c75` | Pre-2.30 B&W contrast/sharpness | `STATIC` |
-| `0x08010c78..0x08010c7e` | Colour NR thresholds | `STATIC` |
+| `0x08010c78..0x08010c7e` | Color NR thresholds | `STATIC` |
 | `0x08010de2` | Battery calibration | `STATIC` |
-| `0x08011304` | Live-view colour preset | `EMU` |
-| `0x08011308`, `0x08011330` | Per-mode colour words; chroma-gain table | `STATIC` |
+| `0x08011304` | Live-view color preset | `EMU` |
+| `0x08011308`, `0x08011330` | Per-mode color words; chroma-gain table | `STATIC` |
 | `0x0801137c/d` | Chroma coring source (0) | `STATIC` |
 | `0x08011380..94` | Matrix rows (0 in stock) | `STATIC` |
 | `0x080113f0..f7` | Tone-curve selectors | `STATIC` |
@@ -746,7 +746,7 @@ Earlier analyses described the checksum as a u16 sum; it is the u32 above.
 | `0x27c5c` | `UEE00` commit | `STATIC` |
 | `0x27cbc`, `0x27d54`, `0x27da0` | `UEE50`, `UEE51`, `UEE53` | `STATIC` |
 | `0x27d0c` | `UEE52`: writes the flash store to `/ATA1/ADJROM.DAT` (not a loader) | `STATIC` |
-| `0xdc7d0`, `0xd0be0` | Callers passing selector `0xe`: factory adjustment (guard flag `0x1ffe3e`; writes `0x08010162/163`), console command ([06](06-image-pipeline-and-colour.md), [frontier 2](../../analysis/emu-frontier-2/README.md)) | `STATIC` |
+| `0xdc7d0`, `0xd0be0` | Callers passing selector `0xe`: factory adjustment (guard flag `0x1ffe3e`; writes `0x08010162/163`), console command ([06](06-image-pipeline-and-color.md), [frontier 2](../../analysis/emu-frontier-2/README.md)) | `STATIC` |
 
 ## Image SDRAM
 
@@ -797,7 +797,7 @@ Earlier analyses described the checksum as a u16 sum; it is the u32 above.
 | `0x12014024` | `vcycle` (low 12 bits) | `STATIC` |
 | `0x12014040`, `0x12014044` | Frame ack; enable (with INTC bit 3) | `STATIC` |
 | `0x1201407c` | Fields unknown | `STATIC` |
-| `0x12018000..` | CC2 colour stage, see [ISP registers](#isp-registers) | |
+| `0x12018000..` | CC2 color stage, see [ISP registers](#isp-registers) | |
 | `0x1201c000`, `0x1201c01c`, `0x1201c020` | JPEG control, mask, status | `STATIC` |
 | `0x12020004`, `0x12020010`, `0x12020014`, `0x12020018` | VEN enable; reset value; mask; status | `STATIC` |
 | `0x12020100` | Palette (63 entries) | `STATIC` |
@@ -883,7 +883,7 @@ Generation 1 (the generation 1 image, tag `Rev024M`) adds the loader and hook to
 | `0xcd03a`, `0xcd05e` | `-CCTL keyset` / `diaset` call sites (`0x65cfc`, `0x65d70`) ([tether.py](../../tools/koma/features/tether.py)) | `STATIC` |
 | `0x1fb784`, `0x1fb794`, `0x1fb7a4` | `-FDWL` record (ID `0x1a`): name, args flag, handler; `liveview` turns it into `-LVFR` ([liveview.py](../../tools/koma/features/liveview.py)) | `HW` |
 | `0x95af4` | `peaking` VD-task hook ([peaking.py](../../tools/koma/features/peaking.py)) | `EMU` |
-| `0x117382` | SELECT (selective colour) YUV pass hook ([06](06-image-pipeline-and-colour.md)) | `HW` |
+| `0x117382` | SELECT (selective color) YUV pass hook ([06](06-image-pipeline-and-color.md)) | `HW` |
 
 Earlier designs used a 32-byte tether cave at `0x56f80`; the shipped `tether` feature uses only the redirects above.
 

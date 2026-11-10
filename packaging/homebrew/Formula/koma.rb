@@ -5,7 +5,7 @@
 class Koma < Formula
   include Language::Python::Virtualenv
 
-  desc "Local app and USB bridge for the Ricoh GR DIGITAL (2005) running Koma"
+  desc "Looks, tethered shooting and webcam for the 2005 Ricoh GR DIGITAL"
   homepage "https://github.com/overscanindustries/koma"
   url "https://files.pythonhosted.org/packages/source/k/koma-gr/koma_gr-1.0.0.tar.gz"
   sha256 "SDIST_SHA256"

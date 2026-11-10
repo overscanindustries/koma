@@ -30,7 +30,7 @@ decimal digits.
     edit rows -> record store, RECIPE row -> IMG SET base 1/3/6, SAVE TO CUSTOM / RESET), then
     $preview.pv_apply([0x23b08a] = the monitor's mono flag cp+0x22, site 2 = setting change), the routine preview's
     monitor hooks call. No per-frame re-read exists in preview; see the README for what this does not cover (a base
-    change B&W <-> colour <-> toned needs the stock setting-change path).
+    change B&W <-> color <-> toned needs the stock setting-change path).
 
 -KGET off,len: 1 <= len <= 4096 and off + len <= 4096, else "451 -KGET range". Copies len bytes from 0x1b000 + off to
     the USB payload [0x1bd308] + 8 (memcpy 0x157bac, no header), then the -PRET state: [0x1bd2bc] = 0x8001,
@@ -179,8 +179,8 @@ CLASSES = [set(range(1, 26, 2)), {0, 1, 2, 4, 6, 7, 8}, {0, 1, 2, 3, 4, 5, 7}, s
            set(range(7)), set(range(1, 6)), {1, 2, 3, 4, 6}]
 STOCK = [(0x053, 0, 1, "EV comp"), (0x059, 1, 2, "ISO"), (0x054, 2, 3, "white balance"), (0x0A6, 3, 0, "WB detail"),
          (0x050, 4, 4, "metering"), (0x030, 5, 0, "IMG SET")] + \
-        [(0x031 + i, 6, 0, n) for i, n in enumerate(["SETTING1 contrast", "SETTING1 sharpness", "SETTING1 colour",
-                                                      "SETTING2 contrast", "SETTING2 sharpness", "SETTING2 colour"])] + \
+        [(0x031 + i, 6, 0, n) for i, n in enumerate(["SETTING1 contrast", "SETTING1 sharpness", "SETTING1 color",
+                                                      "SETTING2 contrast", "SETTING2 sharpness", "SETTING2 color"])] + \
         [(0x1A9, 7, 0, "TE tone"), (0x1AA, 6, 0, "TE density")]
 APP_STATE = 0x1BD1C0                             # 2 = still record state (tether keeps it under USB)
 UI_MODE = 0x1BEFA6                               # 0x6eb1c: 0 or 4 allowed (1 SCENE, 2 movie, ...)
@@ -274,7 +274,7 @@ def _source(rows, apply: bool) -> str:
     ldrb r0, [r0]
     cmp r0, r2
     beq 4f                          @ base unchanged: pv_apply was enough
-    bl ks_idle                      @ base moved (B&W / colour / toned): the stock setting change refreshes cp+0x22
+    bl ks_idle                      @ base moved (B&W / color / toned): the stock setting change refreshes cp+0x22
     bne 4f
     ldr r3, ={STOCK_APPLY + 1:#x}
     bl ks_call_r3

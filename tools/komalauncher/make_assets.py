@@ -18,7 +18,7 @@ Needs fontTools (with brotli), Pillow, rsvg-convert, and on macOS iconutil. Writ
       (the double-click downloads, parked until after 1.0; see that folder)
 
 Every icon carries the same mark: マ, the second half of コマ, from komamark.py (geometry is not drawn here). The
-tray icons are the マ in one colour, no tile, cropped to a 48-unit square so it fills about 80 % of the box. The app
+tray icons are the マ in one color, no tile, cropped to a 48-unit square so it fills about 80 % of the box. The app
 icon is the マ in ink and amber on a dark tile: a squircle for the macOS icns, a rounded square elsewhere.
 """
 from __future__ import annotations
@@ -87,15 +87,15 @@ MA_CROP = "8 11 48 48"   # komamark's マ spans x 10-54, y 14-52 of 64: this cro
 MA_CENTRE = (32, 33)     # the centre of that span
 
 
-def ma_mono(colour: str) -> str:
+def ma_mono(color: str) -> str:
     ink, tick = komamark.paths("ma")
-    return f'<path fill="{colour}" d="{ink}"/><path fill="{colour}" d="{tick}"/>'
+    return f'<path fill="{color}" d="{ink}"/><path fill="{color}" d="{tick}"/>'
 
 
-def tray_svg(px: int, colour: str) -> str:
-    """The tray マ in one colour, no tile, cropped to MA_CROP, px square."""
+def tray_svg(px: int, color: str) -> str:
+    """The tray マ in one color, no tile, cropped to MA_CROP, px square."""
     return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{px}" height="{px}" viewBox="{MA_CROP}">'
-            f'{ma_mono(colour)}</svg>')
+            f'{ma_mono(color)}</svg>')
 
 
 

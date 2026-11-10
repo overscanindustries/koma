@@ -21,12 +21,12 @@ A tag describes the current code unless the row says otherwise. Hardware results
 | MENU LAYOUT: STK+KOMA | Mode page / KOMA / stock SETUP | `EMU` | [koma-modes](../../analysis/koma-modes/README.md) |
 | MENU LAYOUT: GR II | SHOOTING / KEY CUST. / SETUP, Koma rows on SHOOTING | `EMU` | [gr2-layout](../../analysis/gr2-layout/README.md) |
 | KOMA FEATURES: ESSENTIAL | At the next boot, installs only menu, settings I/O, telemetry, tether, live view and stall fix | `EMU` | [koma-modes](../../analysis/koma-modes/README.md) |
-| Looks | 10 B&W looks, SELECT, 6 colour looks, CUSTOM 1-3 in IMG SET, editable per look | `HW` for the look path and for MONO, SHINJUKU, HICON B&W, NOIR, POSITIVE, NEGATIVE, BLEACH, RETRO (frames from an earlier build); `EMU` for the other looks, CUSTOM slots and the later refit of POSITIVE and BLEACH | [test02](../../analysis/colour-research/test02/README.md), [bwrecipes notes](../../analysis/koma-0.1/bwrecipes.md) |
+| Looks | 10 B&W looks, SELECT, 6 color looks, CUSTOM 1-3 in IMG SET, editable per look | `HW` for the look path and for MONO, SHINJUKU, HICON B&W, NOIR, POSITIVE, NEGATIVE, BLEACH, RETRO (frames from an earlier build); `EMU` for the other looks, CUSTOM slots and the later refit of POSITIVE and BLEACH | [test02](../../analysis/colour-research/test02/README.md), [bwrecipes notes](../../analysis/koma-0.1/bwrecipes.md) |
 | Single IMG SET picker | One 21-entry list in GR III order (STANDARD = stock NORMAL, other stock entries hidden, CUSTOM 1-3 in place of SETTING1/2); RIGHT opens the look editor; the RECIPE and EDIT RECIPE rows are gone | `EMU` | [look-ia](../../analysis/look-ia/README.md) |
 | ADJ LEVER per look | Editor row choosing which looks the ADJ lever steps through | `EMU` | [look-ia](../../analysis/look-ia/README.md) |
 | SELECT | Mono except one hue band | `HW` | [selcolour1](../../analysis/colour-research/selcolour1/README.md) |
 | GRAIN, VIGNETTE | Per-look film grain and corner falloff | `EMU` | [fx](../../tools/koma/features/fx.py) |
-| Live-view look preview | LCD shows the active look's colour, toning and filter | `EMU` | [koma-0.3-preview](../../analysis/koma-0.3-preview) |
+| Live-view look preview | LCD shows the active look's color, toning and filter | `EMU` | [koma-0.3-preview](../../analysis/koma-0.3-preview) |
 | SNAP DIST, FULL SNAP | Snap distance 1 m to infinity; quick full press focuses at it | `EMU` | [snapdist](../../tools/koma/features/snapdist.py), [fullpress](../../tools/koma/features/fullpress.py) |
 | AUTO-ISO MAX, SLOW SHUTTER | ISO-auto ceiling and slowest shutter before ISO rises | `EMU` | [autoiso](../../tools/koma/features/autoiso.py) |
 | LONG EXP LIMIT | 180 s or 240 s | `EMU` | [longexp](../../tools/koma/features/longexp.py) |

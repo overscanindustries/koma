@@ -150,13 +150,18 @@ def _stock() -> tuple[bytes | None, str | None]:
 
 
 def package_info() -> dict | None:
-    """What the app needs to plan without the bytes; "ready" says whether the bytes can be built here now."""
+    """What the app needs to plan without the bytes. "delta_sha256" is the shipped delta as found here (the recorded
+    one is "delta_published_sha256"); "ready" says whether the bytes can be built here now: the delta is the recorded
+    one and Ricoh's 2.40 file is on this computer. A fresh install has no Ricoh file, so it is not ready until the user
+    gives the app one."""
     if not PACKAGE_DELTA.is_file():
         return None
+    delta_sha = hashlib.sha256(PACKAGE_DELTA.read_bytes()).hexdigest()
     stock, _ = _stock()
     return {"route": PACKAGE_ROUTE, "name": PACKAGE_NAME, "bytes": PACKAGE_BYTES, "published_sha256": PACKAGE_SHA256,
-            "build_id": PACKAGE_BUILD, "ready": stock is not None, "supersedes": list(SUPERSEDES),
-            "version": PACKAGE_VERSION, "min_firmware_gen": PACKAGE_MIN_FIRMWARE}
+            "delta_sha256": delta_sha, "delta_published_sha256": PACKAGE_DELTA_SHA256,
+            "build_id": PACKAGE_BUILD, "ready": stock is not None and delta_sha == PACKAGE_DELTA_SHA256,
+            "supersedes": list(SUPERSEDES), "version": PACKAGE_VERSION, "min_firmware_gen": PACKAGE_MIN_FIRMWARE}
 
 
 def package_bytes() -> bytes:

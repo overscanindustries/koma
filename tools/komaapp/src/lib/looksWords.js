@@ -19,13 +19,13 @@ export const W = {
   },
   // the last photo is black and white: the gallery draws on the sample, and says why under Details
   whySample: 'Why a sample',
-  whySampleText: "The last photo is black and white, so the filters and SELECT's colour would not show.",
+  whySampleText: "The last photo is black and white, so the filters and SELECT's color would not show.",
   readAgain: 'Read again',               // one verb for every read that failed: the photo, the settings, the Apply check
   readingPhoto: 'Reading the last photo.',
   noPhoto: 'No photo to draw the looks on.',
   readingLooks: 'Reading the looks from the camera.',
 
-  groups: {mono: 'Monochrome', colour: 'Colour', custom: 'Custom'},
+  groups: {mono: 'Monochrome', color: 'Color', custom: 'Custom'},
   tagAdj: 'ADJ',
   tagEdited: 'Edited',
   ghostLine: "The camera's stock setting, not a look",
@@ -98,7 +98,7 @@ export const W = {
     photo: 'Last photo',
     size: 'Size',
     model: 'Try-on',
-    modelText: "Drawn in this browser from Koma's own tone curves, filters, toning, colour matrix, grain and vignette",
+    modelText: "Drawn in this browser from Koma's own tone curves, filters, toning, color matrix, grain and vignette",
   },
 
   // the Camera menu's IMG SET row on a Koma camera (views/settings/CameraMenu.svelte)

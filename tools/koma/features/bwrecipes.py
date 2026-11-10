@@ -1,21 +1,21 @@
-"""bwrecipes: GR II-style Image Settings ("recipes") as virtual IMG SET entries: B&W, SELECT and colour.
+"""bwrecipes: GR II-style Image Settings ("recipes") as virtual IMG SET entries: B&W, SELECT and color.
 
 The feature NAME stays "bwrecipes" (module file and namespace unchanged, so builds, tests and render scripts keep
-their symbols); it carries the colour recipes too.
+their symbols); it carries the color recipes too.
 
 A recipe is a table row: base tone curve + contrast / high-low key / shadow / highlight (parametric, generated on
-the fly) + three type-specific slots + sharpness, plus a kind byte (low 2 bits = type: 0 B&W, 1 colour, 2 SELECT;
-bits 4..6 = the colour look whose ROM matrix a colour recipe uses). 10 curated B&W looks, SELECT, 6 colour looks and
+the fly) + three type-specific slots + sharpness, plus a kind byte (low 2 bits = type: 0 B&W, 1 color, 2 SELECT;
+bits 4..6 = the color look whose ROM matrix a color recipe uses). 10 curated B&W looks, SELECT, 6 color looks and
 3 custom slots (CUSTOM 1..3, defaults = MONO), every one editable in camera, edits sticking to the look, with RESET
-and SAVE TO CUSTOM (which copies the kind, so a colour look saved to CUSTOM keeps its matrix).
+and SAVE TO CUSTOM (which copies the kind, so a color look saved to CUSTOM keeps its matrix).
 
   type      p5            p6          p7            base 0x1b030
   B&W       FILTER EFF.   TONING      TONE LEVEL    3, or 6 when toned
-  colour    SATURATION    WARMTH      TINT          1 (NORMAL)
-  SELECT    COLOUR        RANGE       SATURATION    1 (NORMAL)
+  color    SATURATION    WARMTH      TINT          1 (NORMAL)
+  SELECT    COLOR        RANGE       SATURATION    1 (NORMAL)
 
 Selection (never a non-stock value in the stock byte):
-  * IMG SET list (menu, AUTO / P-A / M pages): the 7 stock entries stay; then the 10 B&W looks, SELECT, the 6 colour
+  * IMG SET list (menu, AUTO / P-A / M pages): the 7 stock entries stay; then the 10 B&W looks, SELECT, the 6 color
     looks, CUSTOM 1..3. Choosing a recipe stores its base (1, 3 or 6) in 0x1b030 plus the recipe id in byte 0x1b8c0;
     a stock entry clears the id. The row shows the recipe name.
   * ADJ lever (IMG SET assigned to an ADJ slot): stepping walks stock entries then recipes, wrapping.
@@ -23,7 +23,7 @@ Selection (never a non-stock value in the stock byte):
     0x1b8c1..0x1b8c9, SAVE TO CUSTOM 0x1b8ca, RESET 0x1b8cb, GRAIN 0x1b8cc, VIGNETTE 0x1b8cd), synced into the per-recipe record store by `sync`
     (on_change, menu/ADJ hooks, every shot). Rows p5..p7 carry per-type labels (menu5 row variants, selector byte
     0x1b908 = the active recipe's type, published by `sync`).
-Store: 'RCP6' v6 at 0x1b900: +8 active type, +9 SELECT colour (1..6, 0 = no SELECT shot), +10 SELECT
+Store: 'RCP6' v6 at 0x1b900: +8 active type, +9 SELECT color (1..6, 0 = no SELECT shot), +10 SELECT
 range (both read by selcolour), +11 GRAIN, +12 VIGNETTE (read by fx), +13 owner id of the GRAIN / VIGNETTE rows; records
 12 B from 0x1b910: p0..p8, kind, 0xa5, xor (same as v5); then the FX table, one byte per recipe at 0x1ba00
 (0x50 | grain | vignette << 2; anything else = OFF / OFF). EDIT RECIPE rows GRAIN 0x1b8cc, VIGNETTE 0x1b8cd. An 'RCP5'
@@ -32,7 +32,7 @@ Every rewrite writes the records and the FX table first and the header last, and
 to a shot only while 0x1b030 equals its base: pull the card and the camera sees plain NORMAL / B&W / B&W(TE).
 
 Per shot (hooks on the stock mono writer call, both develop passes):
-  pass 1 0x96436 (0x96350): B&W: filter luma weights (+ red WB tilt), toning word. Colour: chroma gain 0x12018004
+  pass 1 0x96436 (0x96350): B&W: filter luma weights (+ red WB tilt), toning word. Color: chroma gain 0x12018004
                             (SATURATION), MatR/G/B 0x12018104/108/10c (the look's matrix, TINT on the G row), WB
                             0x12018110/114 (WARMTH, R/B multipliers on the shot's AWB). SELECT: chroma gain. All types:
                             curve upload (16 x 256 entries through 0x16d31c(offset, 256, buf)), CC2 cache 0x1f4db3 := 0xff
@@ -52,7 +52,7 @@ from .. import firmware as fw
 from ..feature import Check, Feature, Hook, Settings
 
 NAME = "bwrecipes"
-SUMMARY = "recipes: 10 B&W + SELECT + 6 colour looks + 3 custom virtual IMG SET entries, editable per look"
+SUMMARY = "recipes: 10 B&W + SELECT + 6 color looks + 3 custom virtual IMG SET entries, editable per look"
 OPTIONS = {"adj": "on (default) | off: no ADJ-lever records (hooks, ADJ item list/count, hint table); bisect build"}
 VERSION = "5.0"
 
@@ -62,10 +62,10 @@ EB = 0x1B8C1           # edit buffer p0..p8 of the active recipe (ROWS bytes)
 SAVE = 0x1B8CA         # SAVE TO CUSTOM row (0 OFF, k = copy the active recipe into CUSTOM k, then back to 0)
 RST = 0x1B8CB          # RESET row (0 NO, 1 YES)
 ST = 0x1B900           # 'RCP5' store: +0 magic, +4 version, +5 edit-row owner id, +6 last applied id, +7 N,
-ST_END = 0x1BC00       # +8 active type, +9 SELECT colour, +10 SELECT range, +11 GRAIN, +12 VIGNETTE (published by
+ST_END = 0x1BC00       # +8 active type, +9 SELECT color, +10 SELECT range, +11 GRAIN, +12 VIGNETTE (published by
                        # sync), +13 GRAIN / VIGNETTE row owner, +14..15 0
 SELB = ST + 8          # menu5 editor variant selector: type of the active recipe (0 when none)
-SELCOL, SELRNG = ST + 9, ST + 10     # SELECT applying to the next shot: colour 1..6 (0 = none), range 0/1
+SELCOL, SELRNG = ST + 9, ST + 10     # SELECT applying to the next shot: color 1..6 (0 = none), range 0/1
 REC = ST + 0x10        # records, 12 B each: p0..p8, kind, VALID, xor(bytes 0..9) ^ 0x5a
 RECLEN = 12
 NPARAM = 9             # p0 curve, p1 contrast, p2 key, p3 shadow, p4 highlight, p5..p7 by type, p8 sharp
@@ -85,8 +85,8 @@ FXMARK = 0x50          # FX table byte = FXMARK | grain | vignette << 2 (anythin
 V4_MAGIC, V4_N, V4_NBW = b"RCP4", 13, 10        # B&W-only store: 10 looks + CUSTOM 1..3 (ids 11..13)
 # 0.3 accepts RCP6 only with exactly N records: the FX table sits at REC + N * RECLEN, so a store with more records
 # (a later release) would put records where 0.3 reads FX bytes. 0.2.2 accepts RCP6 with N or more (no FX table there).
-TYPE_BW, TYPE_COLOUR, TYPE_SEL = 0, 1, 2
-MAXTYPE = TYPE_SEL     # kind & 3 above this (or a colour look index >= NCOL) -> the look's default
+TYPE_BW, TYPE_COLOR, TYPE_SEL = 0, 1, 2
+MAXTYPE = TYPE_SEL     # kind & 3 above this (or a color look index >= NCOL) -> the look's default
 
 # ------------------------------------------------------------------ curves
 LO, HI, PIVOT = 65, 1023, 480       # LO = every base table's value at index 257 (end of Ricoh's pinned toe)
@@ -112,7 +112,7 @@ def _pinned(col):
 # data/grd4/grd4-looks.json: derived numbers measured from the GRD IV 2.30 tables (static analysis of the M32R image;
 # GRD IV firmware README, pass 2), no table rows: 33-point tone-curve values (x = 0, 8, .., 248, 255) for Standard A5
 # (+ A6, Vivid's contrast +1), Bleach Bypass B5 and Positive Film C5; per light x sector chroma responses of Standard
-# (c0) and of the Bleach Bypass / Positive Film colour groups (ct) at each sector-centre hue; mean gains; WB factors.
+# (c0) and of the Bleach Bypass / Positive Film color groups (ct) at each sector-centre hue; mean gains; WB factors.
 # The CMAT reading behind the responses (I): 24 hue boundaries (u8, 256 = 360 deg) + per-sector 2x2 on (Cb, Cr).
 # Curve mapping (gamma-consistent): the GRD IV curve sits after its own gamma stage, so only its shape RELATIVE to
 # Standard is used: on the 8-bit display-referred output, look = T_look(T_A5^-1(v)). Both cameras' outputs are
@@ -166,10 +166,10 @@ def step_limit(t):
 
 # (menu name, intent, loader). Every table keeps Ricoh's toe: indices 0..257 identical (black clip 170, 256 -> 64).
 # 7 B&W bases. DENSE (monochrom-like) is within 1.4 mean / 4 max 8-bit levels of SOFT MONO, so the
-# DENSE is folded into SOFT MONO. The same 7 bases serve colour and SELECT (one CURVE list for every type): the proposed colour bases
+# DENSE is folded into SOFT MONO. The same 7 bases serve color and SELECT (one CURVE list for every type): the proposed color bases
 # SLIDE (fuji-provia-pinned) and NEG (portra-400-like-pinned) are 2.1/4.2 and 2.0/3.7 8-bit levels (mean/max) from
-# STANDARD, and each colour look's own curve (base + its con/key/shd/hil) is within 1.5..2.2 mean / 3.5..5.0 max of
-# STANDARD + the same settings: near-duplicates by the DENSE rule, so no colour curve is stored.
+# STANDARD, and each color look's own curve (base + its con/key/shd/hil) is within 1.5..2.2 mean / 3.5..5.0 max of
+# STANDARD + the same settings: near-duplicates by the DENSE rule, so no color curve is stored.
 # A new base appends here (base id = index; 1,024 B each in the blob).
 # BLEACH = the GRD IV Bleach Bypass curve B5 on STANDARD (grd4_target); the best con/key/shd/hil
 # on STANDARD misses it by 9.2 levels rms (its mid lift 120 -> 172 is past KEY +4), so it needs its own base. The
@@ -282,7 +282,7 @@ DENS = ["1", "2", "3", "4", "5"]
 STEP7 = ["-3", "-2", "-1", "0", "+1", "+2", "+3"]
 WARMS = ["COOL 3", "COOL 2", "COOL 1", "0", "WARM 1", "WARM 2", "WARM 3"]
 TINTS = ["MAG 3", "MAG 2", "MAG 1", "0", "GREEN 1", "GREEN 2", "GREEN 3"]
-SEL_COLOURS = ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "MAGENTA"]     # selcolour COLOUR 1..6 (stored 0..5)
+SEL_COLORS = ["RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "MAGENTA"]     # selcolour COLOR 1..6 (stored 0..5)
 SEL_RANGES = ["NARROW", "WIDE"]
 GRAINS = ["OFF", "1", "2", "3"]                         # every type: fx (0 = OFF, zero cost); digits share VIGNETTE's labels
 VIGS = ["OFF", "1", "2", "3"]
@@ -290,7 +290,7 @@ B = {n: i for i, (n, _, _) in enumerate(BASES)}
 F = {n: i for i, n in enumerate(FILTERS)}
 T = {n: i for i, n in enumerate(TONES)}
 P_CURVE, P_CON, P_KEY, P_SHD, P_HIL, P_FILT, P_TONE, P_DENS, P_SHARP = range(NPARAM)
-P_SAT, P_WARM, P_TINT = 5, 6, 7          # colour
+P_SAT, P_WARM, P_TINT = 5, 6, 7          # color
 P_SCOL, P_SRNG, P_SSAT = 5, 6, 7         # SELECT
 
 # SATURATION: chroma gain 0x12018004 = stock NORMAL word 84 70 69 7c (isp-capabilities section 3: 0x922bc(1) writes
@@ -321,10 +321,10 @@ def wb_words(cp_wb, warm_step):
     return (g9(r, WB0 + WK * s) << 16) | g9(g, 0x10000), g9(b, WB0 - WK * s)
 
 
-# Colour matrix MatR/G/B 0x12018104/108/10c (hardware probes; model vendored as vendor/colour/
+# Color matrix MatR/G/B 0x12018104/108/10c (hardware probes; model vendored as vendor/colour/
 # matrix_model.py): row = output channel; bytes b3 = R input, b2/b1 = G-like, b0 = B input; sign + 6-bit magnitude
 # (bit 7 = sign, confirmed), bit 6 ignored; rows superpose linearly; acts on chroma after the tone curve, luma unchanged. Per look: a ROM constant derived by
-# derive_matrix() (repo-only, tests/test_provenance.py) from the colour recipes' tier B matrices
+# derive_matrix() (repo-only, tests/test_provenance.py) from the color recipes' tier B matrices
 # (`M_rgb_linear`, a pre-tone linear 3x3) by a
 # least-squares fit of the chroma change that matrix makes through the STANDARD curve, in the model's chroma-domain
 # units (luma change dropped: the stage cannot make one), then matrix_model.encode(). Frozen here so a build needs no
@@ -355,13 +355,13 @@ def tint_word(w, t):
 
 
 def matrix_model():
-    """The colour-matrix model (sign-magnitude, b0 = B, superposition; row-output clip),
+    """The color-matrix model (sign-magnitude, b0 = B, superposition; row-output clip),
     vendored as koma.vendor.colour.matrix_model (needs numpy; tests only, the build uses the frozen words)."""
     from ..vendor.colour import matrix_model as mm
     return mm
 
 
-# GRD IV CMAT (colour engine) -> one chroma matrix. Reading of the tables: per table,
+# GRD IV CMAT (color engine) -> one chroma matrix. Reading of the tables: per table,
 # 24 hue boundaries (u8, 256 = 360 deg) cut the hue circle into sectors, each with its own 2x2 [[a, b], [c, d]] on
 # (Cb, Cr); hue = atan2(Cr, Cb). Evidence for that orientation: Standard's sectors 5..12 crowd into 112..155 deg,
 # where skin sits in this convention (fine control where it matters). Sector-to-hue is U in the firmware README.
@@ -445,19 +445,19 @@ def R(name, base, intent, shoot, con=0, key=0, shd=0, hil=0, filt="OFF", sharp=0
     return dict(name=name, params=p, type=TYPE_BW, intent=intent, shoot=shoot)
 
 
-def S(name, base, intent, shoot, con=0, key=0, shd=0, hil=0, colour="RED", rng="NARROW", sat=0, sharp=0):
-    p = [B[base], con + 4, key + 4, shd + 4, hil + 4, SEL_COLOURS.index(colour), SEL_RANGES.index(rng), sat + 3,
+def S(name, base, intent, shoot, con=0, key=0, shd=0, hil=0, color="RED", rng="NARROW", sat=0, sharp=0):
+    p = [B[base], con + 4, key + 4, shd + 4, hil + 4, SEL_COLORS.index(color), SEL_RANGES.index(rng), sat + 3,
          sharp + 2]
     return dict(name=name, params=p, type=TYPE_SEL, intent=intent, shoot=shoot)
 
 
 def C(name, look, src, base, intent, shoot, con=0, key=0, shd=0, hil=0, sat=0, warm=0, tint=0, sharp=0):
     p = [B[base], con + 4, key + 4, shd + 4, hil + 4, sat + 3, warm + 3, tint + 3, sharp + 2]
-    return dict(name=name, params=p, type=TYPE_COLOUR | (look << 4), look=look, src=src, intent=intent, shoot=shoot)
+    return dict(name=name, params=p, type=TYPE_COLOR | (look << 4), look=look, src=src, intent=intent, shoot=shoot)
 
 
 # List order = IMG SET / ADJ / KOMA RECIPE order after the 7 stock entries: the 10 B&W looks,
-# SELECT (a B&W look with one hue kept), the 6 colour looks, CUSTOM 1..3. B&W-family first and colour after keeps the
+# SELECT (a B&W look with one hue kept), the 6 color looks, CUSTOM 1..3. B&W-family first and color after keeps the
 # ADJ walk one block per base (3/6, then 1) and keeps the B&W ids 1..10 stable across store versions.
 CURATED = [
     R("MONO", "R3", "R3 curve: deeper mids, earlier highlight roll-off; no filter",
@@ -478,28 +478,28 @@ CURATED = [
       con=2, key=-2, filt="RED", sharp=1),
     R("MATTE", "STANDARD", "matte: flat contrast, lifted shadows, soft whites", "soft light, faded look",
       con=-3, shd=3, hil=-2),
-    S("SELECT", "R3", "selective colour: mono (R3 curve) except one hue band, which keeps its colour",
-      "a red sign, a yellow cab, one coloured coat in a grey street", sharp=1),
-    # colour: POSITIVE and BLEACH are fitted to the GR DIGITAL IV firmware (src "grd4:..."): POSITIVE = curve C5 as STANDARD + con/key/shd/hil (2.1 levels rms), SATURATION from group C's mean
+    S("SELECT", "R3", "selective color: mono (R3 curve) except one hue band, which keeps its color",
+      "a red sign, a yellow cab, one colored coat in a grey street", sharp=1),
+    # color: POSITIVE and BLEACH are fitted to the GR DIGITAL IV firmware (src "grd4:..."): POSITIVE = curve C5 as STANDARD + con/key/shd/hil (2.1 levels rms), SATURATION from group C's mean
     # sector gain (0.82 -> x0.85), matrix = grd4_matrix(group C); BLEACH = base BLEACH (curve B5), SATURATION from
     # group B's x0.43 (floor x0.55), WARMTH from the Normal WB triple (teal, past COOL 3), no matrix. The other four
     # are estimates: PROPOSAL section 2 values (SLIDE/NEG bases -> STANDARD, see BASES; RETRO's FADE base -> STANDARD
     # with SHADOW +4), matrix from `src` (tier B). Checked against published sources (REFS); NEGATIVE
     # HIGHLIGHT -1 -> 0 and WARMTH COOL 1 -> 0 (GR III defaults: highlight contrast 0, no WB bias; Ricoh: "faded"),
     # WARM NEG WARMTH 2 -> 3 (Portra recipe WB R+2 / B-5). RETRO and SLIDE 50 unchanged. GRD IV has no Retro look.
-    C("POSITIVE", 0, "grd4:positive-film", "STANDARD", "GR Positive Film (GRD IV curve + colour): key up, deep "
-      "shadows, warm hues kept, cool hues muted", "everyday colour, warm light", con=2, key=2, shd=-3, hil=-3,
+    C("POSITIVE", 0, "grd4:positive-film", "STANDARD", "GR Positive Film (GRD IV curve + color): key up, deep "
+      "shadows, warm hues kept, cool hues muted", "everyday color, warm light", con=2, key=2, shd=-3, hil=-3,
       sat=-1),
     C("NEGATIVE", 1, "gr-negative-film", "STANDARD", "GR III Negative Film: soft, faded, lifted shadows, muted "
       "reds and blues, bluish greens", "people, soft light", con=-1, key=1, shd=2, sat=-1),
-    C("BLEACH", 2, "grd4:bleach-bypass", "BLEACH", "GR Bleach Bypass (GRD IV curve + colour): bright crushed "
+    C("BLEACH", 2, "grd4:bleach-bypass", "BLEACH", "GR Bleach Bypass (GRD IV curve + color): bright crushed "
       "mids, low saturation, teal", "metal, concrete, hard light", sat=-3, warm=-3, sharp=1),
     C("RETRO", 3, "gr-retro", "STANDARD", "GR Retro: warm, faded, low contrast, sepia lean", "old streets, interiors",
       con=-2, key=1, shd=4, hil=-2, sat=-1, warm=2),
     C("WARM NEG", 4, "portra-400-like", "STANDARD", "warm portrait negative: soft contrast, warm, faint magenta",
       "skin, golden hour", con=-2, key=2, shd=2, hil=-3, warm=3, tint=-1),
     C("SLIDE 50", 5, "fuji-velvia", "STANDARD", "50-speed slide film: deep contrast, very saturated, slightly warm",
-      "landscape, flowers, colour in sun", con=3, shd=-2, hil=-1, sat=3, warm=1),
+      "landscape, flowers, color in sun", con=3, shd=-2, hil=-1, sat=3, warm=1),
 ]
 NCUR = len(CURATED)
 # Published sources behind the estimate looks; none gives a measured curve.
@@ -512,9 +512,9 @@ REFS = {
     "SLIDE 50": ["https://fujixweekly.com/2017/10/01/my-fujifilm-x100f-velvia-film-simulation-recipe/"],
 }
 NBW = sum(r["type"] == TYPE_BW for r in CURATED)
-CLOOKS = [r for r in CURATED if r["type"] & 3 == TYPE_COLOUR]
+CLOOKS = [r for r in CURATED if r["type"] & 3 == TYPE_COLOR]
 NCOL = len(CLOOKS)
-# (MatR, MatG, MatB) per colour look, frozen (no numpy at build time). POSITIVE = grd4_matrix(2, its SATURATION)
+# (MatR, MatG, MatB) per color look, frozen (no numpy at build time). POSITIVE = grd4_matrix(2, its SATURATION)
 # (test_bwrecipes re-derives; chroma rms over the GRD IV sectors, 8-bit codes at radius 32: change 6.62 -> SATURATION
 # alone 5.09 -> + matrix 3.75, grey cast <= 1.6); BLEACH none (GRD IV: uniform x0.43, no rotation: SATURATION only).
 # The rest = derive_matrix(tier-B src) (test_provenance re-derives; change -> residual on its training set).
@@ -535,10 +535,10 @@ N = len(RECIPES)
 # FX table's byte N + 1 (0x1ba14). The 'RCP6' header (+7 = N) and records 1..N do not move.
 STD = N + 1
 NALL = N + 1
-STD_LOOK = 2           # STANDARD's kind uses colour look 2's matrix row: all zero = the stock rows (no matrix)
+STD_LOOK = 2           # STANDARD's kind uses color look 2's matrix row: all zero = the stock rows (no matrix)
 # Defaults = stock NORMAL: curve STANDARD (ROM 0x19bb30, NORMAL's literal contrast 3), CON/KEY/SHD/HIL 0, chroma x1.00
 # (= the stock word), WARMTH 0 (no WB write), TINT 0, sharpness 0 (= 3: 0x91268 returns literal 3 for NORMAL).
-STANDARD = dict(name="STANDARD", params=[B["STANDARD"], 4, 4, 4, 4, 3, 3, 3, 2], type=TYPE_COLOUR | (STD_LOOK << 4),
+STANDARD = dict(name="STANDARD", params=[B["STANDARD"], 4, 4, 4, 4, 3, 3, 3, 2], type=TYPE_COLOR | (STD_LOOK << 4),
                 intent="stock NORMAL, editable; at its defaults the camera shoots plain NORMAL (no look id)", shoot="")
 ALL = RECIPES + [STANDARD]                    # by id - 1
 # IMG SET list (and ADJ lever walk), GR III order: display position -> look id. Display order only; ids do not move.
@@ -551,8 +551,8 @@ NDISP = len(DISPLAY)
 ADJ_ON = ["STANDARD", "MONO", "HARD MONO", "HICON B&W", "SHINJUKU", "POSITIVE", "CUSTOM 1"]
 DEFMASK = sum(1 << ([r["name"] for r in ALL].index(n)) for n in ADJ_ON)     # bit id - 1
 LIMITS = {TYPE_BW: [NB_BW, 9, 9, 9, 9, len(FILTERS), len(TONES), len(DENS), len(SHARP)],
-          TYPE_COLOUR: [NB_BW, 9, 9, 9, 9, 7, 7, 7, len(SHARP)],
-          TYPE_SEL: [NB_BW, 9, 9, 9, 9, len(SEL_COLOURS), len(SEL_RANGES), 7, len(SHARP)]}
+          TYPE_COLOR: [NB_BW, 9, 9, 9, 9, 7, 7, 7, len(SHARP)],
+          TYPE_SEL: [NB_BW, 9, 9, 9, 9, len(SEL_COLORS), len(SEL_RANGES), 7, len(SHARP)]}
 
 
 def imgset_of(p, kind=TYPE_BW):
@@ -561,11 +561,11 @@ def imgset_of(p, kind=TYPE_BW):
     return 6 if p[P_TONE] else 3
 
 
-def colour_regs(p, kind, cp_wb=(185, 64, 172)):
-    """Host model of the colour / SELECT writes for params p: {register: word} (both develop passes)."""
+def color_regs(p, kind, cp_wb=(185, 64, 172)):
+    """Host model of the color / SELECT writes for params p: {register: word} (both develop passes)."""
     t = kind & 3
-    out = {0x12018004: chroma_word(p[P_SAT] if t == TYPE_COLOUR else p[P_SSAT])}
-    if t == TYPE_COLOUR:
+    out = {0x12018004: chroma_word(p[P_SAT] if t == TYPE_COLOR else p[P_SSAT])}
+    if t == TYPE_COLOR:
         mr, mg, mb = LOOK_MATRIX[kind >> 4]
         out.update({0x12018104: mr, 0x12018108: tint_word(mg, p[P_TINT] - 3), 0x1201810C: mb})
         wb = wb_words(cp_wb, p[P_WARM])
@@ -578,7 +578,7 @@ def colour_regs(p, kind, cp_wb=(185, 64, 172)):
 # KOMA tab: RECIPE page (group "recipe") + the EDIT RECIPE sub-page (group "recipe-edit", edits the active recipe;
 # menu5 lists them in row order: CURVE..SHARPNESS, GRAIN, VIGNETTE (fx builds only), SAVE TO CUSTOM, RESET). Rows p5..p7 change
 # label and options with the active recipe's type (`variants`: menu5 picks alt[type] from the selector byte when the
-# menu loads). The declared label/options are the colour ones: 7 options, the longest list, so the core's
+# menu loads). The declared label/options are the color ones: 7 options, the longest list, so the core's
 # out-of-range repair at boot never clips a valid value of any type.
 _VAR = lambda b, c, s: dict(sel=SELB, alts=[b, c, s])     # noqa: E731
 assert REC + N * RECLEN + NALL <= AJM and STDREC >= AJM + 4 and STDREC + RECLEN <= ST_END
@@ -594,7 +594,7 @@ ROWS = [
     dict(id="rp_shadow", label="SHADOW", options=SIGNED, byte=EB + P_SHD, default=4, group="recipe-edit"),
     dict(id="rp_hilite", label="HIGHLIGHT", options=SIGNED, byte=EB + P_HIL, default=4, group="recipe-edit"),
     dict(id="rp_p5", label="SATURATION", options=STEP7, byte=EB + 5, default=3, group="recipe-edit",
-         variants=_VAR(("FILTER EFF.", FILTERS), ("SATURATION", STEP7), ("COLOUR", SEL_COLOURS))),
+         variants=_VAR(("FILTER EFF.", FILTERS), ("SATURATION", STEP7), ("COLOR", SEL_COLORS))),
     dict(id="rp_p6", label="WARMTH", options=WARMS, byte=EB + 6, default=3, group="recipe-edit",
          variants=_VAR(("TONING", TONES), ("WARMTH", WARMS), ("RANGE", SEL_RANGES))),
     dict(id="rp_p7", label="TINT", options=TINTS, byte=EB + 7, default=3, group="recipe-edit",
@@ -625,13 +625,13 @@ NSTOCK = 7
 NOPT = NSTOCK + N
 CC2_UP, CC2_CACHE = 0x16D31C, 0x1F4DB3
 # Unity WB after the develop hooks (static): 0x96350 / 0xafd20 call the Thumb veneer
-# 0x174ca4 (bx pc; b 0x9b7e0) for readout format cp+0x40 != 3 (pass 1: also not 0, not WB/colour bracket): 0x9b7e0
+# 0x174ca4 (bx pc; b 0x9b7e0) for readout format cp+0x40 != 3 (pass 1: also not 0, not WB/color bracket): 0x9b7e0
 # sets cp+0x268/26a/26c = 100 and 0x12018110/114 to unity (0x40). f = 1 on continuous frames 2.. and AE-BKT frames
 # 2..3 (0x9f854); single shots are f = 3 and never take it. WB mode, flash, ISO play no part.
 WB_UNITY = 0x174CA4
 SITES_WBU = [0x964B8, 0xAFDDC]
 TE_SET, TE_SHADOW = 0x171D80, 0x178CAC
-# wlog (resident): 'KRCPLOG1', +8 colour-write count (u8), +9 last pass, +10 last kind, +11 unity-WB re-applies (u8,
+# wlog (resident): 'KRCPLOG1', +8 color-write count (u8), +9 last pass, +10 last kind, +11 unity-WB re-applies (u8,
 # hook_wbu), +12 chroma, +16/20/24 MatR/G/B,
 # +28/32 WB words (0 when WARMTH is 0). Read by smoke_checks and the unit tests; costs 36 B.
 WL_MAGIC = b"KRCPLOG1"
@@ -872,7 +872,7 @@ aput:
 .ltorg
 
 @ eff: r0 = id 1..N, r1 = dst (9 bytes): the record if valid (store ok, valid byte, xor, kind ok: type <= MAXTYPE and
-@ colour look < NCOL, params in that type's ranges), else the default (CUSTOM n: look CUSTOM_SRC's). Returns r0 = the
+@ color look < NCOL, params in that type's ranges), else the default (CUSTOM n: look CUSTOM_SRC's). Returns r0 = the
 @ kind (record byte 9 / default-row byte 9).
 eff:
     push {{r4, r5, r6, lr}}
@@ -962,7 +962,7 @@ wrec:
     bx r3
 .ltorg
 
-@ imgset_p: r0 = params, r1 = type -> r0 = the base IMG SET: colour / SELECT 1 (NORMAL); B&W 3, or 6 (B&W(TE)) when
+@ imgset_p: r0 = params, r1 = type -> r0 = the base IMG SET: color / SELECT 1 (NORMAL); B&W 3, or 6 (B&W(TE)) when
 @ toned. Leaf.
 imgset_p:
     cmp r1, #0
@@ -1162,7 +1162,7 @@ stdclean:
     ldr r1, =deftab + {NCUR * DEFLEN}
     ldrb r2, [r1, #{NPARAM}]
     cmp r0, r2
-    bne 8f                           @ another kind (e.g. a host-written colour look): not clean
+    bne 8f                           @ another kind (e.g. a host-written color look): not clean
     ldr r0, =tmp
     movs r2, #0
 1:  ldrb r3, [r0, r2]
@@ -1275,7 +1275,7 @@ fxsync:
     bx r3
 .ltorg
 
-@ publish: store header +8 = type of the active recipe (menu5's editor labels), +9/+10 = SELECT colour (1..6) and
+@ publish: store header +8 = type of the active recipe (menu5's editor labels), +9/+10 = SELECT color (1..6) and
 @ range when a SELECT recipe applies to the next shot, else 0 / 0 (selcolour reads them at the master-YUV step);
 @ +11 / +12 = GRAIN / VIGNETTE of the recipe applying to the next shot (any type), else 0 / 0 (fx reads them there).
 publish:
@@ -1598,18 +1598,18 @@ dev_common:
     movs r1, #3
     ands r0, r1
     beq bwp
-    bl yw_restore                    @ ---- colour / SELECT (base NORMAL): no B&W filter word
+    bl yw_restore                    @ ---- color / SELECT (base NORMAL): no B&W filter word
     cmp r4, #0
-    bne curvep                       @ develop not in colour (never on base NORMAL): the curve only
+    bne curvep                       @ develop not in color (never on base NORMAL): the curve only
     movs r0, r5
     movs r1, r6
-    bl colour_regs
+    bl color_regs
     b curvep
 bwp:
     subs r4, #1
     cmp r4, #1
     bls 2f
-    bl yw_restore                    @ develop says colour: no filter / toning, the curve still follows the recipe
+    bl yw_restore                    @ develop says color: no filter / toning, the curve still follows the recipe
     b curvep
 2:  ldr r0, =cur                      @ ---- filter
     ldrb r0, [r0, #{P_FILT}]
@@ -1685,11 +1685,11 @@ out:
     bx r3
 .ltorg
 
-@ colour_regs: r0 = cp, r1 = develop pass (1/2); cur/ckind = the applying colour or SELECT recipe. Writes, after the
-@ stock writers of this pass: chroma gain 0x12018004 (SATURATION: colour p5, SELECT p7); colour only: MatR/G/B
+@ color_regs: r0 = cp, r1 = develop pass (1/2); cur/ckind = the applying color or SELECT recipe. Writes, after the
+@ stock writers of this pass: chroma gain 0x12018004 (SATURATION: color p5, SELECT p7); color only: MatR/G/B
 @ 0x12018104/108/10c (the look's ROM rows, G row with the TINT step), and when WARMTH != 0 the WB words 0x12018110/114
 @ (R, B multipliers on the shot's AWB values cp+0x268/26c; G passes). Every value also goes to wlog (smoke / tests).
-colour_regs:
+color_regs:
     push {{r4, r5, r6, r7, lr}}
     movs r5, r0
     ldr r6, =wlog
@@ -1704,7 +1704,7 @@ colour_regs:
     lsls r1, r7, #30
     lsrs r1, r1, #30
     ldrb r0, [r4, #{P_SAT}]
-    cmp r1, #{TYPE_COLOUR}
+    cmp r1, #{TYPE_COLOR}
     beq 1f
     ldrb r0, [r4, #{P_SSAT}]
 1:  lsls r0, r0, #2
@@ -1716,7 +1716,7 @@ colour_regs:
     movs r0, #0
     str r0, [r6, #{WL_WB}]
     str r0, [r6, #{WL_WB} + 4]
-    cmp r1, #{TYPE_COLOUR}
+    cmp r1, #{TYPE_COLOR}
     bne 9f
     lsrs r0, r7, #4                  @ ---- matrix: look row block (R, B, G for TINT 0..6)
     movs r1, #36
@@ -2335,7 +2335,7 @@ CHECKS = [
     (0x8FFAC, "4668f0e1fee7", "0x8ff0e passes sp to 0x171d80 (same calling form)"),
     (0x8FFB8, "00178cac", "0x8ff0e literal: mono word shadow 0x178cac"),
     (0x1725F8, 12, "WB setter: 0x12018110 = *r0"),
-    (0x96426, "f7fcf8b7", "pass 1: bl 0x92598 (MatR/G/B, UV) before the hooked site: colour writes win"),
+    (0x96426, "f7fcf8b7", "pass 1: bl 0x92598 (MatR/G/B, UV) before the hooked site: color writes win"),
     (0x9642C, "f7fbff46", "pass 1: bl 0x922bc (chroma gain 0x12018004) before the hooked site"),
     (0xAFD2E, "f7e2fc33", "pass 2: bl 0x92598 before the hooked site 0xafd3e"),
     (0xAFD34, "f7e2fac2", "pass 2: bl 0x922bc before the hooked site 0xafd3e"),
@@ -2406,7 +2406,7 @@ MENU_RIGHT = ("imgright", "imgdone")     # menu5's kright calls these (RIGHT on 
 SHARED = ["cur", "ckind", "prm", "prmu", "ftab", "ttab", "mtab", "state", "yw_restore", "gen_chunk", "gs", "buf", "bases"]
 
 
-SMOKE_RECIPE = "POSITIVE"   # colour: STANDARD + params, chroma x1.30, the POSITIVE matrix; looked up by name
+SMOKE_RECIPE = "POSITIVE"   # color: STANDARD + params, chroma x1.30, the POSITIVE matrix; looked up by name
 
 
 def _smoke_id():
@@ -2434,7 +2434,7 @@ def smoke_checks(obs):
     own write log, the emulator's register file (last value written to each address) and the CC2 stream."""
     rid = _smoke_id()
     r = RECIPES[rid - 1]
-    want = colour_regs(r["params"], r["type"])
+    want = color_regs(r["params"], r["type"])
     ups = obs.cc2_uploads
     curve_sha = hashlib.sha256(struct.pack(">4096H", *curve(r["params"]))).hexdigest()
     out = [("recipe still active, IMG SET NORMAL", obs.ram8(ACT) == rid and obs.ram8(0x1B030) == 1,
@@ -2442,8 +2442,8 @@ def smoke_checks(obs):
            (f"last CC2 stream = {SMOKE_RECIPE} generated curve (16 x 256 chunks)", bool(ups) and ups[-1][0] == curve_sha,
             f"uploads={[(h[:8], n) for h, n in ups]} want={curve_sha[:8]}"),
            ("CC2 cache invalidated (0xff)", obs.ram8(CC2_CACHE) == 0xFF, f"0x1f4db3={obs.ram8(CC2_CACHE):#x}"),
-           ("store 'RCP6' v6, published type colour", obs.ram(ST, 5) == MAGIC + bytes([STORE_VER]) and
-            obs.ram8(SELB) == TYPE_COLOUR and obs.ram8(SELCOL) == 0, obs.ram(ST, 11).hex())]
+           ("store 'RCP6' v6, published type color", obs.ram(ST, 5) == MAGIC + bytes([STORE_VER]) and
+            obs.ram8(SELB) == TYPE_COLOR and obs.ram8(SELCOL) == 0, obs.ram(ST, 11).hex())]
     wl = wlog_addr(obs.ram)
     out.append(("write log found in the resident block", wl is not None, f"wlog={wl and hex(wl)}"))
     if wl is not None:

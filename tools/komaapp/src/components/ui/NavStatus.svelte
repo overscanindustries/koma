@@ -2,7 +2,7 @@
   // Identity and connection, the one place for both: under the wordmark in the nav column on
   // a desktop, in the one top line on a phone. ● GR DIGITAL (+ SIM when the bridge runs a simulated camera), the
   // connection word beneath on a desktop. On a phone the line is short: the word follows SIM whenever the camera is not
-  // connected, so a drop is never told by the dot's colour alone; connected, the green dot stands for it (the word stays
+  // connected, so a drop is never told by the dot's color alone; connected, the green dot stands for it (the word stays
   // for screen readers). Identical on every app screen. Data: GET /status (camera.model, connected, simulated, webcam).
   import {cam, cameraName} from '../../lib/camera.svelte.js';
   import {S} from '../../lib/settings.svelte.js';

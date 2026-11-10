@@ -309,7 +309,7 @@ def test_turning_off_erases_and_leaving_the_screen_forgets():
     r.u.uc.mem_write(P.MONRUN, b"\x01")
 
 
-def test_yellow_and_colour_change():
+def test_yellow_and_color_change():
     r = Rig(setting=2)
     before = r.plane()
     r.call()

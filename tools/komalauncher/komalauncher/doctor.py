@@ -153,7 +153,15 @@ def _package() -> str:
         return f"could not be read ({type(error).__name__}: {error})"
     if not info:
         return "missing"
-    state = "" if info.get("sha256") == info.get("published_sha256") else ", not the recorded build"
+    # The package ships as a delta and is built from Ricoh's 2.40 file, which no download carries: without that file
+    # the package is not "ready", and that is a healthy fresh install (the app asks for the file). Only a delta that
+    # is not the recorded one is a fault.
+    if info.get("delta_sha256") != info.get("delta_published_sha256"):
+        state = ", not the recorded build"
+    elif not info.get("ready"):
+        state = ", built from Ricoh's 2.40 file when you set up a card"
+    else:
+        state = ""
     return f"{info.get('name')}, Koma {version_text(info.get('version'))}{state}"
 
 

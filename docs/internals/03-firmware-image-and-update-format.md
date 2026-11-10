@@ -296,7 +296,7 @@ The loader contract is in [how it works](../how-it-works.md#boot-and-the-loader-
 
 The B&W contrast-5 tone table lives at `0x199b30` (file `0x17dd30`): 4,096 big-endian u16 entries (8,192 B), 12-bit index, 10-bit value, monotone, endpoints 0 and 1023. Three literals point at it: `0x900c4`, `0x90404`, `0x90498` (in `0x8ffc8`, `0x9035c`, `0x90408`); preview and stills both use it. `STATIC`. It is read before the update gate when B&W contrast 5 is the saved setting (boot-time preview upload), and not with default settings. `EMU`. Every stock table keeps the pin 256 -> 64. `STATIC`
 
-Not implemented: a data-only image that replaces this table was built and emulated but never flashed. Looks are applied in RAM by card modules on hardware ([06](06-image-pipeline-and-colour.md)). `HW`
+Not implemented: a data-only image that replaces this table was built and emulated but never flashed. Looks are applied in RAM by card modules on hardware ([06](06-image-pipeline-and-color.md)). `HW`
 
 ## Update runs on hardware
 

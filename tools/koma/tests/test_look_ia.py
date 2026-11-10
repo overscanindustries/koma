@@ -324,10 +324,10 @@ def test_host_mask_write_byte_by_byte_survives_a_non_default_active_look():
 
 
 def test_stdclean_compares_the_kind_too():
-    """N2: a STANDARD record with default params but another kind (a colour look's matrix) is not 'clean': NORMAL is a
+    """N2: a STANDARD record with default params but another kind (a color look's matrix) is not 'clean': NORMAL is a
     ghost and the look keeps its id."""
     u = unit()
-    rec = list(B.STANDARD["params"]) + [B.TYPE_COLOUR | 0 << 4]  # POSITIVE's matrix, STANDARD's params
+    rec = list(B.STANDARD["params"]) + [B.TYPE_COLOR | 0 << 4]  # POSITIVE's matrix, STANDARD's params
     x = 0x5A
     for b in rec:
         x ^= b

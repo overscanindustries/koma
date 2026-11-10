@@ -20,7 +20,7 @@ before-bytes (`patches()`), the v2 band source (`menu5v2.BAND_SRC`) and the glyp
   * Row variants (Koma 0.2, for the recipe editor): a row may carry `variants` = dict(sel=<byte address>,
     alts=[(label, options), ...]) in its feature's ROWS. When the rows are loaded (ksync_load), alt[sel byte] (out of
     range -> alt 0) replaces the row's label, option list and option count (display entry and ktab), so one row reads
-    FILTER EFF. / SATURATION / COLOUR with the active recipe's type. The row's declared options must be at least as long
+    FILTER EFF. / SATURATION / COLOR with the active recipe's type. The row's declared options must be at least as long
     as every alt (the core's boot repair uses the declared count).
   * Koma modes: the init picks the menu directory from MENU LAYOUT (0x1b8bb, when the
     build has that row): 0 / 2 -> the 5-tab directory, 1 -> STOCK+KOMA (mode page | KOMA | the stock 30-row SETUP

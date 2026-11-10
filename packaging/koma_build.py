@@ -37,7 +37,7 @@ NAME = "koma-gr"
 DIST = "koma_gr"
 PACKAGE_DIR = "koma_gr"
 REQUIRES_PYTHON = ">=3.10"
-SUMMARY = "Koma for the Ricoh GR DIGITAL (2005): the local app for settings, looks, photos, tether and setup over USB"
+SUMMARY = "Koma for the 2005 Ricoh GR DIGITAL: 21 looks, camera settings, photo import, tethered shooting and webcam over USB"
 HOMEPAGE = "https://github.com/overscanindustries/koma"
 EPOCH = 1762646400  # 2025-11-09 00:00 UTC; every entry carries it so two builds of one tree are identical
 DEPENDENCIES = [

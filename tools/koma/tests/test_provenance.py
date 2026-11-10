@@ -142,8 +142,8 @@ def derive_matrix(key):
     return tuple(regs[r] for r in MM.ROWS), dict(rms_change=rms(dC), rms_residual=rms(pred[:, 1:] - yt[:, 1:]))
 
 
-def test_colour_look_matrices_rederive_and_vendored_model():
-    """bwrecipes.LOOK_MATRIX = derive_matrix(tier-B src) for all six colour looks; the vendored model v2 equals the
+def test_color_look_matrices_rederive_and_vendored_model():
+    """bwrecipes.LOOK_MATRIX = derive_matrix(tier-B src) for all six color looks; the vendored model v2 equals the
     probe-3 analysis file."""
     if not _have("analysis/colour-research/probe3/matrix_model.py", "analysis/colour-recipes/recipes.json"):
         return

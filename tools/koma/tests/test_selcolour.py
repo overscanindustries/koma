@@ -4,11 +4,11 @@ The real hooked site runs: 0x117380 `add r0, r4, #0` + the patched `bl` at 0x117
 0x1173e8 (stubbed). A synthetic master UV plane (one vertical band per known hue, padding past the width) sits at the
 real 8 MP UV base 0x8f40e00 with a small geometry in a fake cp.
 
-Covered: install (1 KiB table block allocated); for every COLOUR x RANGE the Thumb-built table equals the Python
+Covered: install (1 KiB table block allocated); for every COLOR x RANGE the Thumb-built table equals the Python
 reference and the plane equals the reference pass; which patches survive (NARROW: exactly the chosen hue; WIDE: the
-neighbour inside the soft edge is halved); OFF / out-of-range COLOUR / out-of-range RANGE / B&W develop / bad geometry
+neighbour inside the soft edge is halved); OFF / out-of-range COLOR / out-of-range RANGE / B&W develop / bad geometry
 leave the plane untouched and still call the original once with cp; crcb order; r4-r7 kept; table rebuilt only when
-the key changes; COLOUR / RANGE only from an 'RCP5' recipe store header (Koma 0.2: published by the SELECT recipe).
+the key changes; COLOR / RANGE only from an 'RCP5' recipe store header (Koma 0.2: published by the SELECT recipe).
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from unicorn.arm_const import UC_ARM_REG_R4, UC_ARM_REG_R5, UC_ARM_REG_R6, UC_AR
 CP = 0x700000
 UV = S.UV8
 STRIDE, WIDTH, LINES = 352, 336, 3          # width: 8 bands of 40 bytes + 16 bytes of grey tail; 16 B padding
-SURVIVE = {  # (colour, range) -> {patch: "keep" | "half"}; everything else must go neutral
+SURVIVE = {  # (color, range) -> {patch: "keep" | "half"}; everything else must go neutral
     (1, 0): {"red": "keep"}, (1, 1): {"red": "keep", "orange": "half"},
     (2, 0): {"orange": "keep"}, (2, 1): {"orange": "keep"},
     (3, 0): {"yellow": "keep"}, (3, 1): {"yellow": "keep", "orange": "half"},
@@ -48,10 +48,10 @@ def lut_of(u):
     return struct.unpack(">I", u.read(u.state + S.O_LUT, 4))[0]
 
 
-def shot(u, colour, rng, mode=0, plane=None, geom=(UV, STRIDE, WIDTH, LINES), magic=S.STMAGIC):
+def shot(u, color, rng, mode=0, plane=None, geom=(UV, STRIDE, WIDTH, LINES), magic=S.STMAGIC):
     uv, stride, width, lines = geom
     u.uc.mem_write(S.STB, magic)
-    u.uc.mem_write(S.COLB, bytes([colour, rng]))
+    u.uc.mem_write(S.COLB, bytes([color, rng]))
     u.uc.mem_write(S.MODEB, bytes([mode]))
     u.uc.mem_write(CP, bytes(0x100))
     u.uc.mem_write(CP + 0x58, struct.pack(">I", uv))
@@ -86,9 +86,9 @@ def survivors(after, band, order="cbcr"):
 
 def test_rows_and_install():
     from koma.features import bwrecipes as B
-    assert S.ROWS == []                                                    # the SELECT recipe carries COLOUR / RANGE
+    assert S.ROWS == []                                                    # the SELECT recipe carries COLOR / RANGE
     assert (S.STB, S.STMAGIC, S.COLB, S.RNGB) == (B.ST, B.MAGIC, B.SELCOL, B.SELRNG)
-    assert S.COLOURS[1:] == B.SEL_COLOURS and S.RANGES == B.SEL_RANGES
+    assert S.COLORS[1:] == B.SEL_COLORS and S.RANGES == B.SEL_RANGES
     assert S.LUTN == 1024
     u = unit()
     lut = lut_of(u)
@@ -97,7 +97,7 @@ def test_rows_and_install():
     assert u.read(u.state + S.O_KEY, 1) == b"\xff"
 
 
-def test_every_colour_and_range():
+def test_every_color_and_range():
     u = unit()
     plane, band = S.synthetic_plane(STRIDE, WIDTH, LINES)
     for (c, rg), want in SURVIVE.items():
@@ -106,7 +106,7 @@ def test_every_colour_and_range():
         assert st[S.O_RES] == S.RES_RAN and st[S.O_KEY] == key, (c, rg, st.hex())
         assert u.read(lut_of(u), S.LUTN) == S.reference_lut(key), (c, rg)
         assert after == S.reference_pass(plane, STRIDE, WIDTH, LINES, S.reference_lut(key)), (c, rg)
-        assert survivors(after, band) == want, (S.COLOURS[c], S.RANGES[rg], survivors(after, band))
+        assert survivors(after, band) == want, (S.COLORS[c], S.RANGES[rg], survivors(after, band))
         assert struct.unpack(">I", st[S.O_END:S.O_END + 4])[0] == UV + (LINES - 1) * STRIDE + WIDTH
         for ln in range(LINES):                                            # stride padding never touched
             assert after[ln * STRIDE + WIDTH:(ln + 1) * STRIDE] == b"\x5a" * (STRIDE - WIDTH)
@@ -177,7 +177,7 @@ def test_alloc_failure_keeps_feature_off():
 
 
 def test_needs_the_recipe_store_header():
-    """COLOUR / RANGE count only under an 'RCP5' header: a v4 store (or none) is OFF, whatever bytes 9/10 hold."""
+    """COLOR / RANGE count only under an 'RCP5' header: a v4 store (or none) is OFF, whatever bytes 9/10 hold."""
     u = unit()
     plane, _ = S.synthetic_plane(STRIDE, WIDTH, LINES)
     for magic in (b"RCP4", b"\xff\xff\xff\xff", b"\x00\x00\x00\x00"):
@@ -197,7 +197,7 @@ def test_force_option():
 
 
 def test_rcp6_header_from_koma03_counts_like_rcp5():
-    """A store left by Koma 0.3 ('RCP6', same +9 COLOUR / +10 RANGE) drives SELECT exactly as 'RCP5' does."""
+    """A store left by Koma 0.3 ('RCP6', same +9 COLOR / +10 RANGE) drives SELECT exactly as 'RCP5' does."""
     u = unit()
     plane, _ = S.synthetic_plane(STRIDE, WIDTH, LINES)
     a5, st5 = shot(u, 1, 0, plane=plane, magic=b"RCP5")

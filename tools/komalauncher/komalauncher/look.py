@@ -1,4 +1,4 @@
-"""The startup window's colours and measurements, shared by the macOS window (ui_mac.py, AppKit, in points) and the
+"""The startup window's colors and measurements, shared by the macOS window (ui_mac.py, AppKit, in points) and the
 Windows and Linux window (ui_tray.py, Tk, in 96-dpi pixels times the display's scale), so the two cannot drift.
 
 The window: text on --bg, wordmark, one status line, version bottom-left, one action; sizes sit on a 4 pt grid.

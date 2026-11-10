@@ -4,7 +4,7 @@
 
 Tags: HW, EMU, STATIC, INFERRED, defined in [features](evidence-ledger.md).
 
-Related: [03 Firmware image and update format](03-firmware-image-and-update-format.md), [05 Settings and adjustment store](05-settings-and-adjustment-store.md), [06 Image pipeline and colour](06-image-pipeline-and-colour.md), [07 USB protocol](07-usb-protocol.md), [09 Recovery and failure modes](09-recovery-and-failure-modes.md), [10 Emulator and tooling](10-emulator-and-tooling.md), [12 Version history](12-version-history.md), [13 Display, live view and USB streaming](13-display-live-view-and-usb-streaming.md), and the user-facing [build guide](../building.md).
+Related: [03 Firmware image and update format](03-firmware-image-and-update-format.md), [05 Settings and adjustment store](05-settings-and-adjustment-store.md), [06 Image pipeline and color](06-image-pipeline-and-color.md), [07 USB protocol](07-usb-protocol.md), [09 Recovery and failure modes](09-recovery-and-failure-modes.md), [10 Emulator and tooling](10-emulator-and-tooling.md), [12 Version history](12-version-history.md), [13 Display, live view and USB streaming](13-display-live-view-and-usb-streaming.md), and the user-facing [build guide](../building.md).
 
 ## Change classes, ranked by what a mistake touches
 
@@ -286,7 +286,7 @@ Features of koma04w: the `koma04` set in [`tools/koma/features/__init__.py`](../
 | Feature | v | Mechanism | Resident | Tag |
 |---|---|---|---|---|
 | `menu5` five-tab menu with KOMA tab | 3.0 | 16 `bl` records, 15 pointers, 3 data patches over the stock menu; opaque header band; data-driven rows | 13,368 B | `HW` (five-tab layout); `EMU` for the STOCK+KOMA and GR II layouts |
-| `bwrecipes` recipes | 4.2 | Virtual IMG SET entries: 10 B&W looks, SELECT, 6 colour looks, CUSTOM 1–3; generated 8 KiB curves through the stock LUT upload; selector-cache invalidation; sharpness, toning, filter | 13,792 B | `HW` for MONO, SHINJUKU, HICON B&W, NOIR, POSITIVE, NEGATIVE, BLEACH, RETRO (earlier frames); `EMU` for the rest |
+| `bwrecipes` recipes | 4.2 | Virtual IMG SET entries: 10 B&W looks, SELECT, 6 color looks, CUSTOM 1–3; generated 8 KiB curves through the stock LUT upload; selector-cache invalidation; sharpness, toning, filter | 13,792 B | `HW` for MONO, SHINJUKU, HICON B&W, NOIR, POSITIVE, NEGATIVE, BLEACH, RETRO (earlier frames); `EMU` for the rest |
 | `selcolour` SELECT | 2.0 | UV-plane pass on the master YUV: mono except one hue band | 720 B | `HW` |
 | `fx` GRAIN, VIGNETTE | 1.0 | Y-plane pass chained after `selcolour` | 984 B | `EMU` |
 | `preview` look in live view | 1.0 | Live-view hooks sharing `bwrecipes` tables | 480 B | `EMU` |
@@ -315,7 +315,7 @@ Other modules and image changes, not in koma04w:
 
 | Change | Mechanism | Size | Tag |
 |---|---|---|---|
-| Colour-register probe (`colourprobe`) | Hooks at `0x96436` and `0xafd3e`; stock setters | 716 B | `HW` |
+| Color-register probe (`colourprobe`) | Hooks at `0x96436` and `0xafd3e`; stock setters | 716 B | `HW` |
 | Body marker `Rev024M` / `240K2` | Data bytes in the `Rev%4.4x` string at `0x112578` (in the flashed image) | — | `HW` |
 | 16:9 | 1 data byte (`0x1bd3f5` 1 → 2) + 28-byte wrapper + 4 call sites | not a feature | `EMU` |
 | New setting group | 44-byte routine at `0x281ee`, `U` marker at `0x1b1b3` | not a feature | `EMU` |
@@ -327,7 +327,7 @@ Shared limits of the `EMU` rows: the model has no lens, sensor or CPU1, and a st
 
 ### Tone-table notes
 
-The five stock tables (4096 big-endian u16, values 0..1023, at `0x193b30 + k·0x2000`) have not changed since 1.08 ([12](12-version-history.md)). Every shipped Ricoh u16 table reads 64 (or 65) at input 256; a table that breaks that pin changes the toe all five GR tables share, with hardware relevance unknown (`STATIC`). Detail level 5 selects table `0x199b30` in B&W, SETTING1, SETTING2 and TE, and the live preview loads it too, so replacing a stock table is not a B&W-only change. A module that uploads its own table on the capture route and invalidates the selector cache (`0x1f4db0`/`0x1f4db3`) leaves the stock tables and colour modes alone; that is how `bwrecipes` reaches the JPEG on the camera (`HW`).
+The five stock tables (4096 big-endian u16, values 0..1023, at `0x193b30 + k·0x2000`) have not changed since 1.08 ([12](12-version-history.md)). Every shipped Ricoh u16 table reads 64 (or 65) at input 256; a table that breaks that pin changes the toe all five GR tables share, with hardware relevance unknown (`STATIC`). Detail level 5 selects table `0x199b30` in B&W, SETTING1, SETTING2 and TE, and the live preview loads it too, so replacing a stock table is not a B&W-only change. A module that uploads its own table on the capture route and invalidates the selector cache (`0x1f4db0`/`0x1f4db3`) leaves the stock tables and color modes alone; that is how `bwrecipes` reaches the JPEG on the camera (`HW`).
 
 | Tone fact | Consequence for a feature | Tag |
 |---|---|---|
@@ -347,12 +347,12 @@ Contrast is not recorded in the JPEG, so tone tests need a hand log and a fixed 
 | Setup | Tripod, M exposure, fixed ISO and WB, flash off, one image size for every frame |
 | Frames | At least 3 per setting; the reference setting and the changed one in the same session |
 | Signature of a curve change | Shadows and mids move, highlights stay: for a darker curve, stock 32 → about 18, 64 → 40, 128 → 102, while 191 and above barely change. An exposure change moves 191 too |
-| Pass rule (set before shooting) | At least half the predicted change at stock 64–128; under 3 levels at stock 190 and up; other contrast levels and colour within shot-to-shot noise |
+| Pass rule (set before shooting) | At least half the predicted change at stock 64–128; under 3 levels at stock 190 and up; other contrast levels and color within shot-to-shot noise |
 | Most likely bad outcome | Not a brick but an ambiguous result: wrong file on the card, a setting silently reset, a body whose store selects another table, a frame with no highlights |
 
 ## 8. Worked example: measure on hardware with one card swap
 
-The colour-register probe answers hardware questions the emulator cannot: does a register change the JPEG? It is a small module that writes one register value per shot, keyed to a shot counter in its own RAM, and restores the stock values afterwards.
+The color-register probe answers hardware questions the emulator cannot: does a register change the JPEG? It is a small module that writes one register value per shot, keyed to a shot counter in its own RAM, and restores the stock values afterwards.
 
 | Step | What to do |
 |---|---|
@@ -372,7 +372,7 @@ First round (`HW`):
 | 3–4 | IQ matrix `0x12018028` = `C00000C0` / `40000040` | = stock | No effect as written |
 | 5 | Chroma offset `0x12018030` | = stock | No effect as written |
 | 6 | Chroma clip `0x1201802c` = 0 | = stock | No effect as written |
-| 7 | Colour-matrix row `0x12018104` = `3F000000` | 137 | 3×3 matrix live: mean RGB 128/76/38 → 206/32/21 |
+| 7 | Color-matrix row `0x12018104` = `3F000000` | 137 | 3×3 matrix live: mean RGB 128/76/38 → 206/32/21 |
 | 8 | none | = stock | Restore works |
 
 Frame 7 moved luma about 5% while Cr rose about 59 codes: the byte acts mostly as a red-axis chroma push, not a plain red gain. Later frames show that the matrix bytes are sign-magnitude and linear (bit 6 is ignored; the stock path masks the rows with `0xbfbfbfbf`), that `0x120180d8` is chroma coring, and that control bit 6 of `0x12018100` does not enable the IQ stage. The stock control-word setter `0x172594` force-clears bit 7, so bit 7 is left alone.
@@ -478,7 +478,7 @@ In code, PLAY is not read by the gate; the default answer is No and the prompt t
 | `0x8ffc8` | Selector → table pointer and upload | `EMU` |
 | `0x193b30..0x19bb30` | Five stock tone tables; `0x19db30` the slot-`0xe` table | `STATIC` |
 | `0x1f4db0`, `0x1f4db3` | LUT selector cache | `EMU` |
-| `0x12018004`, `0x12018104/108/10c`, `0x120180d8` | Chroma gain, colour-matrix rows, chroma coring | `HW` |
+| `0x12018004`, `0x12018104/108/10c`, `0x120180d8` | Chroma gain, color-matrix rows, chroma coring | `HW` |
 | `0x15f024`, `0x15f084`, `0x2bf81c` | Pool alloc, free, KernPool handle | `STATIC` |
 | `0x6128a` | Fatal pool wrapper (`KERNEL MEMORY EMPTY`) | `STATIC` |
 | `0x517dc` | Key funnel | `STATIC` |
@@ -492,7 +492,7 @@ In code, PLAY is not read by the gate; the default answer is No and the prompt t
 - Restore of the official `QRFLECT3` over generation 2 on a camera.
 - Per-feature checks on the camera for everything tagged `EMU` above.
 - Whether a stale I-cache can bite a package that patches stock code which already ran before install: the boot SMC test (rewritten code runs its new value) and the lint cover the known cases; a stock line patched after it ran has not been tested directly.
-- Whether the IQ stage (`0x12018028/2c/30`) is wired and how it is enabled; the colour-matrix byte roles and scale; which develop pass makes the JPEG pixels.
+- Whether the IQ stage (`0x12018028/2c/30`) is wired and how it is enabled; the color-matrix byte roles and scale; which develop pass makes the JPEG pixels.
 - Whether stills pass through CC1, CC2 or both tone LUTs, and the tables' input encoding.
 - Whether the 256 → 64 tone-table pin matters to the hardware.
 - Whether the gap `0x3dadec..0x422800` is free for the whole session, not only the boot window the canary covers; a plain text-draw routine; the physical key and dial mapping.
@@ -515,7 +515,7 @@ In code, PLAY is not read by the gate; the default answer is No and the prompt t
 - [analysis/hw-tests/RUNBOOK-2026-11-08.md](../../analysis/hw-tests/RUNBOOK-2026-11-08.md): tether, live view and stall-fix results
 - [analysis/static-resident/README.md](../../analysis/static-resident/README.md): static resident block and the gap above KernPool
 - [analysis/koma-0.1/hw/](../../analysis/koma-0.1/hw/): boot logs (CP15 hang, SMC test, pool headroom)
-- [analysis/koma-0.1/colourprobe.md](../../analysis/koma-0.1/colourprobe.md): colour-register probe rounds
+- [analysis/koma-0.1/colourprobe.md](../../analysis/koma-0.1/colourprobe.md): color-register probe rounds
 - [analysis/koma-0.1/adj-hang.md](../../analysis/koma-0.1/adj-hang.md): CPU1 timeout shared with the key-scan period
 - [analysis/stall/ROOT-CAUSE.md](../../analysis/stall/ROOT-CAUSE.md): second-session tether stall
 - [analysis/feature-code-map/README.md](../../analysis/feature-code-map/README.md): code-cave ranking and "not caves"

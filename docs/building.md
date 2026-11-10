@@ -58,7 +58,7 @@ Named sets:
 | `koma04-lite` | `koma04` without `ksettings`, `peaking`, `waitdiag` |
 | `koma03`, `koma03io`, `koma03sio`, `koma03lv` | An earlier set (looks, GRAIN/VIGNETTE, preview) and its settings-I/O and live-view variants |
 | `koma02`, `koma01` | Smaller, earlier sets |
-| `drop1`..`drop3`, `probe` | Early drops and the colour-register probe |
+| `drop1`..`drop3`, `probe` | Early drops and the color-register probe |
 
 With no `--features`, `build` uses an old three-feature default (`tone-r3,snap15,recipe-slots`). `koma04w` (`koma04` plus `widefs` for SDHC/SDXC) is built by `analysis/sdhc/bundle/build.py`, because `widefs` is not a registered feature ([install](manual-install.md#install-koma)).
 

@@ -279,7 +279,7 @@
    "confidence": "HW",
    "order": 4,
    "section": "Image",
-   "help": "The look of your pictures: a colour style, black and white, toned black and white, or one of your own SETTING1 or SETTING2 looks."
+   "help": "The look of your pictures: a color style, black and white, toned black and white, or one of your own SETTING1 or SETTING2 looks."
   },
   {
    "name": "setting1_contrast",
@@ -298,7 +298,7 @@
    "default": 3,
    "persist": true,
    "body_specific": false,
-   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (colour); default 3 in 0x3d4a4",
+   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (color); default 3 in 0x3d4a4",
    "confidence": "STATIC",
    "order": 5,
    "section": "Image",
@@ -321,7 +321,7 @@
    "default": 3,
    "persist": true,
    "body_specific": false,
-   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (colour); default 3 in 0x3d4a4",
+   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (color); default 3 in 0x3d4a4",
    "confidence": "STATIC",
    "order": 6,
    "section": "Image",
@@ -344,11 +344,11 @@
    "default": 3,
    "persist": true,
    "body_specific": false,
-   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (colour); default 3 in 0x3d4a4",
+   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (color); default 3 in 0x3d4a4",
    "confidence": "STATIC",
    "order": 7,
    "section": "Image",
-   "help": "How strong the colours are in your SETTING1 look. Five steps; 3 is the standard."
+   "help": "How strong the colors are in your SETTING1 look. Five steps; 3 is the standard."
   },
   {
    "name": "setting2_contrast",
@@ -367,7 +367,7 @@
    "default": 3,
    "persist": true,
    "body_specific": false,
-   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (colour); default 3 in 0x3d4a4",
+   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (color); default 3 in 0x3d4a4",
    "confidence": "STATIC",
    "order": 8,
    "section": "Image",
@@ -390,7 +390,7 @@
    "default": 3,
    "persist": true,
    "body_specific": false,
-   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (colour); default 3 in 0x3d4a4",
+   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (color); default 3 in 0x3d4a4",
    "confidence": "STATIC",
    "order": 9,
    "section": "Image",
@@ -413,11 +413,11 @@
    "default": 3,
    "persist": true,
    "body_specific": false,
-   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (colour); default 3 in 0x3d4a4",
+   "evidence": "detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (color); default 3 in 0x3d4a4",
    "confidence": "STATIC",
    "order": 10,
    "section": "Image",
-   "help": "How strong the colours are in your SETTING2 look. Five steps; 3 is the standard."
+   "help": "How strong the colors are in your SETTING2 look. Five steps; 3 is the standard."
   },
   {
    "name": "af_aux_light",
@@ -834,8 +834,8 @@
    "evidence": "commit table 0x1bd3dc; validator 0x6dca0 accepts 0..5, 7; load 0x5aa38 maps 7 -> 7th option DETAIL (label 0x191c20); main body = 1",
    "confidence": "HW",
    "order": 24,
-   "section": "Colour",
-   "help": "Corrects the colour for the kind of light you are shooting in, so whites look white."
+   "section": "Color",
+   "help": "Corrects the color for the kind of light you are shooting in, so whites look white."
   },
   {
    "name": "date_imprint",
@@ -1007,7 +1007,7 @@
    "confidence": "STATIC",
    "order": 27,
    "section": "Drive",
-   "help": "Takes three pictures in a row with slightly different exposure, white balance or colour, so you can pick the best one. It returns to OFF when the camera starts."
+   "help": "Takes three pictures in a row with slightly different exposure, white balance or color, so you can pick the best one. It returns to OFF when the camera starts."
   },
   {
    "name": "adj_btn_set2",
@@ -1428,7 +1428,7 @@
    "evidence": "written by the one-push measurement 0x9b108; clamped 0x10..0x310 in 0x9af40/0x174ab8",
    "confidence": "STATIC",
    "help": "Red gain measured by the last manual white-balance reading on this camera.",
-   "section": "Colour",
+   "section": "Color",
    "ui": "hidden"
   },
   {
@@ -1447,7 +1447,7 @@
    "evidence": "as 0x074, blue gain",
    "confidence": "STATIC",
    "help": "Blue gain from the last manual white-balance reading.",
-   "section": "Colour",
+   "section": "Color",
    "ui": "hidden"
   },
   {
@@ -1706,7 +1706,7 @@
    "confidence": "STATIC",
    "order": 17,
    "section": "Card",
-   "help": "The range of colours saved in JPEGs. sRGB suits most uses; Adobe RGB is wider and meant for editing and printing. Adobe RGB file names start with an underscore."
+   "help": "The range of colors saved in JPEGs. sRGB suits most uses; Adobe RGB is wider and meant for editing and printing. Adobe RGB file names start with an underscore."
   },
   {
    "name": "wb_detail",
@@ -1724,8 +1724,8 @@
    "body_specific": false,
    "evidence": "detail screen 0x5b764 (17 steps, 0x1c2e68 = 0x10); index into per-body gain tables 0x080103a0/0x080103c4 (0x174ab8); main body = 5",
    "confidence": "STATIC",
-   "section": "Colour",
-   "help": "A fine colour-temperature adjustment, used when white balance is set to DETAIL.",
+   "section": "Color",
+   "help": "A fine color-temperature adjustment, used when white balance is set to DETAIL.",
    "order": 25
   },
   {
@@ -4263,7 +4263,7 @@
    "confidence": "STATIC",
    "order": 29,
    "section": "Shooting",
-   "help": "With ON, colour bracketing also records a toned black-and-white picture."
+   "help": "With ON, color bracketing also records a toned black-and-white picture."
   },
   {
    "name": "sepia_contrast_230",
@@ -4705,7 +4705,7 @@
    "confidence": "STATIC",
    "order": 15,
    "section": "Image",
-   "help": "The colour of the toning on toned black-and-white pictures."
+   "help": "The color of the toning on toned black-and-white pictures."
   },
   {
    "name": "te_density",
@@ -4728,7 +4728,7 @@
    "confidence": "STATIC",
    "order": 16,
    "section": "Image",
-   "help": "How strong the toning colour is. Five steps; 3 is the standard."
+   "help": "How strong the toning color is. Five steps; 3 is the standard."
   },
   {
    "name": "my1_te_contrast",
@@ -5405,11 +5405,11 @@
    "default": 3,
    "persist": true,
    "body_specific": false,
-   "evidence": "tools/koma/features/bwrecipes.py ROWS id rp_p5 (byte 0x1b8c6); label/options vary with the active look's type (selector 0x1b908): FILTER EFF.=OFF/YELLOW/ORANGE/RED/GREEN; SATURATION=-3/-2/-1/0/+1/+2/+3; COLOUR=RED/ORANGE/YELLOW/GREEN/BLUE/MAGENTA",
+   "evidence": "tools/koma/features/bwrecipes.py ROWS id rp_p5 (byte 0x1b8c6); label/options vary with the active look's type (selector 0x1b908): FILTER EFF.=OFF/YELLOW/ORANGE/RED/GREEN; SATURATION=-3/-2/-1/0/+1/+2/+3; COLOR=RED/ORANGE/YELLOW/GREEN/BLUE/MAGENTA",
    "confidence": "STATIC",
    "order": 15,
    "section": "Edit look",
-   "help": "Colour strength, or the colour filter for black and white. The name and choices change with the look type."
+   "help": "Color strength, or the color filter for black and white. The name and choices change with the look type."
   },
   {
    "name": "recipe_rp_p6",
@@ -5434,7 +5434,7 @@
    "confidence": "STATIC",
    "order": 16,
    "section": "Edit look",
-   "help": "Toning, warmth or colour range, depending on the look type."
+   "help": "Toning, warmth or color range, depending on the look type."
   },
   {
    "name": "recipe_rp_p7",
@@ -5776,7 +5776,7 @@
   },
   {
    "name": "rcp6_select_colour",
-   "label": "SELECT COLOUR",
+   "label": "SELECT COLOR",
    "page": "recipe",
    "offset": "0x909",
    "size": 1,

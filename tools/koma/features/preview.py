@@ -2,15 +2,15 @@
 
 Why: Koma writes recipe registers only inside still develop. Every way back into live view re-runs Ricoh's monitor
 preset after that (STATIC): monitor start 0x985a0, post-shot resume 0x95cd0, setting change 0x338cc. Each ends its
-colour set-up with the mono/TE writer 0x8ff0e(cp+0x22); the setting change then rewrites the chroma gain once more
+color set-up with the mono/TE writer 0x8ff0e(cp+0x22); the setting change then rewrites the chroma gain once more
 (0x8f18c -> 0x922bc(0) at 0x8f1f0). The preview wraps those four calls and, after the stock write, re-applies the
-active recipe's colour registers. No per-frame cost: it runs only on those transitions.
+active recipe's color registers. No per-frame cost: it runs only on those transitions.
 
 Level A (default):
   hooks  0x98726 / 0x95e24 / 0x8f2e0  bl 0x8ff0e (r0 = the monitor's mono flag cp+0x22; r0 dead after the call)
          0x8f1f0                      bl 0x922bc (r0 = 0: monitor preset; return value dead)
          0x923fc                      bl 0x171924 inside 0x922bc: tap of the stock chroma word (r0 = &word)
-  colour : chroma gain 0x12018004 = the monitor's own stock word (tapped) x the recipe SATURATION step, per byte,
+  color : chroma gain 0x12018004 = the monitor's own stock word (tapped) x the recipe SATURATION step, per byte,
            capped 0xff (the still develop does stock NORMAL word x the same step, so the screen moves by the same
            ratio as the photo); MatR/G/B 0x12018104/108/10c = the look's matrix + TINT (bwrecipes mtab, as on the shot)
   SELECT : chroma gain only (SATURATION p7): the hue isolation is selcolour's software pass, never on the live view
@@ -53,7 +53,7 @@ SAT_Q8 = [round(s * 256) for s in B.SAT_STEPS]            # 141 .. 371
 WARM_Q16 = 2294                                           # 0.035 in Q16 (bwrecipes WK is the same step x 16/25)
 
 # pv (resident, 36 B): +0 'KPV1', +4 applies (u8), +9 last site (0 start, 1 resume, 2 setting, 3 chroma 0x8f1f0,
-# 4 unused), +6 last type (0 B&W, 1 colour, 2 SELECT, 0xff none), +7 curve uploads, +8 last monitor mono
+# 4 unused), +6 last type (0 B&W, 1 color, 2 SELECT, 0xff none), +7 curve uploads, +8 last monitor mono
 # flag, +9 latched WARMTH step + 1 (0 none), +10 level B: a preview curve is loaded, +12 tapped stock chroma word,
 # +16 SATURATION Q8 x 7 (u16). Read by the tests and the emulator run.
 PL_MAGIC = b"KPV1"
@@ -120,7 +120,7 @@ pv_tap:
     bx r3
 
 @ ================================================================ apply
-@ pv_apply: r0 = monitor mono flag (0 colour, 1 / 2 B&W / TE) or 0xff (chroma only), r1 = site id (0..4).
+@ pv_apply: r0 = monitor mono flag (0 color, 1 / 2 B&W / TE) or 0xff (chroma only), r1 = site id (0..4).
 pv_apply:
     push {{r4, r5, r6, r7, lr}}
     movs r4, r0
@@ -137,7 +137,7 @@ pv_apply:
     ldr r0, ={bw}.ckind
     ldrb r5, [r0, #0]
     lsls r5, r5, #30
-    lsrs r5, r5, #30                 @ type: 0 B&W, 1 colour, 2 SELECT
+    lsrs r5, r5, #30                 @ type: 0 B&W, 1 color, 2 SELECT
 1:  strb r5, [r7, #O_TYPE]
     cmp r4, #0xff
     beq pa_chroma
@@ -148,8 +148,8 @@ pv_apply:
     beq pa_bw
     cmp r5, #0xff
     beq pa_none
-    cmp r4, #0                       @ ---- colour / SELECT
-    bne pa_curve                     @ monitor not in colour (never on base NORMAL): registers stay stock
+    cmp r4, #0                       @ ---- color / SELECT
+    bne pa_curve                     @ monitor not in color (never on base NORMAL): registers stay stock
     bl {bw}.yw_restore
     bl pv_chroma
     cmp r5, #1
@@ -176,7 +176,7 @@ pv_apply:
     strb r0, [r7, #O_WARM]
     b pa_curve
 pa_chroma:
-    subs r0, r5, #1                  @ colour / SELECT only
+    subs r0, r5, #1                  @ color / SELECT only
     cmp r0, #1
     bhi pa_out
     bl pv_chroma
@@ -184,7 +184,7 @@ pa_chroma:
 pa_bw:
     subs r0, r4, #1
     cmp r0, #1
-    bhi pa_none                      @ monitor in colour: no filter / toning
+    bhi pa_none                      @ monitor in color: no filter / toning
     ldrb r0, [r6, #P_FILT]           @ ---- filter luma weights
     subs r0, #1
     bmi 2f
@@ -242,7 +242,7 @@ pa_out:
     pop {{r3}}
     bx r3
 
-@ pv_chroma: r5 = type (1 colour / 2 SELECT), r6 = cur, r7 = pv. 0x12018004 = tapped stock monitor word x SAT Q8 >> 8
+@ pv_chroma: r5 = type (1 color / 2 SELECT), r6 = cur, r7 = pv. 0x12018004 = tapped stock monitor word x SAT Q8 >> 8
 @ per byte, capped 0xff.
 pv_chroma:
     push {{r4, lr}}

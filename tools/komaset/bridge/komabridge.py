@@ -71,6 +71,7 @@ import json
 import re
 import secrets
 import socket
+import socketserver
 import struct
 import sys
 import threading
@@ -171,7 +172,7 @@ KSET_STOCK = {
     0x0A6: frozenset(range(0, 17)),             # WB DETAIL 0..16
     0x050: frozenset((0, 1, 2)),                # PHOTOMETRY: CENTER 0, SPOT 1, MULTI 2
     0x030: frozenset(range(0, 7)),              # IMG SET 0..6
-    **{off: frozenset(range(1, 6)) for off in range(0x031, 0x037)},  # SETTING1 / SETTING2 contrast, sharpness, colour
+    **{off: frozenset(range(1, 6)) for off in range(0x031, 0x037)},  # SETTING1 / SETTING2 contrast, sharpness, color
     0x1A9: frozenset((1, 2, 3, 4, 6)),          # B&W (TE) TONE
     0x1AA: frozenset(range(1, 6)),              # B&W (TE) DENSITY
 }
@@ -1911,7 +1912,7 @@ PALETTE_ROM_NOTE = "palette: ROM default"
 
 def ycbcr_to_rgb(y, cb, cr):
     """Copied from tools/grdui/display.py ycbcr_to_rgb (0x161d30 constants, signed Cb/Cr, Y scale 219/255). Panel
-    response unknown, so colours are approximate. Bits 24-25 of a register are ignored, as there."""
+    response unknown, so colors are approximate. Bits 24-25 of a register are ignored, as there."""
     cb = cb - 256 if cb > 127 else cb
     cr = cr - 256 if cr > 127 else cr
     y = y / 0.859
@@ -1957,7 +1958,7 @@ def _png(width: int, height: int, depth: int, ctype: int, raw: bytes, extra: byt
 
 def osd_png(frame: dict) -> bytes:
     """A 4-bit indexed PNG of a mode 2 frame. PNG packs 4-bit pixels high nibble first, the OSD's own order, so each
-    page row goes in unchanged behind a filter byte. PLTE holds the 16 colours, tRNS makes index 0 fully transparent
+    page row goes in unchanged behind a filter byte. PLTE holds the 16 colors, tRNS makes index 0 fully transparent
     (every other index opaque), so the browser composites it over the live picture as the panel does."""
     w, h = frame["width"], frame["height"]
     stride = (w + 1) // 2
@@ -2555,10 +2556,20 @@ def make_handler(link: Link, port: int, token: str | None = None):
     return Handler
 
 
+class Server(ThreadingHTTPServer):
+    """ThreadingHTTPServer without the name lookup. HTTPServer.server_bind asks DNS for the bound address's name
+    (socket.getfqdn) after binding and before listening; where DNS does not answer (no network, a captive portal, some
+    CI Macs) that holds the port bound but unanswered for 30 s or more. Nothing here uses server_name."""
+
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = str(self.server_address[0]), self.server_address[1]
+
+
 def make_server(link: Link, host: str = HOST, port: int = PORT, token: str | None = None) -> ThreadingHTTPServer:
     if host not in ("127.0.0.1", "localhost", "::1") and not (host == "0.0.0.0" and token):
         raise SystemExit("komabridge listens on loopback only (or 0.0.0.0 with a token: --lan)")
-    server = ThreadingHTTPServer((host, port), make_handler(link, port, token))
+    server = Server((host, port), make_handler(link, port, token))
     server.daemon_threads = True
     return server
 

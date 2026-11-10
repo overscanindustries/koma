@@ -87,18 +87,18 @@ If a magic is missing, Koma writes defaults, magic last. Koma never calls the sa
 A still is processed in two develop passes. Koma hooks the call to the stock mono writer in pass 1 (`0x96436`) and pass 2 (`0xafd3e`), after stock has written its register values. Pass 2 rewrites white balance, chroma, matrix and mono settings, so overrides made only in pass 1 are lost; Koma writes them in both (`HW`).
 
 - B&W looks upload a generated tone curve through the stock table upload, set the filter's luma weights and the toning word, and invalidate the selector cache so the new table is used. Sharpness comes from a hooked getter, which also feeds EXIF (`HW`).
-- Colour looks write the colour registers below (`HW` for POSITIVE, NEGATIVE, BLEACH and RETRO on frames from an earlier build).
+- Color looks write the color registers below (`HW` for POSITIVE, NEGATIVE, BLEACH and RETRO on frames from an earlier build).
 - SELECT and GRAIN/VIGNETTE are pixel passes on the finished master YUV image at `0x117382`, before JPEG encoding. SELECT neutralises chroma outside the chosen hue band (`HW`); GRAIN and VIGNETTE work on the Y plane (`EMU`).
 
 | Register | Meaning | Status |
 |---|---|---|
 | `0x12018004` | Chroma gain, four bytes. 0 gives a grey frame; scaling all four by 1.30 gives a uniform x1.30. Drives SATURATION. | `HW` |
-| `0x12018104`, `+4`, `+8` | 3x3 colour matrix rows (MatR, MatG, MatB): sign-magnitude bytes (bit 7 sign), entries add, byte 0 is blue. TINT is a G-row shift. | `HW` |
+| `0x12018104`, `+4`, `+8` | 3x3 color matrix rows (MatR, MatG, MatB): sign-magnitude bytes (bit 7 sign), entries add, byte 0 is blue. TINT is a G-row shift. | `HW` |
 | `0x12018110`, `0x12018114` | White-balance multipliers; WARMTH scales R and B on the shot's own AWB values | `HW` (earlier frames) |
 | `0x120180d8` | Chroma coring: removes Cb (low field) and Cr (high field) below the field value; a dead zone, not an offset | `HW` |
 | `0x12018028`, `2c`, `30` | IQ hue matrix, clip, offset: writes have no effect | `HW` |
 
-One tone curve serves all channels, so per-channel looks such as cross processing are not possible. Live view runs Ricoh's monitor preset on every return to live view; the `preview` feature re-applies part of the look after those calls (`EMU`). Pipeline detail: [internals 06](internals/06-image-pipeline-and-colour.md). Register probes: [colourprobe](../analysis/koma-0.1/colourprobe.md).
+One tone curve serves all channels, so per-channel looks such as cross processing are not possible. Live view runs Ricoh's monitor preset on every return to live view; the `preview` feature re-applies part of the look after those calls (`EMU`). Pipeline detail: [internals 06](internals/06-image-pipeline-and-color.md). Register probes: [colourprobe](../analysis/koma-0.1/colourprobe.md).
 
 ## The menu
 

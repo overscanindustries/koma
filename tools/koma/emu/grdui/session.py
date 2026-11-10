@@ -44,7 +44,7 @@ STANDINS = [
     {"name": "VEN_RESET_VALUE", "address": "0x12020010", "what": "Resets to 0x000f0f0f so 0x1705d4's range assertion passes. "
      "Real reset value unknown."},
     {"name": "PALETTE_DECODE", "address": "0x161d30", "what": "YCbCr with signed Cb and Cr, per the constants in 0x161d30, and "
-     "bits 24-25 ignored. The panel's real colour response is unknown, so screenshot colours are approximate."},
+     "bits 24-25 ignored. The panel's real color response is unknown, so screenshot colors are approximate."},
     {"name": "KEY_INJECT", "address": "sink 0x51740, array 0x2b9dd8", "what": "The harness calls the real sink 0x51740 in tOpeMain's "
      "context at the top of real poll 0x50eb0. Everything from the sink on is real firmware. Physical keys, the qOPE message "
      "that normally carries the call, and CPU1 transport are bypassed."},

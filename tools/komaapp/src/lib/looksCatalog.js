@@ -15,14 +15,14 @@ const LINES = {
   'DENSE': 'A long, dense scale of greys',
   'NOIR': 'Low key, red filter',
   'MATTE': 'Flat, lifted shadows, soft whites',
-  'SELECT': 'Black and white with one colour kept',
+  'SELECT': 'Black and white with one color kept',
   // POSITIVE and BLEACH follow the GRD IV refit: "warm hues kept, cool
   // hues muted" and "teal", not the earlier wording
   'POSITIVE': 'Punchy contrast, warm hues kept, cool hues muted',
   'NEGATIVE': 'Gentle, muted, slightly cool',
-  'SLIDE 50': 'Deep contrast, strong colour, slightly warm',
+  'SLIDE 50': 'Deep contrast, strong color, slightly warm',
   'WARM NEG': 'Soft and warm, a faint magenta cast',
-  'BLEACH': 'High contrast, drained colour, a teal cast',
+  'BLEACH': 'High contrast, drained color, a teal cast',
   'RETRO': 'Warm, faded, low contrast',
   'CUSTOM 1': 'A look of its own, starting from MONO',
   'CUSTOM 2': 'A look of its own, starting from MONO',
@@ -32,7 +32,7 @@ const LINES = {
 function groupOf(id) {
   if (id === D.std) return 'standard';
   if (id >= 18) return 'custom';
-  return D.defaults[id - 1][9] & 1 ? 'colour' : 'mono';    // type 1 = colour; B&W (0) and SELECT (2) are mono
+  return D.defaults[id - 1][9] & 1 ? 'color' : 'mono';    // type 1 = color; B&W (0) and SELECT (2) are mono
 }
 
 export function slugOf(name) {
@@ -44,7 +44,7 @@ export const LOOKS = D.order.map(id => {
   return {id, name, group: groupOf(id), line: LINES[name] || '', slug: slugOf(name)};
 });
 
-export const GROUPS = ['standard', 'mono', 'colour', 'custom'];
+export const GROUPS = ['standard', 'mono', 'color', 'custom'];
 
 export function lookById(id) { return LOOKS.find(l => l.id === id) || null; }
 export function lookBySlug(slug) { return LOOKS.find(l => l.slug === slug) || null; }

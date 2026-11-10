@@ -7,7 +7,7 @@
   //   id     the look to draw
   import {onMount} from 'svelte';
   import * as LS from '../../lib/looksStore.js';
-  import {makePlan, render, colourOf, ghostState} from '../../lib/looksRender.js';
+  import {makePlan, render, colorOf, ghostState} from '../../lib/looksRender.js';
   import sampleUrl from '../../assets/looks/sample.jpg';
   let {block = null, id = 0, name = ''} = $props();
 
@@ -25,7 +25,7 @@
         : await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = URL.createObjectURL(blob); });
       src = {img, w: img.width, h: img.height, px: new Map()};
       const t = pixels(160, Math.max(1, Math.round(160 * src.h / src.w)));
-      const c = colourOf(t.data, t.width * t.height);
+      const c = colorOf(t.data, t.width * t.height);
       src.mono = c.mono; src.cast = c.mono && c.cast;
       src.source = c.mono ? ghostState(3, null) : null;
       srcRev++;

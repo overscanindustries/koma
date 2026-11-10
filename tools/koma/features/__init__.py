@@ -19,8 +19,8 @@ DROP2 = DROP1[:-1] + ["autoiso", "longexp", "hlalert", "telemetry"]
 # superseded (bwrecipes recipe 1 is R3; snapdist replaces snap15) and left out. telemetry last (transient init).
 DROP3 = KOMA01 = ["menu5", "snapdist", "fullpress", "fastkeys", "autoiso", "longexp", "hlalert", "bwrecipes",
                   "telemetry"]
-# Koma 0.2: the 0.1 set + selective colour. bwrecipes (feature name kept for its symbols) now carries B&W, SELECT and
-# colour recipes; selcolour is the SELECT look's UV-plane pass (no rows of its own). telemetry last (transient init).
+# Koma 0.2: the 0.1 set + selective color. bwrecipes (feature name kept for its symbols) now carries B&W, SELECT and
+# color recipes; selcolour is the SELECT look's UV-plane pass (no rows of its own). telemetry last (transient init).
 KOMA02 = ["menu5", "snapdist", "fullpress", "fastkeys", "autoiso", "longexp", "hlalert", "bwrecipes", "selcolour",
           "telemetry"]
 # Koma 0.3: the 0.2 set + film GRAIN / VIGNETTE (fx: recipe sub-settings; the Y-plane pass on the same master-YUV hook

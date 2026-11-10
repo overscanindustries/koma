@@ -1,4 +1,4 @@
-"""colourprobe: one-boot hardware probe of the live CC2 colour matrix.
+"""colourprobe: one-boot hardware probe of the live CC2 color matrix.
 
 Findings so far: hook and write path live; IQ 0x28/0x2c/0x30 dead; MatR live. MatR/G/B byte roles (b3 = R, b2/b1 = G-like, b0 = B-like, weak), bit 6
 ignored, linear in magnitude, gamma-domain, chroma only; pUVoffset low field = Cb coring; IQ + control bit 6 dead.
@@ -41,7 +41,7 @@ from .. import firmware as fw
 from ..feature import Check, Feature, Hook
 
 NAME = "colourprobe"
-SUMMARY = "hardware probe r3: shot k of a power-on gets colour probe k (0 stock, 1..6 probes, 7 restore)"
+SUMMARY = "hardware probe r3: shot k of a power-on gets color probe k (0 stock, 1..6 probes, 7 restore)"
 OPTIONS = {}
 VERSION = "3.0"
 

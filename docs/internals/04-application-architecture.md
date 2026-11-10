@@ -213,7 +213,7 @@ On stock 2.40 in ORIGINAL mode, every `-CCTL` command (`remtin`, `diaset,0..8`, 
 
 ### Shooting-parameter byte `0x23b085`
 
-`0x23b085` is `cp+0x1d` in `0x23b068`. Values 0 and 5 are normal; 1, 3 and 4 force tone selector `0x20` and set EXIF SceneCaptureType (`0x2d27ac`). It is unrelated to app state 9. `cp+0x22` (`0x23b08a`) is the colour / B&W / TE mode (0/1/2), `cp+0x40` selects CC1. `STATIC`. All 134 archived stock JPEGs read SceneCaptureType 0. `HW`
+`0x23b085` is `cp+0x1d` in `0x23b068`. Values 0 and 5 are normal; 1, 3 and 4 force tone selector `0x20` and set EXIF SceneCaptureType (`0x2d27ac`). It is unrelated to app state 9. `cp+0x22` (`0x23b08a`) is the color / B&W / TE mode (0/1/2), `cp+0x40` selects CC1. `STATIC`. All 134 archived stock JPEGs read SceneCaptureType 0. `HW`
 
 ## CPU1 link and power-off
 
@@ -327,7 +327,7 @@ A module that patches the stock menu ran on the main body: the tab table, header
 |---|---|---|
 | `0x96350` | Still develop, pass 1; writes CC2 per shot (chroma gain, matrix rows, chroma coring, unity gains) | `EMU` |
 | `0x96436` | `bl 0x8ff0e` in pass 1, after the stock register writes; per-shot hook | `HW 2026-11-06 main` |
-| `0xafd20` | Second develop pass; rewrites the colour registers, so pass-1 overrides are lost | `STATIC`, `HW` |
+| `0xafd20` | Second develop pass; rewrites the color registers, so pass-1 overrides are lost | `STATIC`, `HW` |
 | `0xafd3e` | Pass-2 hook (`-> 0x8ff0e`) | `HW 2026-11-06 main` |
 | `0x9665e` | `bl 0x91e78` (filter parameters); enhancer override point | `STATIC` |
 | `0x9733a` -> `0x90278` -> `0x90408` -> `0x16d31c` | Shot tone upload (not `0x92050`, which runs before the update gate) | `EMU` |

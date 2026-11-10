@@ -46,13 +46,13 @@ STANDARD, MONO, SOFT MONO, HARD MONO, HICON B&W, SHINJUKU, FILM 400, FINE 100, D
 
 ### SELECT
 
-The frame turns mono except one hue band. COLOUR picks the band (RED, ORANGE, YELLOW, GREEN, BLUE, MAGENTA). RANGE is NARROW or WIDE. SATURATION (-3 to +3) scales the colour that stays.
+The frame turns mono except one hue band. COLOR picks the band (RED, ORANGE, YELLOW, GREEN, BLUE, MAGENTA). RANGE is NARROW or WIDE. SATURATION (-3 to +3) scales the color that stays.
 
-<img src="img/select-real.jpg" alt="Stock frame beside the same scene shot with SELECT, COLOUR=RED" width="640">
+<img src="img/select-real.jpg" alt="Stock frame beside the same scene shot with SELECT, COLOR=RED" width="640">
 
-Left: stock. Right: SELECT with COLOUR set to RED.
+Left: stock. Right: SELECT with COLOR set to RED.
 
-### Colour looks
+### Color looks
 
 | Look | Description |
 |---|---|
@@ -67,11 +67,11 @@ Left: stock. Right: SELECT with COLOUR set to RED.
 
 Each look keeps its own edits. Rows 6 to 8 change with the look type.
 
-| Row | B&W looks | Colour looks | SELECT |
+| Row | B&W looks | Color looks | SELECT |
 |---|---|---|---|
 | CURVE | R3, STANDARD, HARD, HI-CONT, SOFT MONO, FILM 400, FINE 100, BLEACH | same | same |
 | CONTRAST, KEY, SHADOW, HIGHLIGHT | -4 to +4 | -4 to +4 | -4 to +4 |
-| 6 | FILTER EFF.: OFF, YELLOW, ORANGE, RED, GREEN | SATURATION: -3 to +3 | COLOUR |
+| 6 | FILTER EFF.: OFF, YELLOW, ORANGE, RED, GREEN | SATURATION: -3 to +3 | COLOR |
 | 7 | TONING: OFF, SEPIA, SELENIUM, BLUE, GREEN | WARMTH: COOL 3 to WARM 3 | RANGE |
 | 8 | TONE LEVEL: 1 to 5 | TINT: MAG 3 to GREEN 3 | SATURATION: -3 to +3 |
 | SHARPNESS | -2 to +2 | -2 to +2 | -2 to +2 |
@@ -82,7 +82,7 @@ Each look keeps its own edits. Rows 6 to 8 change with the look type.
 
 CONTRAST steepens the curve, KEY moves the whole range lighter or darker, SHADOW and HIGHLIGHT move the toe and the shoulder. WARMTH leans the white balance; TINT shifts green-magenta.
 
-SAVE TO CUSTOM copies the active look's values into a slot, then returns to OFF (the look itself stays active); a slot can hold a colour look. RESET restores the look's defaults; a CUSTOM slot resets to MONO.
+SAVE TO CUSTOM copies the active look's values into a slot, then returns to OFF (the look itself stays active); a slot can hold a color look. RESET restores the look's defaults; a CUSTOM slot resets to MONO.
 
 Edits, CUSTOM slots, ADJ LEVER choices and every KOMA row persist through the camera's normal power-off save.
 
@@ -92,7 +92,7 @@ The app's Looks editor has the same rows and previews them on your last photo.
 
 ### Live-view preview
 
-The LCD shows part of the active look: saturation, the colour matrix, TINT, the B&W filter and toning. The shot itself is always processed in full.
+The LCD shows part of the active look: saturation, the color matrix, TINT, the B&W filter and toning. The shot itself is always processed in full.
 
 ## FOCUS, EXPOSURE and DISPLAY rows
 

@@ -306,7 +306,7 @@
   .bodies { display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s6); border-top: 1px solid var(--line); }
   .bodies .card { border-top: 0; }
   .mono, .hex, table { font-family: var(--mono); font-size: 12px; line-height: 18px; }
-  /* status in the engineer view: ink text, the 6 px dot carries the colour */
+  /* status in the engineer view: ink text, the 6 px dot carries the color */
   .ok, .bad { color: var(--ink); }
   .ok::before, .bad::before { content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
   .ok::before { background: var(--ok); }

@@ -13,7 +13,7 @@ import {setOn as webcamSetOn} from './webcam.svelte.js';
 import {startApply, A} from './apply.svelte.js';
 import {STATE} from './words.js';
 import * as LS from './looksStore.js';
-import {makePlan, render, colourOf, castOf, ghostState} from './looksRender.js';
+import {makePlan, render, colorOf, castOf, ghostState} from './looksRender.js';
 import {LOOKS_DATA as D} from './looksData.js';
 import {W} from './looksWords.js';
 import sampleUrl from '../assets/looks/sample.jpg';
@@ -22,7 +22,7 @@ export const LK = $state({
   src: 'idle',       // what the last photo's read gave: 'idle' | 'reading' | 'photo' | 'sample' | 'none'
   why: '',           // why no photo: 'none' | 'busy' | 'error' | 'card'
   name: '', path: '', date: '', size: 0,
-  mono: false,       // the last photo has no colour to show: the gallery draws on the sample instead
+  mono: false,       // the last photo has no color to show: the gallery draws on the sample instead
   srcRev: 0,         // bumps when a photo the looks are drawn on changes
   conn: -1,          // the connection the photo was read on
   readingS: 0,       // seconds spent reading the photo
@@ -31,9 +31,9 @@ export const LK = $state({
   status: null,      // {tone: 'wait' | 'ok', text, id, ids}
 });
 
-// The two photos the looks can be drawn on: the last photo from the card, and the bundled sample (R0015657, colour).
+// The two photos the looks can be drawn on: the last photo from the card, and the bundled sample (R0015657, color).
 // Each keeps its bitmap (decoded once), how it was made (`state`: the look on the camera when the photo was read, null:
-// STANDARD), whether it holds colour, and its pixels at the sizes drawn.
+// STANDARD), whether it holds color, and its pixels at the sizes drawn.
 const SRC = {
   photo: {bitmap: null, state: null, mono: false, cast: false, px: new Map()},
   sample: {bitmap: null, state: null, mono: false, cast: false, px: new Map()},
@@ -43,7 +43,7 @@ export function nameOf(id) { return D.names[id - 1] || ''; }
 
 // ---------------------------------------------------------------- the photo
 // What the gallery draws on: the last photo, unless it is black and white (the user's usual JPEG), where the filters,
-// toning and SELECT's colour would not show; then the sample. The editor's split draws on the last photo whenever there
+// toning and SELECT's color would not show; then the sample. The editor's split draws on the last photo whenever there
 // is one: "As shot" against the look is its point.
 export function gallerySrc() { void LK.srcRev; return LK.src === 'photo' && !LK.mono ? 'photo' : 'sample'; }
 export function editorSrc() { void LK.srcRev; return LK.src === 'photo' ? 'photo' : 'sample'; }
@@ -58,7 +58,7 @@ async function decode(blob) {
   return img;
 }
 
-// The bundled sample, decoded once. A colour photo made as STANDARD: state null.
+// The bundled sample, decoded once. A color photo made as STANDARD: state null.
 let sampleP = null;
 function loadSample() {
   if (!sampleP) sampleP = (async () => {
@@ -78,18 +78,18 @@ async function useSample(why) {
   LK.srcRev++;
 }
 
-// A photo the looks are drawn on: its pixels cached anew, its colour read, and how it was made squared with it. The
-// camera's look and the photo must agree, or the photo was made some other way: a colour photo was not made by a black
-// and white look (read as STANDARD); a black and white photo was not made by a colour look, nor a toned one by a look
+// A photo the looks are drawn on: its pixels cached anew, its color read, and how it was made squared with it. The
+// camera's look and the photo must agree, or the photo was made some other way: a color photo was not made by a black
+// and white look (read as STANDARD); a black and white photo was not made by a color look, nor a toned one by a look
 // without TONING, nor a neutral one by a toned look (read as the stock B&W setting, the stock curve).
 function setSource(s, bitmap, state) {
   s.bitmap = bitmap; s.px.clear(); s.state = state;
-  const c = bitmap ? colourOf_(s) : {mono: false, cast: false};
+  const c = bitmap ? colorOf_(s) : {mono: false, cast: false};
   s.mono = c.mono; s.cast = c.mono && c.cast;
   const t = state ? state.kind & 3 : -1;
   const toned = castOf(state) > 2;
   if (t === LS.TYPE.bw && !c.mono) s.state = null;
-  else if (c.mono && (t === -1 || t === LS.TYPE.colour || (t === LS.TYPE.bw && toned !== c.cast))) s.state = ghostState(3, null);
+  else if (c.mono && (t === -1 || t === LS.TYPE.color || (t === LS.TYPE.bw && toned !== c.cast))) s.state = ghostState(3, null);
   results.clear(); kept = 0;
 }
 
@@ -178,10 +178,10 @@ export function sourcePixels(w, h, which) {
   return px;
 }
 
-function colourOf_(s) {
+function colorOf_(s) {
   const w = 160, h = Math.max(1, Math.round(160 * s.bitmap.height / s.bitmap.width));
   const px = sourcePixels(w, h, s);
-  return colourOf(px.data, w * h);
+  return colorOf(px.data, w * h);
 }
 
 // ---------------------------------------------------------------- looks: what the camera holds, and the drafts
@@ -266,8 +266,8 @@ export function rebaseDrafts() {
 // ---------------------------------------------------------------- the editor's rows, in the camera's order
 // [{key, label, options, index(st) -> i, set(st, i), def(id) -> i, kind}]: 'scale' for steps on one axis (a detent
 // slider), 'list' for named choices (a select), 'seg' for two named choices. p5..p7 change with the look's type, as
-// the camera's editor rows do: B&W FILTER EFF. / TONING / TONE LEVEL, colour SATURATION / WARMTH / TINT, SELECT
-// COLOUR / RANGE / SATURATION.
+// the camera's editor rows do: B&W FILTER EFF. / TONING / TONE LEVEL, color SATURATION / WARMTH / TINT, SELECT
+// COLOR / RANGE / SATURATION.
 const SLOT_KIND = [['list', 'list', 'scale'], ['scale', 'scale', 'scale'], ['list', 'seg', 'scale']];
 export function rowsFor(kind) {
   const t = Math.min(2, kind & 3), slots = D.slots[t], R = D.rows;
@@ -292,7 +292,7 @@ export function rowsFor(kind) {
 export const ADJ_ROW = {key: 'adj', label: D.rows.rp_adjlever.label, on: D.rows.rp_adjlever.options[0],
   off: D.rows.rp_adjlever.options[1]};
 
-// What a draft changes against the camera, row by row, for the bar and its Review. A CUSTOM slot that held a colour
+// What a draft changes against the camera, row by row, for the bar and its Review. A CUSTOM slot that held a color
 // look and went back to its stock values (MONO) changes type: its rows are listed together and undo together.
 export function changesOf(id) {
   void LK.rev; void S.rev;

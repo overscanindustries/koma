@@ -10,15 +10,15 @@ Mechanism (the hlalert live path's, moved from every 4th frame to every frame):
   work  STEP x STEP subsampling (default 4: 160 x 60 samples, the first 240 lines as hlalert maps them).
         g = |Y(x+1,y) - Y(x,y)| + |Y(x,y+1) - Y(x,y)|; g >= THRESH marks one 2x2 OSD block = one byte in each of
         OSD rows y, y+1 at byte floor(9x/16 / 2) (the 640 -> 360 width map hlalert uses). A block is painted only when
-        both bytes are 0 (fully transparent), with colour index c in both nibbles. Before painting, each previously
-        marked block of the same group has its nibbles equal to the old colour cleared (nothing else). Groups of 8
+        both bytes are 0 (fully transparent), with color index c in both nibbles. Before painting, each previously
+        marked block of the same group has its nibbles equal to the old color cleared (nothing else). Groups of 8
         samples share one bitmap byte (1 bit per sample, 20 B per sample row, 1,200 B).
   show  plane-1 shadow 0x302d58 (0xd4018(1)) then the firmware flush 0x6bbfc(1, rect) (Thumb stub 0x174c05), exactly
         as hlalert; rect = the sample rows that actually changed (no flush when nothing changed).
 Gates, every call: one pass per VD (VD count [0x1f511c] moved). Not our screen (monitor stopped [0x1f502f] != 1, or app
 state [0x23a874] not one of 2/3/5/10/12/13): forget the marks, plane untouched (the firmware owns that screen). Our
 screen but PEAKING OFF / out of range, digital zoom on, or no frame: erase our marks (flush), stay idle.
-Colour: the stock shooting palette's own entries, no VEN register writes (the firmware reloads all 15 entries per screen
+Color: the stock shooting palette's own entries, no VEN register writes (the firmware reloads all 15 entries per screen
 through 0x2233c, so a private register value would not survive, and every index is written). RED = index 15 (as
 hlalert), YELLOW = index 10 (0x98bd29, an amber). Shares hlalert's 2x2 grid, so a block is owned by one of the two.
 Footprint: bitmap = one pool block allocated once by the init (STEP 4: 1,200 B; STEP 8: 300 B); alloc failure = off.
@@ -194,7 +194,7 @@ pk_off:
 pk_run:
     bl scan
     ldrb r0, [r7, #1]
-    strb r0, [r7, #0]           @ the marks now carry the new colour (0 = none)
+    strb r0, [r7, #0]           @ the marks now carry the new color (0 = none)
 pk_out:
     pop {{r4, r5, r6, r7}}
     pop {{r3}}
@@ -202,13 +202,13 @@ pk_out:
 pk_drop:                        @ not our screen: forget the marks, never touch the plane
     ldrb r0, [r7, #0]
     cmp r0, #0
-    beq pk_out                  @ no marks (colour 0 means an empty bitmap)
+    beq pk_out                  @ no marks (color 0 means an empty bitmap)
     bl bm_clear
     movs r0, #0
     strb r0, [r7, #0]
     b pk_out
 
-@ ---------------------------------------------------------------- scan(r0 colour or 0, r1 Y base or 0 = erase only)
+@ ---------------------------------------------------------------- scan(r0 color or 0, r1 Y base or 0 = erase only)
 @ r3/r4 Y rows y+1/y at the group, r5 plane byte of the group's sample 0 (OSD row y), r6 new bits, r7 bitmap byte,
 @ r8 groups left, r9 row changed, r10 Y (0 = erase only), r11 j.
 scan:
@@ -224,7 +224,7 @@ scan:
     strb r0, [r2, #1]
     lsls r3, r0, #4
     orrs r3, r0
-    strb r3, [r2, #2]           @ colour in both nibbles
+    strb r3, [r2, #2]           @ color in both nibbles
     movs r3, #0
     str r3, [r2, #8]            @ marks this pass
     str r1, [sp, #0]
@@ -337,8 +337,8 @@ sc_out:
 
 @ ---------------------------------------------------------------- grp(r0 old bits, r6 new bits, r5 group plane byte)
 @ -> r0 bits now marked, r1 1 if any plane byte changed. Per sample k (plane byte r5 + boff[k], rows y and y+1):
-@ keep: old and new bit, same colour, both bytes already the colour byte -> nothing written.
-@ else old bit: nibbles equal to the old colour -> 0; new bit: if both bytes are 0, both get the colour byte.
+@ keep: old and new bit, same color, both bytes already the color byte -> nothing written.
+@ else old bit: nibbles equal to the old color -> 0; new bit: if both bytes are 0, both get the color byte.
 @ Marks stop at MAXMARKS per pass (pstate+8 counts them): past the cap a hit counts as no hit.
 grp:
     push {{r3, r4, r5, r6, r7, lr}}
@@ -519,7 +519,7 @@ call_r4:
 .ltorg
 .p2align 2
 pstate:
-    .word 0                     @ [0] colour of the marks in the bitmap (0 none), [1] new colour, [2] new colour byte
+    .word 0                     @ [0] color of the marks in the bitmap (0 none), [1] new color, [2] new color byte
     .word 0xffffffff            @ [4] VD count of the last pass
     .word 0                     @ [8] marks this pass (cap MAXMARKS)
 heap_ptr:

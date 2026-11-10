@@ -2,7 +2,7 @@
 
 The GR DIGITAL keeps two unrelated kinds of stored state. User settings live in a 4 KB RAM block at `0x1b000`, guarded by a magic and a 32-bit checksum, loaded at startup and saved at power-off. Koma keeps its own settings, recipe store and settings-file header in an unused part of that block, and adds a card import (`PARAM.DAT`) and export (`PARAM.CUR`) of the whole block, proven by a cross-body mirror on hardware. The factory adjustment store (calibration and register values) lives in flash block `0x3d`, is loaded into SDRAM at `0x08010000`, and is guarded by a magic byte and its own sum; Ricoh's `qrflect7` rewrites part of it during an official update.
 
-Tags: `HW`, `EMU`, `STATIC`, `INFERRED`, as defined in [features](evidence-ledger.md) and the [index](README.md). Related: [03 firmware image and update format](03-firmware-image-and-update-format.md), [04 application architecture](04-application-architecture.md), [06 image pipeline and colour](06-image-pipeline-and-colour.md), [07 USB protocol](07-usb-protocol.md), [08 card scripts and service terminal](08-card-scripts-and-service-terminal.md), [09 recovery and failure modes](09-recovery-and-failure-modes.md), [11 modification playbook](11-modification-playbook.md), [12 version history](12-version-history.md).
+Tags: `HW`, `EMU`, `STATIC`, `INFERRED`, as defined in [features](evidence-ledger.md) and the [index](README.md). Related: [03 firmware image and update format](03-firmware-image-and-update-format.md), [04 application architecture](04-application-architecture.md), [06 image pipeline and color](06-image-pipeline-and-color.md), [07 USB protocol](07-usb-protocol.md), [08 card scripts and service terminal](08-card-scripts-and-service-terminal.md), [09 recovery and failure modes](09-recovery-and-failure-modes.md), [11 modification playbook](11-modification-playbook.md), [12 version history](12-version-history.md).
 
 Addresses are firmware 2.40 runtime addresses. `0x0801xxxx` addresses are the SDRAM copy of the adjustment store; the store offset is the low 16 bits (`0x080113f0` is offset `0x13f0`). "ADJ" means the adjustment store unless it says "ADJ button". Two checksums appear in this chapter and must not be confused: the **settings checksum** (block `0x1b000`, u32 at `0x1bffc`) and the **store sum** (block `0x3d`, word at `0x1ffc`). Unit-specific values (camera ID, MakerNote tag `0x5`, Camera Info tags 4, `0xc`, `0x14`, either checksum value) are deliberately not given.
 
@@ -71,7 +71,7 @@ Complete byte map: `tools/komaset/settings-map.json` (298 fields, 878 of 4,096 b
 | `0x1b031`, `0x1b034` | Contrast, SETTING1 / SETTING2 | 1..5, default 3 | `STATIC` |
 | `0x1b032`, `0x1b035` | Sharpness, SETTING1 / SETTING2 | 1..5 | `STATIC` |
 | `0x1b197`, `0x1b198` | Contrast / sharpness, B&W | 1..5, default 3; EXIF reduces sharpness to 3 levels | `STATIC` |
-| `0x1b1a7..0x1b1aa` | B&W(TE) contrast, sharpness, tone (1..6), density (1..5) | see [06](06-image-pipeline-and-colour.md#mono-and-toning) | `STATIC` |
+| `0x1b1a7..0x1b1aa` | B&W(TE) contrast, sharpness, tone (1..6), density (1..5) | see [06](06-image-pipeline-and-color.md#mono-and-toning) | `STATIC` |
 | `0x1b050` | PHOTOMETRY | 2 MULTI, 0 CENTER, 1 SPOT; invalid resets to 2 (`0x6e040`) | `STATIC` |
 | `0x1b052` | CONT. MODE | reset to 0 at every boot | `STATIC` |
 | `0x1b053` | EXPOSURE COMP. | odd 1..25 = -2.0..+2.0 EV in 1/3 steps, default 13 (`0x6dc24`) | `HW` (main = 13) |
@@ -212,13 +212,13 @@ The Tag column gives the camera evidence for the **feature** that owns the byte;
 | `0x1b8be` | STALL FIX FLAGS (no row; set by host `-KSET`) | high nibble `0xA` makes the low nibble the fix mask: 1 `0xa201` no-op while USB is attached, 2 no lens auto-retract timer, 4 LCD-mutex leak guard, 8 panel on at tether arm. Any other value means mask `0xd`, i.e. 173 (`0xad`) | `HW 2026-11-08`: second tether session armed in 10.41 s with 160 (all off), 0.66 s with 173 |
 | `0x1b8bf` | PEAKING | **0 OFF**, 1 RED, 2 YELLOW; read once per live-view frame by the VD-task hook `0x95af4` | `EMU` (no camera result) |
 | `0x1b8c0` | RECIPE: active recipe id (0 = none) | | `HW` (earlier frames; carried by the mirror) |
-| `0x1b8c1..0x1b8c9` | EDIT RECIPE p0..p8: CURVE, CONTRAST, KEY, SHADOW, HIGHLIGHT, p5, p6, p7, SHARPNESS. p5..p7 are FILTER EFF., TONING, TONE LEVEL for a B&W look; SATURATION, WARMTH, TINT for a colour look; COLOUR, RANGE, SATURATION for SELECT (label chosen by store `+8`) | per row | `HW` (earlier frames); current build `EMU` |
+| `0x1b8c1..0x1b8c9` | EDIT RECIPE p0..p8: CURVE, CONTRAST, KEY, SHADOW, HIGHLIGHT, p5, p6, p7, SHARPNESS. p5..p7 are FILTER EFF., TONING, TONE LEVEL for a B&W look; SATURATION, WARMTH, TINT for a color look; COLOR, RANGE, SATURATION for SELECT (label chosen by store `+8`) | per row | `HW` (earlier frames); current build `EMU` |
 | `0x1b8ca` | SAVE TO CUSTOM (action; returns to OFF) | **OFF**, CUSTOM 1..3 | `EMU` |
 | `0x1b8cb` | RESET (action; returns to NO) | **NO**, YES | `EMU` |
 | `0x1b8cc`, `0x1b8cd` | GRAIN, VIGNETTE of the active recipe | **OFF**, 1, 2, 3 | `EMU` (no camera result) |
 | `0x1b8ce`, `0x1b8cf` | Unused inside the row range | | |
 
-A recipe never writes a non-stock value into a stock byte: choosing one sets `0x1b030` to 1 (colour looks and SELECT), 3 (B&W) or 6 (B&W(TE), toned) and stores the id in `0x1b8c0`. A recipe applies to a shot only while `0x1b030` still equals its base, so with no package loaded the camera shoots plain NORMAL, B&W or B&W(TE).
+A recipe never writes a non-stock value into a stock byte: choosing one sets `0x1b030` to 1 (color looks and SELECT), 3 (B&W) or 6 (B&W(TE), toned) and stores the id in `0x1b8c0`. A recipe applies to a shot only while `0x1b030` still equals its base, so with no package loaded the camera shoots plain NORMAL, B&W or B&W(TE).
 
 ### Settings-file header `KSIO`
 
@@ -240,19 +240,19 @@ The header describes the body that wrote the block, so the import never copies i
 | +4 | Version 6 | `EMU` |
 | +5 | Owner id of the edit rows | `EMU` |
 | +6 | Last applied id | `EMU` |
-| +7 | Record count N = 20 (10 B&W looks, SELECT, 6 colour looks, 3 CUSTOM); a store with any other N is not accepted, because the FX table sits right after the records | `EMU` |
+| +7 | Record count N = 20 (10 B&W looks, SELECT, 6 color looks, 3 CUSTOM); a store with any other N is not accepted, because the FX table sits right after the records | `EMU` |
 | +8 | Active type (selects the p5..p7 row variants) | `EMU` |
-| +9 / +10 | SELECT colour (1..6, 0 = no SELECT shot) / SELECT range, read by the selective-colour pass | `EMU` |
+| +9 / +10 | SELECT color (1..6, 0 = no SELECT shot) / SELECT range, read by the selective-color pass | `EMU` |
 | +11 / +12 | GRAIN / VIGNETTE for the next shot, read by the FX pass | `EMU` |
 | +13 | Owner id of the GRAIN / VIGNETTE rows | `EMU` |
-| +0x10 + 12·n | Record n: bytes 0..8 = p0..p8; byte 9 = kind (bits 0..1 type: 0 B&W, 1 colour, 2 SELECT; bits 4..6 colour look 0..5 for the ROM matrix); byte 10 = `0xa5` valid; byte 11 = XOR of bytes 0..9 with `0x5a` | `EMU` |
+| +0x10 + 12·n | Record n: bytes 0..8 = p0..p8; byte 9 = kind (bits 0..1 type: 0 B&W, 1 color, 2 SELECT; bits 4..6 color look 0..5 for the ROM matrix); byte 10 = `0xa5` valid; byte 11 = XOR of bytes 0..9 with `0x5a` | `EMU` |
 | `0x1ba00..0x1ba13` | FX table, one byte per recipe: `0x50 | grain | vignette << 2`; any other value reads OFF / OFF | `EMU` |
 
 - A record applies only if valid, its XOR matches, its kind is valid and every parameter is below that type's limit; otherwise the look's default is used.
 - Migration: an `RCP5` v5 store (same header and records, no FX table) keeps every record and starts with the FX table OFF. An `RCP4` v4 store (13 records) keeps its B&W records and moves CUSTOM 1..3 from ids 11..13 to 18..20. Any other header resets every record.
 - Every rewrite writes the records and FX table first and the header last, and clears the active id, SAVE TO CUSTOM, RESET and the GRAIN / VIGNETTE rows.
 
-How a recipe becomes a curve and register writes is in [06](06-image-pipeline-and-colour.md#koma-recipes-and-selective-colour).
+How a recipe becomes a curve and register writes is in [06](06-image-pipeline-and-color.md#koma-recipes-and-selective-color).
 
 ## Factory adjustment store
 
@@ -307,12 +307,12 @@ Values are `qrflect7`'s or compiled defaults, not per-unit values.
 | `0x08010c64`, `0x08010c66` | ISO band thresholds (ISO 400, ISO 800) | `0x20`, `0x30` | `STATIC` |
 | `0x08010c68/69`, `0x08010c6c/6d` | HARD contrast/sharpness; SOFT contrast/sharpness | 4, 4; 2, 2 | `STATIC` |
 | `0x08010c74/75` | B&W contrast/sharpness before 2.30 (unused since) | n/a | `STATIC` |
-| `0x08010c78..0x08010c7e`, `0x08010c80..0x08010c8f` | Software chroma NR gate and offsets (colour only) | `0x1a1a`, `0x20`, 0, 0 | `STATIC` |
+| `0x08010c78..0x08010c7e`, `0x08010c80..0x08010c8f` | Software chroma NR gate and offsets (color only) | `0x1a1a`, `0x20`, 0, 0 | `STATIC` |
 | `0x08010de2` | Battery recovery threshold term (recovery counts down from 400 polls with thresholds raised by it) | 50 | `STATIC` |
-| `0x08011304..0x08011394` | Colour preset words, chroma-gain table, matrix and UV slots; see [06](06-image-pipeline-and-colour.md#colour-path) | n/a | `STATIC` |
+| `0x08011304..0x08011394` | Color preset words, chroma-gain table, matrix and UV slots; see [06](06-image-pipeline-and-color.md#color-path) | n/a | `STATIC` |
 | `0x080113f0..0x080113fc` | Tone selectors, luma word, `0x12018174` source; see [below](#store-bytes-that-feed-the-image-pipeline) | `V13F0 W2221`, `V13F2 W1E1F`, `V13F4 W2020`, `V13F6 W0520` | `STATIC` |
 | `0x0801144c`, `0x0801145d`, `0x08011404..2e`, `0x080114d4..6` | Enhancer blend enable, lens-index term enable, CC1 `0x1201407c` sources (bits 24-25, 28) | n/a | `STATIC` |
-| `0x08011b5c`, `0x08011b6e` | DNG colour matrices (DNG tags `0xc621`/`0xc622` only; no effect on JPEG) | n/a | `STATIC` |
+| `0x08011b5c`, `0x08011b6e` | DNG color matrices (DNG tags `0xc621`/`0xc622` only; no effect on JPEG) | n/a | `STATIC` |
 | `0x08010096..0x080100ab`, `0x8a..0x8d` | JPEG size targets (bpp ×10) and rate-control limits | 2.8 bpp FINE; ±5%, 2 fit steps, 3 corrections, at most 7 passes | `STATIC` |
 | `+0x0dd2`, `+0x1520`, `+0x1522`, `+0x1526`, `+0x1528`, `+0x153c` | Boot delays taken from calibration (sleeps at `0x288f6`); `0xFF` here delays the update prompt to about `3.5e8` virtual units; `+0x0e3e`, `+0x1524` unresolved | n/a | `EMU` |
 
@@ -350,7 +350,7 @@ Stock bytes at `+0x13f0`: `22 21 1e 1f 20 20 05 20 | 40 08 99 3a | 00 00 00 80` 
 | 4 | `0x21` | `0x197b30` |
 | 5 | `0x22` | `0x199b30` |
 
-Selectors `0x14` and `0x18` also map to `0x19bb30`; `0x0e` maps to `0x19db30` (inverted factory curve); other values upload nothing. The B&W path has no bank of its own; every mode at a given contrast reads the same table. HARD and SOFT take contrast from `0x08010c68`/`0x08010c6c`, NORMAL from a literal 3. `0x23b085` states 1, 3, 4 force selector `0x20`. Across 504 mode/detail/state combinations only modes 3, 4, 5, 6 at contrast 5 reach `0x199b30` (`EMU`). Details in [06](06-image-pipeline-and-colour.md#tone-tables).
+Selectors `0x14` and `0x18` also map to `0x19bb30`; `0x0e` maps to `0x19db30` (inverted factory curve); other values upload nothing. The B&W path has no bank of its own; every mode at a given contrast reads the same table. HARD and SOFT take contrast from `0x08010c68`/`0x08010c6c`, NORMAL from a literal 3. `0x23b085` states 1, 3, 4 force selector `0x20`. Across 504 mode/detail/state combinations only modes 3, 4, 5, 6 at contrast 5 reach `0x199b30` (`EMU`). Details in [06](06-image-pipeline-and-color.md#tone-tables).
 
 ## Camera Info tag 5
 

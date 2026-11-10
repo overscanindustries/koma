@@ -43,7 +43,7 @@
   function choose(id) { LK.sel = id; if (LK.status && LK.status.id !== id) LK.status = null; }
   function setAdj(v) { if (selLook) edit(sel, st => { st.adj = v; }); }
 
-  const groups = [['mono', LOOKS.filter(l => l.group === 'mono')], ['colour', LOOKS.filter(l => l.group === 'colour')],
+  const groups = [['mono', LOOKS.filter(l => l.group === 'mono')], ['color', LOOKS.filter(l => l.group === 'color')],
     ['custom', LOOKS.filter(l => l.group === 'custom')]];
   const standard = LOOKS.find(l => l.group === 'standard');
 

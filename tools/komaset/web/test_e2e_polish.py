@@ -645,7 +645,7 @@ class LooksCatalog(unittest.TestCase):
             line = a or b
             self.assertFalse(line.endswith("."), line)
         self.assertEqual([r[2] for r in rows].count("mono"), 11)
-        self.assertEqual([r[2] for r in rows].count("colour"), 6)
+        self.assertEqual([r[2] for r in rows].count("color"), 6)
 
 
 if __name__ == "__main__":

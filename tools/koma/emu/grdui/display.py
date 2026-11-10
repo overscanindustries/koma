@@ -171,8 +171,8 @@ from unicorn.arm_const import UC_ARM_REG_PC as _PC  # noqa: E402
 
 def ycbcr_to_rgb(y, cb, cr):
     """Screenshot conversion. Cb and Cr are signed: 0x161d30 builds them from R,G,B with no offset before masking, and
-    the firmware's own table 0x1fba30 holds neutral colours as Cb=Cr=0 (0xda0000, 0x6d0000). Y scale comes from the same
-    function (0.859 = 219/255). The panel's real response is unknown, so colours are approximate."""
+    the firmware's own table 0x1fba30 holds neutral colors as Cb=Cr=0 (0xda0000, 0x6d0000). Y scale comes from the same
+    function (0.859 = 219/255). The panel's real response is unknown, so colors are approximate."""
     cb = cb - 256 if cb > 127 else cb
     cr = cr - 256 if cr > 127 else cr
     y = y / 0.859
@@ -198,7 +198,7 @@ STANDIN_VIDEO_PLANE = (64, 64, 72)   # what shows through transparent OSD pixels
 def render_page(mem, base, stride, width, height, raw_palette):
     """Render a 4-bit OSD page to an RGB PIL image. Index 0 has no palette register (0x161f18 rejects it), treated as
     transparent over STANDIN_VIDEO_PLANE (inference). Unset palette entries render magenta so they can't be mistaken for
-    firmware colour."""
+    firmware color."""
     from PIL import Image
     pal = decode_palette(raw_palette)
     lut = []

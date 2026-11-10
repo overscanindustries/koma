@@ -117,8 +117,8 @@ def test_release_layout_matches_the_release_ia():
         "KOMA: FOCUS", "SNAP DIST", "FULL SNAP",
         "KOMA: EXPOSURE", "AUTO-ISO MAX", "SLOW SHUTTER", "LONG EXP LIMIT", "KOMA: DISPLAY", "HIGHLIGHT ALRT",
         "version"]
-    # Koma 0.2: rows p5..p7 are declared with their colour labels; menu5 shows the active type's variant (B&W FILTER
-    # EFF. / TONING / TONE LEVEL, SELECT COLOUR / RANGE / SATURATION; test_bwrecipes covers the switch)
+    # Koma 0.2: rows p5..p7 are declared with their color labels; menu5 shows the active type's variant (B&W FILTER
+    # EFF. / TONING / TONE LEVEL, SELECT COLOR / RANGE / SATURATION; test_bwrecipes covers the switch)
     assert [lab(e) for e in editor] == ["etitle", "CURVE", "CONTRAST", "KEY", "SHADOW", "HIGHLIGHT", "SATURATION",
                                        "WARMTH", "TINT", "SHARPNESS", "GRAIN", "VIGNETTE", "ADJ LEVER",
                                        "SAVE TO CUSTOM", "RESET"]

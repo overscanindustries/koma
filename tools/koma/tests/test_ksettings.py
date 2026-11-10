@@ -223,13 +223,13 @@ def test_apply_real_reconcile_moves_imgset_and_reapplies():
     u = _unit()
     _idle(u)
     u.uc.mem_write(K.MONO_FLAG, b"\x00")
-    rid = next(i + 1 for i, r in enumerate(B.RECIPES) if r["type"] == B.TYPE_COLOUR)
+    rid = next(i + 1 for i, r in enumerate(B.RECIPES) if r["type"] == B.TYPE_COLOR)
     pv = u.res("kf_preview__pv")
     n0 = u.u8(pv + P.O_N)
     u.mmio.clear()
     reply, _, state, blk = _kset(u, 0x8C0, rid)
     assert reply == f"200 -KSET 2240={rid}\r\n" and state == 3
-    assert u.u8(BLK + 0x8C0) == rid and u.u8(BLK + 0x30) == 1          # colour recipe base: IMG SET NORMAL
+    assert u.u8(BLK + 0x8C0) == rid and u.u8(BLK + 0x30) == 1          # color recipe base: IMG SET NORMAL
     assert u.u8(pv + P.O_N) == n0 + 1 and u.u8(pv + P.O_SITE) == K.SITE_SETTING and u.u8(pv + P.O_TYPE) == 1
     assert any(a == "12018004" for a, _ in u.mmio), u.mmio
     assert all(BLK + 0x800 <= a < BLK + 0xC00 or a == BLK + 0x30 for a in blk), [hex(a) for a in blk]
@@ -328,8 +328,8 @@ def test_recipe_base_change_calls_stock_apply_once():
     u.stub(K.STOCK_APPLY, "apply")
     _idle(u)
     u.uc.mem_write(K.MONO_FLAG, b"\x00")
-    rid_c = next(i + 1 for i, r in enumerate(B.RECIPES) if r["type"] == B.TYPE_COLOUR)
-    rid_c2 = [i + 1 for i, r in enumerate(B.RECIPES) if r["type"] & 3 == B.TYPE_COLOUR][1]
+    rid_c = next(i + 1 for i, r in enumerate(B.RECIPES) if r["type"] == B.TYPE_COLOR)
+    rid_c2 = [i + 1 for i, r in enumerate(B.RECIPES) if r["type"] & 3 == B.TYPE_COLOR][1]
     rid_b = next(i + 1 for i, r in enumerate(B.RECIPES) if r["type"] == B.TYPE_BW and B.imgset_of(r["params"]) == 3)
     u.uc.mem_write(BLK + 0x30, b"\x01")
     for rid, base, n in ((rid_c, 1, 0), (rid_c2, 1, 0), (rid_b, 3, 1), (rid_c, 1, 1)):

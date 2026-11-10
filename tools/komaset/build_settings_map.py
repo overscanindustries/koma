@@ -131,7 +131,7 @@ for o, n, l in [(0x031, "setting1_contrast", "SETTING1 CONTRAST"),
                    (0x035, "setting2_sharpness", "SETTING2 SHARPNESS"),
                    (0x036, "setting2_color_depth", "SETTING2 COLOR DEPTH")]:
     field(o, n, l, S, "enum", values=LEVEL5, default=3, order=5, section="Image",
-          ev="detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (colour); "
+          ev="detail screen 0x5b7e4/0x5b89c; readers 0x92cc8 (contrast), 0x91268 (sharpness), 0x92200 (color); "
              "default 3 in 0x3d4a4")
 field(0x037, "af_aux_light", "AF AUX. LIGHT", "setup", "enum", values={0: "ON", 1: "OFF"}, default=0, order=18,
       section="Shooting", ev="SETUP commit 0x6c4bc table 0x1beef2 (cursor1->0, cursor2->1); main body = 1",
@@ -166,7 +166,7 @@ field(0x052, "cont_mode", "CONT. MODE", S, "enum", values=CONT, default=0, order
 field(0x053, "exposure_comp", "EXPOSURE COMP.", S, "enum", values=EV, default=13, order=10, section="Exposure",
       conf="HW", ev="commit table 0x1bd3ce (odd values 1..25 = -2.0..+2.0 in 1/3 EV); validator 0x6dc24 accepts "
                      "1..25, bad -> 13; main body = 13")
-field(0x054, "white_balance", "WHITE BALANCE", S, "enum", values=WB, default=0, order=11, section="Colour", conf="HW",
+field(0x054, "white_balance", "WHITE BALANCE", S, "enum", values=WB, default=0, order=11, section="Color", conf="HW",
       ev="commit table 0x1bd3dc; validator 0x6dca0 accepts 0..5, 7; load 0x5aa38 maps 7 -> 7th option DETAIL "
          "(label 0x191c20); main body = 1")
 field(0x055, "date_imprint", "DATE IMPRINT", S, "enum", values=DATEIMP, default=0, order=9, section="Image",
@@ -252,10 +252,10 @@ field(0x072, "file_number", "FILE NUMBER", "internal", "u16", size=2, rng=(0, 99
       conf="HW", ev="0x47b4e/0x49c10 (9999 wrap); main body = 5601",
       help="Last file number used, for SEQUENTIAL NO.")
 excl(0x070, 4, "Folder and file-number counters of this body; copying them can repeat file names.")
-field(0x074, "manual_wb_r", "MANUAL WB R GAIN", S, "u16", size=2, rng=(16, 784), body=True, section="Colour",
+field(0x074, "manual_wb_r", "MANUAL WB R GAIN", S, "u16", size=2, rng=(16, 784), body=True, section="Color",
       conf="STATIC", ev="written by the one-push measurement 0x9b108; clamped 0x10..0x310 in 0x9af40/0x174ab8",
       help="Red gain measured by the last manual white-balance reading on this camera.", ui="hidden")
-field(0x076, "manual_wb_b", "MANUAL WB B GAIN", S, "u16", size=2, rng=(16, 784), body=True, section="Colour",
+field(0x076, "manual_wb_b", "MANUAL WB B GAIN", S, "u16", size=2, rng=(16, 784), body=True, section="Color",
       conf="STATIC", ev="as 0x074, blue gain", help="Blue gain from the last manual white-balance reading.", ui="hidden")
 excl(0x074, 4, "Manual WB gains measured through this body's sensor; meaningless on another body.")
 field(0x07a, "time_exposure_1x", "TIME EXPOSURE (1.x)", S, "enum", values=TIMEEXP, persist=False, ui="hidden",
@@ -297,7 +297,7 @@ field(0x0a4, "digital_zoom", "DIGITAL ZOOM", "setup", "enum", values={1: "ON", 0
       section="Shooting", ev="SETUP commit table 0x1beeef", conf="HW")
 field(0x0a5, "color_space", "COLOR SPACE SET", "setup", "enum", values={0: "sRGB", 1: "Adobe RGB"}, default=0,
       order=17, section="Card", ev="SETUP commit table 0x1beeec; file prefix 0x499a8", conf="HW")
-field(0x0a6, "wb_detail", "WB DETAIL", S, "u8", rng=(0, 16), default=5, section="Colour", conf="STATIC",
+field(0x0a6, "wb_detail", "WB DETAIL", S, "u8", rng=(0, 16), default=5, section="Color", conf="STATIC",
       ev="detail screen 0x5b764 (17 steps, 0x1c2e68 = 0x10); index into per-body gain tables 0x080103a0/0x080103c4 "
          "(0x174ab8); main body = 5")
 field(0x0a7, "movie_size", "MOVIE SIZE", S, "enum", values=MOVIE, default=9, section="Movie",
@@ -589,7 +589,7 @@ field(ST, "rcp6_magic", "LOOK STORE MAGIC", "recipe", "bytes", size=4, ui="hidde
       conf="STATIC", help="Marks the look store.")
 for k, n, l, rng in [(4, "version", "STORE VERSION", (0, 255)), (5, "edit_owner", "EDIT-ROW OWNER ID", (0, NALL)),
                      (6, "last_applied", "LAST APPLIED ID", (0, NALL)), (7, "count", "RECORD COUNT", (0, 255)),
-                     (8, "active_type", "ACTIVE TYPE", (0, 2)), (9, "select_colour", "SELECT COLOUR", (0, 6)),
+                     (8, "active_type", "ACTIVE TYPE", (0, 2)), (9, "select_color", "SELECT COLOR", (0, 6)),
                      (10, "select_range", "SELECT RANGE", (0, 1)), (11, "grain", "GRAIN (PUBLISHED)", (0, 3)),
                      (12, "vignette", "VIGNETTE (PUBLISHED)", (0, 3)), (13, "fx_owner", "FX ROW OWNER", (0, NALL))]:
     field(ST + k, "rcp6_" + n, l, "recipe", "u8", rng=rng, ui="hidden", conf="STATIC", ev=RH + " (+%d)" % k,
@@ -631,13 +631,13 @@ excl(0x900, 16, "Koma look-store header (owner ids, published values); rewritten
 # User-facing help and labels. The editor shows these; the inline strings above are engineering notes that this
 # table replaces at build time (hidden fields keep their terse engineering help).
 HELP = {
-    "img_set": "The look of your pictures: a colour style, black and white, toned black and white, or one of your own SETTING1 or SETTING2 looks.",
+    "img_set": "The look of your pictures: a color style, black and white, toned black and white, or one of your own SETTING1 or SETTING2 looks.",
     "setting1_contrast": "How punchy your SETTING1 look is. Five steps; 3 is the standard.",
     "setting1_sharpness": "How crisp the edges are in your SETTING1 look. Five steps; 3 is the standard.",
-    "setting1_color_depth": "How strong the colours are in your SETTING1 look. Five steps; 3 is the standard.",
+    "setting1_color_depth": "How strong the colors are in your SETTING1 look. Five steps; 3 is the standard.",
     "setting2_contrast": "How punchy your SETTING2 look is. Five steps; 3 is the standard.",
     "setting2_sharpness": "How crisp the edges are in your SETTING2 look. Five steps; 3 is the standard.",
-    "setting2_color_depth": "How strong the colours are in your SETTING2 look. Five steps; 3 is the standard.",
+    "setting2_color_depth": "How strong the colors are in your SETTING2 look. Five steps; 3 is the standard.",
     "af_aux_light": "Lights the lamp on the front of the camera so autofocus can work on dark subjects. Turn it off where a light would be distracting.",
     "zoom_btn_set": "What the zoom lever (T/W) changes while digital zoom is off. Assign it to exposure compensation or white balance for quick access, or OFF to leave it unused.",
     "scene_flash_a": "The flash mode the camera remembers for the TEXT scene.",
@@ -645,12 +645,12 @@ HELP = {
     "photometry": "How the camera measures the light: across the whole frame, weighted to the centre, or on a small spot. Use SPOT for a subject lit very differently from its surroundings.",
     "cont_mode": "Keeps shooting pictures while you hold the shutter button. The camera switches this back to OFF when it starts, unless a My Setting restores it.",
     "exposure_comp": "Makes pictures brighter (+) or darker (-) than the camera's own reading. Use it when a scene is very bright or dark.",
-    "white_balance": "Corrects the colour for the kind of light you are shooting in, so whites look white.",
+    "white_balance": "Corrects the color for the kind of light you are shooting in, so whites look white.",
     "date_imprint": "Prints the date, or the time, onto the picture itself.",
     "language": "The language of the menus and messages.",
     "focus": "How the camera focuses: autofocus over the frame or on a spot, manual focus, a fixed close SNAP distance, or infinity for distant scenes.",
     "iso": "How sensitive the camera is to light. AUTO lets the camera choose. Higher numbers let you shoot in dimmer light at faster shutter speeds, with more noise.",
-    "auto_bracket": "Takes three pictures in a row with slightly different exposure, white balance or colour, so you can pick the best one. It returns to OFF when the camera starts.",
+    "auto_bracket": "Takes three pictures in a row with slightly different exposure, white balance or color, so you can pick the best one. It returns to OFF when the camera starts.",
     "adj_btn_set1": "The first setting the ADJ lever offers for quick changes. Assign the setting you change most often, or OFF to leave the slot empty.",
     "adj_btn_set2": "The second setting the ADJ lever offers for quick changes. Assign it a setting you change often, or OFF to leave the slot empty.",
     "adj_btn_set3": "The third setting the ADJ lever offers for quick changes. Assign it a setting you change often, or OFF to leave the slot empty.",
@@ -673,8 +673,8 @@ HELP = {
     "disp_mode": "Which shooting-screen layout the DISP. button last selected. The camera remembers it between sessions.",
     "auto_power_off": "Turns the camera off after this long without use, to save the battery.",
     "digital_zoom": "Lets the zoom lever enlarge the centre of the picture digitally once optical zoom runs out.",
-    "color_space": "The range of colours saved in JPEGs. sRGB suits most uses; Adobe RGB is wider and meant for editing and printing. Adobe RGB file names start with an underscore.",
-    "wb_detail": "A fine colour-temperature adjustment, used when white balance is set to DETAIL.",
+    "color_space": "The range of colors saved in JPEGs. sRGB suits most uses; Adobe RGB is wider and meant for editing and printing. Adobe RGB file names start with an underscore.",
+    "wb_detail": "A fine color-temperature adjustment, used when white balance is set to DETAIL.",
     "movie_size": "The frame size of movies. The larger size looks better and uses more card space.",
     "text_size": "The picture size used in TEXT mode.",
     "manual_shutter": "The shutter speed used in manual (M) exposure. You normally change it with the dial while shooting.",
@@ -687,15 +687,15 @@ HELP = {
     "enlge_photo_icon": "Makes the icons on the shooting screen larger.",
     "synchro_monitor": "With ON, the screen stays dark until you half-press the shutter button.",
     "raw_jpeg_setting": "The quality of the JPEG saved alongside each RAW picture.",
-    "cl_bkt_bw_te": "With ON, colour bracketing also records a toned black-and-white picture.",
+    "cl_bkt_bw_te": "With ON, color bracketing also records a toned black-and-white picture.",
     "info_disp": "While SYNCHRO. MONITOR keeps the screen dark, ON still shows the shooting information.",
     "flash_expo_comp": "Makes the flash stronger (+) or weaker (-). Use it when flash pictures come out too bright or too dark.",
     "bw_contrast": "How punchy black-and-white pictures look. Five steps; 3 is the standard.",
     "bw_sharpness": "How crisp the edges are in black-and-white pictures. Five steps; 3 is the standard.",
     "te_contrast": "How punchy toned black-and-white pictures look. Five steps; 3 is the standard.",
     "te_sharpness": "How crisp the edges are in toned black-and-white pictures. Five steps; 3 is the standard.",
-    "te_tone": "The colour of the toning on toned black-and-white pictures.",
-    "te_density": "How strong the toning colour is. Five steps; 3 is the standard.",
+    "te_tone": "The color of the toning on toned black-and-white pictures.",
+    "te_density": "How strong the toning color is. Five steps; 3 is the standard.",
     # Koma features
     "snap_dist": "The distance the camera focuses at in SNAP focus. Pick the distance you usually shoot street subjects from.",
     "full_snap": "With ON, a quick full press of the shutter focuses at the SNAP distance and shoots at once, instead of waiting for autofocus.",
@@ -711,8 +711,8 @@ HELP = {
     "recipe_rp_key": "Makes the look you are editing lighter (high key) or darker (low key) overall.",
     "recipe_rp_shadow": "Contrast in the dark areas of the look you are editing.",
     "recipe_rp_hilite": "Contrast in the bright areas of the look you are editing.",
-    "recipe_rp_p5": "Colour strength, or the colour filter for black and white. The name and choices change with the look type.",
-    "recipe_rp_p6": "Toning, warmth or colour range, depending on the look type.",
+    "recipe_rp_p5": "Color strength, or the color filter for black and white. The name and choices change with the look type.",
+    "recipe_rp_p6": "Toning, warmth or color range, depending on the look type.",
     "recipe_rp_p7": "Toning strength, tint or saturation, depending on the look type.",
     "recipe_rp_sharp": "Sharpness of the look you are editing.",
     "recipe_rp_save": "Copies the look you are editing into one of the three CUSTOM slots, then returns to OFF.",
@@ -732,7 +732,7 @@ SHOOT_ORDER = [("Image", ["pic_quality", "pic_size", "pic_aspect", "img_set", "s
                           "date_imprint"]),
                ("Focus", ["focus"]),
                ("Exposure", ["photometry", "exposure_comp", "iso", "manual_shutter", "manual_aperture"]),
-               ("Colour", ["white_balance", "wb_detail"]),
+               ("Color", ["white_balance", "wb_detail"]),
                ("Drive", ["cont_mode", "auto_bracket", "image_with_sound"]),
                ("Flash", ["flash_mode", "flash_expo_comp", "scene_flash_a", "scene_flash_b"]),
                ("Scene", ["scene_mode", "slow_shutter_limit"]),

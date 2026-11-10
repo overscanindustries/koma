@@ -381,8 +381,8 @@ def _lv_pattern(n):
 
 
 # ---------------------------------------------------------------- simulated RAM block with a Koma 0.3 recipe store
-# Independent copy of tools/koma/features/bwrecipes.py RECIPES (p0..p8, kind): kind low 2 bits = type (0 B&W, 1 colour,
-# 2 SELECT), bits 4..6 = the colour look. test_komabridge.py compares it with bwrecipes.
+# Independent copy of tools/koma/features/bwrecipes.py RECIPES (p0..p8, kind): kind low 2 bits = type (0 B&W, 1 color,
+# 2 SELECT), bits 4..6 = the color look. test_komabridge.py compares it with bwrecipes.
 RECIPE_DEFAULTS = (
     (0, 4, 4, 4, 4, 0, 0, 2, 3, 0), (3, 6, 4, 2, 5, 3, 0, 2, 4, 0), (3, 4, 4, 4, 4, 0, 0, 2, 4, 0),
     (2, 6, 4, 4, 4, 0, 3, 0, 3, 0), (4, 4, 4, 4, 4, 0, 0, 2, 1, 0), (5, 5, 4, 4, 4, 1, 0, 2, 3, 0),

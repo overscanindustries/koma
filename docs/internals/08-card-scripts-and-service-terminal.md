@@ -4,7 +4,7 @@
 
 Tags: `HW`, `EMU`, `STATIC`, `INFERRED`, defined in [features](evidence-ledger.md). Addresses are firmware 2.40 runtime addresses (payload offset + `0x1c000`; file offset + `0x1be00`).
 
-Related chapters: [05 settings and adjustment store](05-settings-and-adjustment-store.md), [06 image pipeline and colour](06-image-pipeline-and-colour.md), [07 USB protocol](07-usb-protocol.md), [02 boot chain and Monitor](02-boot-chain-and-monitor.md), [03 firmware image and update format](03-firmware-image-and-update-format.md), [09 recovery and failure modes](09-recovery-and-failure-modes.md).
+Related chapters: [05 settings and adjustment store](05-settings-and-adjustment-store.md), [06 image pipeline and color](06-image-pipeline-and-color.md), [07 USB protocol](07-usb-protocol.md), [02 boot chain and Monitor](02-boot-chain-and-monitor.md), [03 firmware image and update format](03-firmware-image-and-update-format.md), [09 recovery and failure modes](09-recovery-and-failure-modes.md).
 
 ## Key addresses
 

@@ -87,7 +87,7 @@ def _rgb(hex_: str):
 
 
 def color(name: str):
-    """A token as a dynamic colour: resolved against the appearance it is drawn in, so dark and light both hold."""
+    """A token as a dynamic color: resolved against the appearance it is drawn in, so dark and light both hold."""
     if name not in _colors:
         dark, light = (_rgb(h) for h in TOKENS[name])
 
@@ -135,8 +135,8 @@ def on_grid(y: float) -> float:
     return round(y * 2) / 2
 
 
-def text(value: str, face, colour, kern: float = 0.0, line: float = 0.0):
-    attrs = {NSFontAttributeName: face, NSForegroundColorAttributeName: colour}
+def text(value: str, face, color, kern: float = 0.0, line: float = 0.0):
+    attrs = {NSFontAttributeName: face, NSForegroundColorAttributeName: color}
     if kern:
         attrs[NSKernAttributeName] = kern
     if line:
@@ -201,7 +201,7 @@ def _ring(view, radius: float):
 
 class QuietButton(NSButton):
     """--raise fill, 1 px --line border, --ink sentence-case title, radius 4; pressed moves 1 px
-    down, no colour change. The frame is the button's outer box plus RING on every side. The title's cap height is
+    down, no color change. The frame is the button's outer box plus RING on every side. The title's cap height is
     centred in the box (look.title_baseline); the version's baseline sits on the same row."""
 
     def isFlipped(self):

@@ -3,7 +3,7 @@
 // ADJ LEVER flag and every parameter come from the camera's settings block at run time, never from this file.
 //   id     the stored look id (settings map field recipe_rcp_active, 0x8c0; STANDARD is id 21). The camera writes plain NORMAL with no look id while STANDARD is unedited.
 //   name   the camera's string
-//   group  'standard' | 'mono' | 'colour' | 'custom'
+//   group  'standard' | 'mono' | 'color' | 'custom'
 //   line   the one-liner (a fragment: no terminal period, no trademark, no photographer's name, no engineering number)
 export const LOOKS = [
   {id: 21, name: 'STANDARD', group: 'standard', line: "The camera's standard rendering"},
@@ -17,13 +17,13 @@ export const LOOKS = [
   {id: 8, name: 'DENSE', group: 'mono', line: 'A long, dense scale of greys'},
   {id: 9, name: 'NOIR', group: 'mono', line: 'Low key, red filter'},
   {id: 10, name: 'MATTE', group: 'mono', line: 'Flat, lifted shadows, soft whites'},
-  {id: 11, name: 'SELECT', group: 'mono', line: 'Black and white with one colour kept'},
-  {id: 12, name: 'POSITIVE', group: 'colour', line: 'Punchy contrast, rich blues and greens'},
-  {id: 13, name: 'NEGATIVE', group: 'colour', line: 'Gentle, muted, slightly cool'},
-  {id: 17, name: 'SLIDE 50', group: 'colour', line: 'Deep contrast, strong colour, slightly warm'},
-  {id: 16, name: 'WARM NEG', group: 'colour', line: 'Soft and warm, a faint magenta cast'},
-  {id: 14, name: 'BLEACH', group: 'colour', line: 'High contrast, drained colour, silvery'},
-  {id: 15, name: 'RETRO', group: 'colour', line: 'Warm, faded, low contrast'},
+  {id: 11, name: 'SELECT', group: 'mono', line: 'Black and white with one color kept'},
+  {id: 12, name: 'POSITIVE', group: 'color', line: 'Punchy contrast, rich blues and greens'},
+  {id: 13, name: 'NEGATIVE', group: 'color', line: 'Gentle, muted, slightly cool'},
+  {id: 17, name: 'SLIDE 50', group: 'color', line: 'Deep contrast, strong color, slightly warm'},
+  {id: 16, name: 'WARM NEG', group: 'color', line: 'Soft and warm, a faint magenta cast'},
+  {id: 14, name: 'BLEACH', group: 'color', line: 'High contrast, drained color, silvery'},
+  {id: 15, name: 'RETRO', group: 'color', line: 'Warm, faded, low contrast'},
   {id: 18, name: 'CUSTOM 1', group: 'custom', line: 'A look of its own, starting from MONO'},
   {id: 19, name: 'CUSTOM 2', group: 'custom', line: 'A look of its own, starting from MONO'},
   {id: 20, name: 'CUSTOM 3', group: 'custom', line: 'A look of its own, starting from MONO'},
@@ -33,7 +33,7 @@ export const LOOKS = [
 export const LOOK_GROUPS = [
   {id: 'standard', label: ''},
   {id: 'mono', label: 'Monochrome'},
-  {id: 'colour', label: 'Colour'},
+  {id: 'color', label: 'Color'},
   {id: 'custom', label: 'Custom'},
 ];
 

@@ -1,5 +1,5 @@
 /* Setup, Install and Update Koma. Area classes only, prefixed onb-; the shared type, danger and boxed-rule
-   classes (.micro, .cam, .small, .h1, .btn.danger, .rule-box) come from app.css. Sizes, colours and durations are the
+   classes (.micro, .cam, .small, .h1, .btn.danger, .rule-box) come from app.css. Sizes, colors and durations are the
    the design tokens. */
 
 .onb-lead { font-size: var(--fs-lead, 16px); line-height: 24px; font-weight: 500; color: var(--ink); max-width: 36ch; text-wrap: balance; }

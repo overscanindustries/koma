@@ -9,7 +9,7 @@
 // the Apply check); 12-byte records from 0x910 for ids 1..20 and at 0xa1c for STANDARD (21): p0..p8, kind, 0xa5,
 // xor of bytes 0..9 with 0x5a; the FX table 0xa00 + id - 1 (0x50 | grain | vignette << 2); the ADJ LEVER mask 0xa18
 // (21 bits, little-endian, then m0 ^ m1 ^ m2 ^ 0x5a; a bad check byte reads as the default mask). IMG SET 0x030 holds
-// the stock base of the look that applies (1 NORMAL for colour and SELECT, 3 B&W, 6 B&W (TE) with toning); a look
+// the stock base of the look that applies (1 NORMAL for color and SELECT, 3 B&W, 6 B&W (TE) with toning); a look
 // applies only while IMG SET holds its base.
 import {LOOKS_DATA as D} from './looksData.js';
 import {komaVersion, getMap} from '../engine/engine.js';
@@ -19,7 +19,7 @@ export const AT = {imgset: 0x030, act: 0x8c0, rows: 0x8c1, save: 0x8ca, reset: 0
 export const STD = D.std;            // 21
 const N = D.std - 1;                 // 20 records in the main store
 export const P = {curve: 0, con: 1, key: 2, shd: 3, hil: 4, s5: 5, s6: 6, s7: 7, sharp: 8};
-export const TYPE = {bw: 0, colour: 1, select: 2};
+export const TYPE = {bw: 0, color: 1, select: 2};
 
 export function typeOf(kind) { return kind & 3; }
 export function koma(b) { return !!b && komaVersion(b) !== null; }

@@ -29,6 +29,7 @@ from __future__ import annotations
 import hmac
 import secrets
 import socket
+import socketserver
 import threading
 from http.server import ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
@@ -48,6 +49,10 @@ class _LanServer(ThreadingHTTPServer):
     def __init__(self, address, handler, access: "PhoneAccess"):
         self.access = access
         super().__init__(address, handler)
+
+    def server_bind(self):  # no DNS lookup of the address (HTTPServer.server_bind's getfqdn): see komabridge.Server
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = str(self.server_address[0]), self.server_address[1]
 
     def get_request(self):
         sock, addr = super().get_request()

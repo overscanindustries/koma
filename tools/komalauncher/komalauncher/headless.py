@@ -11,6 +11,10 @@ import threading
 
 from . import selftest, system
 
+# Ctrl-C, SIGTERM, and on Windows Ctrl-Break (SIGBREAK): each quits the way Quit Koma does. Without a SIGBREAK
+# handler Windows ends the process on Ctrl-Break with no Quit, and the bridge only stops later, when its stdin closes.
+QUIT_SIGNALS = tuple(getattr(signal, name) for name in ("SIGINT", "SIGTERM", "SIGBREAK") if hasattr(signal, name))
+
 
 def line(snap) -> str:
     return json.dumps({"phase": snap.phase, "reason": snap.reason or None, "webcam": snap.webcam,
@@ -35,8 +39,8 @@ def run(sup, open_browser: bool = True, self_test: bool = False, announce: str =
     def on_signal(_signum, _frame):
         sup.command("quit")
 
-    signal.signal(signal.SIGINT, on_signal)
-    signal.signal(signal.SIGTERM, on_signal)
+    for signum in QUIT_SIGNALS:
+        signal.signal(signum, on_signal)
     if announce:
         print(announce, file=sys.stderr, flush=True)
     sup.start()
@@ -105,8 +109,8 @@ def terminal(sup, open_browser: bool = True, log_file: str = "") -> int:
     def on_signal(_signum, _frame):
         sup.command("quit")
 
-    signal.signal(signal.SIGINT, on_signal)
-    signal.signal(signal.SIGTERM, on_signal)
+    for signum in QUIT_SIGNALS:
+        signal.signal(signum, on_signal)
     if sup.snap.platform == "win32" and "--real" in sup.bridge_args:
         if doctor.windows_driver_problem(doctor.windows_driver()):  # the registry only; no device is touched
             say(words.USB_WINDOWS_DRIVER)

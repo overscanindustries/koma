@@ -11,7 +11,7 @@ from ..feature import Check, Feature, Hook, Settings
 from . import _legacy
 
 NAME = "recipe-slots"
-SUMMARY = "5 recipe slots (IMG SET/contrast/sharpness/depth/curve/colour regs), per-shot hook 0x96436"
+SUMMARY = "5 recipe slots (IMG SET/contrast/sharpness/depth/curve/color regs), per-shot hook 0x96436"
 OPTIONS = {"slot": "active slot forced at boot: 1..5, or 'keep' to keep the tail's byte. Default 1",
            "reseed": "1: module slot data overwrites the tail every boot; 0: keep user-edited slots. "
                      "Default 1 when a slot is forced, 0 for 'keep'"}

@@ -23,7 +23,7 @@ Tags: `HW`, `EMU`, `STATIC`, `INFERRED`, defined in [features](evidence-ledger.m
 | `0x10800000` | OneNAND BootRAM/DataRAM window; registers at `0x1081e000` | `STATIC` |
 | `0x12000000` | Interrupt controller | `STATIC` |
 | `0x12010000` | System timer; `+0x04` counts on hardware | `HW 2026-11-06 main` |
-| `0x12018000` | Image engine CC2 (colour stage) | `HW 2026-11-06 main` |
+| `0x12018000` | Image engine CC2 (color stage) | `HW 2026-11-06 main` |
 | `0x12030000` | GPIO | `STATIC` |
 | `0x12044000` | SD host controller (TMIO family) | `STATIC`, family `INFERRED` |
 | Block `0x3c` / `0x3d` | Main-info header / adjustment store | `HW` (capture) |
@@ -94,7 +94,7 @@ The Monitor runs in `[0, 0xfc00)` with its stacks in SRAM at `0x1220xxxx`. It co
 | `0x12010004` | Free-running counter: advanced across a busy loop on two of four logged boots, read 0 on the other two | `HW 2026-11-06 main` |
 | `0x1200c000` | Display/DMA: OSD base `0x1200c080`, stride/4 `0x1200c088`, enable `0x1200c00c` bit 2; DMA `0x1200c150` (written 7), `0x1200c16c` (LNIR/PXIR9 fields) | `STATIC` |
 | `0x12014000` | CC1 / capture timing: `0x1201401c` status (shutter wait `0x947e4` on bit 31, then bits 23:16), `0x12014024` `vcycle`, `0x12014040`/`44` frame ack and enable, `0x1201407c` (fields unknown), `0x12014088/8c` clip levels | `STATIC` |
-| `0x12018000` | CC2 colour stage: chroma gain `0x12018004`, luma weights `0x1201800c`, mono `0x12018038`, WB gains `0x12018110/114`, colour matrix `0x12018104/108/10c`, chroma coring `0x120180d8`. Full map in [address index](address-index.md#isp-registers) | `STATIC`; liveness `HW` |
+| `0x12018000` | CC2 color stage: chroma gain `0x12018004`, luma weights `0x1201800c`, mono `0x12018038`, WB gains `0x12018110/114`, color matrix `0x12018104/108/10c`, chroma coring `0x120180d8`. Full map in [address index](address-index.md#isp-registers) | `STATIC`; liveness `HW` |
 | `0x1201c000` | JPEG block: control `+0x00`, mask `+0x1c`, status `+0x20` | `STATIC` |
 | `0x12020000` | VEN (video/OSD): enable `+0x04` bit 1, `0x12020010` reset value, mask `+0x14`, status `+0x18`, palette `0x12020100` (Y, signed Cb, signed Cr) | `STATIC` |
 | `0x12024000`, `0x12024200` | USART: LCD panel control and audio codec; IRQ `0x23ef4`, send `0x240fc`. Carries no pixels | `STATIC` |
@@ -144,7 +144,7 @@ Results from register writes in both develop passes on the main body, judged fro
 | `0x12018004` chroma gain | all four bytes x1.30 | Uniform x1.30 chroma | `HW 2026-11-06 main` |
 | `0x12018028/2c/30` IQ hue matrix, clip, offset | several values, also with `0x12018100` bit 6 | No change: dead stage | `HW 2026-11-06 main` |
 
-Byte roles, scale and clamp of the matrix are in [06 image pipeline](06-image-pipeline-and-colour.md); register list in the [address index](address-index.md#isp-registers).
+Byte roles, scale and clamp of the matrix are in [06 image pipeline](06-image-pipeline-and-color.md); register list in the [address index](address-index.md#isp-registers).
 
 ## GPIO pins
 
@@ -325,7 +325,7 @@ Five USB handlers (`RETR` `0xcc434`, `-NLST` `0xcc970`, `-VER` `0xccb5c`, `-INFO
 | Generation 2 Koma firmware build 2b (tag `240K2`, image sha256 `75425a70…9680`) on both bodies, with package koma04w (build `747F061F`) in `/IROM` | `HW 2026-11-08 both` |
 | SD CMD8 answered on the spare; 64 GB cards mounted at full capacity under generation 2 + widefs | `HW 2026-11-07` |
 | Module code runs in SVC mode; SMC coherent; `MRC p15` hangs; pool headroom as above; `0x12010004` counts | `HW 2026-11-06 main` |
-| Colour matrix and chroma coring live, IQ stage dead | `HW 2026-11-06 main` |
+| Color matrix and chroma coring live, IQ stage dead | `HW 2026-11-06 main` |
 
 ## Open questions
 

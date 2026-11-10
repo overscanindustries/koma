@@ -17,7 +17,7 @@ It also refreshes the "Set up a card" and phone-app pieces:
   - the expected SHA-256 of the Koma module, read from the module's SHA256SUMS file, embedded
     between the MODULE-EMBED markers (the page prefers the live SHA256SUMS when it can fetch it);
   - the app icon (an SVG plus PNGs drawn here, stdlib only) between the ICON-EMBED markers;
-  - ../manifest.webmanifest, with theme colours taken from the page's :root tokens.
+  - ../manifest.webmanifest, with theme colors taken from the page's :root tokens.
 
 Run: python3 tools/komaset/web/testdata/make_demo.py [--main path/to/PARAM.CUR]
 """
@@ -126,7 +126,7 @@ def rgb(hx):
     return tuple(int(hx[i:i + 2], 16) for i in (0, 2, 4))
 
 
-# The icon: a lens (ring and centre dot) in the page colour on the accent colour. Full-bleed square so the
+# The icon: a lens (ring and centre dot) in the page color on the accent color. Full-bleed square so the
 # platforms can round or mask it (the ring stays inside the maskable safe zone, radius 40%).
 RING_R, RING_W, DOT_R = 0.30, 0.07, 0.08
 

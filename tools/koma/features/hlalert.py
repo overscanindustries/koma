@@ -25,7 +25,7 @@ from .. import firmware as fw
 NAME = "hlalert"
 SUMMARY = "Highlight Alert blinkies: histogram DISP, normal live view and playback (setting 0x1b8b9)"
 OPTIONS = {"threshold": "Y at or above which a pixel is marked (default 250; 233 if the live Y is video range)",
-           "colour": "OSD palette index of the marks, 1..15 (default 15 = red in the shooting palette)",
+           "color": "OSD palette index of the marks, 1..15 (default 15 = red in the shooting palette)",
            "div": "live-view path: act on every Nth monitor call (calls come every 4th frame). Default 2",
            "lstep": "live lines per OSD line, Q8 (default 256 = 240-line live frame; 128 if it is 120 lines)"}
 
@@ -573,11 +573,11 @@ CHECKS_SHA256 = "f8818a3a25e0d55c6674d1ba5bbf2b9954a0438609319504fad82aebf0e58fd
 
 def make(opts):
     thresh = int(opts.get("threshold", 250))
-    col = int(opts.get("colour", 15))
+    col = int(opts.get("color", 15))
     div = int(opts.get("div", 2))
     lstep = int(opts.get("lstep", 256))
     if not 1 <= thresh <= 255 or not 1 <= col <= 15 or not 1 <= div <= 255 or lstep not in (128, 256):
-        raise ValueError("hlalert: threshold 1..255, colour 1..15, div 1..255, lstep 128 or 256")
+        raise ValueError("hlalert: threshold 1..255, color 1..15, div 1..255, lstep 128 or 256")
     src = SRC.format(setb=SETB, tick=TICK, liveptr=LIVEPTR, zoom=ZOOM, appst=APPST, pbtab=PBTAB, flush=FLUSH,
                      thresh=thresh, col=col, colb=col * 0x11, div=div, maprow=MAPROW, mapoff=MAP_OFF,
                      mapbytes=MAP_BYTES, heapbytes=HEAP_BYTES, xtbytes=XT_BYTES,
@@ -588,7 +588,7 @@ def make(opts):
         assert fw.ram(c.addr, len(c.before)) == c.before, f"hlalert check {c.addr:#x} does not match 2.40"
     return Feature(
         name=NAME, version="1.0", summary=SUMMARY,
-        options=dict(threshold=thresh, colour=col, div=div, lstep=lstep),
+        options=dict(threshold=thresh, color=col, div=div, lstep=lstep),
         source=src, init="koma_init", checks=checks,
         # smoke_reachable=False: the smoke never enters DISP 5 or playback, and the model has no monitor frames
         hooks=[Hook(SITE_HIST, 0x82E98, "hook_hist", "next_hist", "histogram element refresh (DISP 5), OSD task",

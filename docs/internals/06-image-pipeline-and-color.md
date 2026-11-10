@@ -1,6 +1,6 @@
-# 06. Image pipeline and colour
+# 06. Image pipeline and color
 
-**Summary.** A still goes from the CCD through white balance, an edge-enhancement block, one shared 4096-entry tone table, a colour stage and a mono/tint register to a 4:2:2 master YUV image and a size-targeted JPEG. Five stock tone tables (one per contrast level) are shared by every mode, so stock B&W has no curve of its own. On hardware, the per-shot hook at `0x96436` reaches the JPEG: chroma gain, the 3×3 colour matrix and a chroma-coring field are live, Koma's per-shot tone-curve uploads produce distinct curves, and a software pass on the finished UV plane gives selective colour. The never-called IQ hue matrix, chroma clip and chroma offset do nothing even when written. No edit of a stock tone table has been shown to reach a JPEG.
+**Summary.** A still goes from the CCD through white balance, an edge-enhancement block, one shared 4096-entry tone table, a color stage and a mono/tint register to a 4:2:2 master YUV image and a size-targeted JPEG. Five stock tone tables (one per contrast level) are shared by every mode, so stock B&W has no curve of its own. On hardware, the per-shot hook at `0x96436` reaches the JPEG: chroma gain, the 3×3 color matrix and a chroma-coring field are live, Koma's per-shot tone-curve uploads produce distinct curves, and a software pass on the finished UV plane gives selective color. The never-called IQ hue matrix, chroma clip and chroma offset do nothing even when written. No edit of a stock tone table has been shown to reach a JPEG.
 
 Tags: `HW`, `EMU`, `STATIC`, `INFERRED`, defined in [features](evidence-ledger.md). Emulator register writes are not pixels. Addresses are firmware 2.40 runtime addresses (payload offset + `0x1c000`). `cp` is the camera parameter block at `0x23b068`. Related chapters: [04 application architecture](04-application-architecture.md), [05 settings and adjustment store](05-settings-and-adjustment-store.md), [07 USB protocol](07-usb-protocol.md), [08 card scripts](08-card-scripts-and-service-terminal.md), [10 emulator](10-emulator-and-tooling.md), [11 modification playbook](11-modification-playbook.md), [12 version history](12-version-history.md).
 
@@ -27,7 +27,7 @@ Tags: `HW`, `EMU`, `STATIC`, `INFERRED`, defined in [features](evidence-ledger.m
 | `0x9b54c` | WB gain computation (no B&W test) | `STATIC` |
 | `0xdd888` | Stored defect-list repair (callers `0x96bc8`, `0x9fb20`, `0x9fcf4`, `0xa0144`) | `STATIC` |
 | `0x12018004` | Chroma gain | `HW 2026-11-06 main` |
-| `0x12018104` / `108` / `10c` | Colour matrix rows MatR / MatG / MatB | `HW 2026-11-06 main` |
+| `0x12018104` / `108` / `10c` | Color matrix rows MatR / MatG / MatB | `HW 2026-11-06 main` |
 | `0x120180d8` | `pUVoffset`, chroma coring: low field Cb, high field Cr | `HW 2026-11-06 main` |
 | `0x12018028` / `02c` / `030` | IQ hue matrix / chroma clip / chroma offset: dead | `HW 2026-11-06 main` |
 | `0x1201800c` | Luma weights (`40 08 99 3a`) | `STATIC` |
@@ -50,22 +50,22 @@ Tags: `HW`, `EMU`, `STATIC`, `INFERRED`, defined in [features](evidence-ledger.m
 
 | Stage | Where | Mode-dependent? | Tag |
 |---|---|---|---|
-| Mode from settings: 0 colour, 1 B&W, 2 TE, stored `cp+0x22` (`0x23b08a`) | `0x6e588` (callers `0x54bd0`, `0x334cc`) | sets the mode | `STATIC` |
+| Mode from settings: 0 color, 1 B&W, 2 TE, stored `cp+0x22` (`0x23b08a`) | `0x6e588` (callers `0x54bd0`, `0x334cc`) | sets the mode | `STATIC` |
 | CCD to SDRAM raw, 16-bit | `0x96350` | no | `STATIC` |
 | Long exposure: second frame (`0x1199b4`), dark subtract `0x16e4e4`, hot-pixel filter `0x119e18` when `0x080103e8` = `0xAA` | `0x97aee` | no | `STATIC` |
 | Stored defect-list repair | `0xdd888` | no | `STATIC` |
 | WB gains `cp+0x268/26a/26c` → `0x12018110/114`; R and B scaled ×16/25 (64 = 1.0, `INFERRED`) | `0x96242`, `0x96350`; gains `0x9b54c` | no B&W test | `STATIC` |
 | Interpolation, RGB filter, edge enhancement (YH, ENH) | `0x91e78` | no B&W branch | `STATIC` |
 | Tone LUT, 4096 entries, CC2 per shot (CC1 when `cp+0x40` = 1) | `0x90278` → `0x16d31c` | selector depends on mode | `STATIC` |
-| Chroma gain, colour matrix, chroma coring, `SxUV`, unity gains | `0x922bc`, `0x92598`, `0x928d8` | chroma gain only | `STATIC` |
+| Chroma gain, color matrix, chroma coring, `SxUV`, unity gains | `0x922bc`, `0x92598`, `0x928d8` | chroma gain only | `STATIC` |
 | Mono / tint: fixed Cb/Cr | `0x8ff0e` → `0x12018038` | B&W and TE only | `STATIC` |
-| Master YUV 4:2:2; software chroma NR if colour and ISO ≥ 400 | `0x11703c`; gate `0x116fb8` | skipped in B&W | `STATIC` |
+| Master YUV 4:2:2; software chroma NR if color and ISO ≥ 400 | `0x11703c`; gate `0x116fb8` | skipped in B&W | `STATIC` |
 | Lens-shading multiply on RAW-Y (WB-bracket shots only) | `0x11705c` → `0xa32dc` | gated | `STATIC` |
 | Date imprint into the finished planes | `0x13f0b4` at `0x117372` (also `0x1181ba`, gated `0x118192`) | no | `STATIC` |
 | JPEG rate control and encode | `0x10f984` | no | `STATIC` |
 | EXIF/MakerNote | `0x112120` | no | `STATIC` |
 
-Normal still path: `0x97aee` → `0x97694` → `0x969b8` → `0x966d0` → `0x96350`, `0x96242`, `0x11703c` (`STATIC`). Order inside the hardware block is not documented; the colour-matrix fits place the matrix and coring after the tone curve (see [Colour matrix](#colour-matrix-matrgb)).
+Normal still path: `0x97aee` → `0x97694` → `0x969b8` → `0x966d0` → `0x96350`, `0x96242`, `0x11703c` (`STATIC`). Order inside the hardware block is not documented; the color-matrix fits place the matrix and coring after the tone curve (see [Color matrix](#color-matrix-matrgb)).
 
 ### Diagram
 
@@ -81,7 +81,7 @@ Normal still path: `0x97aee` → `0x97694` → `0x969b8` → `0x966d0` → `0x96
  +--------------------------- CC1/CC2 hardware block ---------------------------+
  | interpolation / RGB filter / YH+ENH edge enhance  (0x91e78, store tables)    |
  | tone LUT: 4096 x 10-bit, one table for all channels (CC2 0x1201811c)         |
- | colour matrix MatR/G/B 0x12018104..10c  (chroma only, after the tone curve)  |
+ | color matrix MatR/G/B 0x12018104..10c  (chroma only, after the tone curve)  |
  | chroma gain 0x12018004; chroma coring 0x120180d8                             |
  | mono/tint 0x12018038 (B&W: fixed Cb/Cr; TE: adds tint)                       |
  | luma weights 0x1201800c (written at monitor start)                           |
@@ -177,7 +177,7 @@ Whether the 12-bit input is linear light, gamma-encoded or post-matrix is not es
 A shutter press goes `0x9733a` → `0x90278` → `0x90408` → `0x16d31c` with its own cached selector `0x1f4db3`; `0x900f4` loads CC1 for stills only when `cp+0x40` = 1 (`STATIC`). Consequences (`EMU`):
 - The LCD preview keeps the monitor-route curve while the shot's CC2 upload can differ.
 - `0x92050` overwrites the LUTs without updating the cached selector bytes, so a modified upload must invalidate `0x1f4db3` or the next shot may skip its upload.
-- After a custom shot, a same-selector colour shot with no intervening `0x92050` keeps the custom LUT; a menu mode change runs `0x92050` and restores stock.
+- After a custom shot, a same-selector color shot with no intervening `0x92050` keeps the custom LUT; a menu mode change runs `0x92050` and restores stock.
 
 Other selector users: service command `0xd095c` case `0xb0` (any selector), factory calibration `0xdc7d0`/`0xdd058` (selectors 1 and `0xe`) (`STATIC`).
 
@@ -187,7 +187,7 @@ All three selector paths map selector `0xe` to `0x19db30`, which only factory ad
 
 ## Mono and toning
 
-`0x8ff0e(mode)` writes `0x12018038`: 0 for colour, `0x1000000` (`fixMode`, bit 24) for B&W, `0x1000000 | cfr<<12 | cfb` for TE, with `cfr[21:12]` and `cfb[9:0]` signed 10-bit (−512..511) (`STATIC`). Chroma is replaced by constants; Y is not reweighted by this register (`INFERRED` for Y). Other bits pass through unchecked; a dead API `0x16d078` packs 8-bit Cb/Cr `<<2` and preserves bits 31:25, 23:22, 11:10 from a fourth argument, which are undocumented fields (`STATIC`).
+`0x8ff0e(mode)` writes `0x12018038`: 0 for color, `0x1000000` (`fixMode`, bit 24) for B&W, `0x1000000 | cfr<<12 | cfb` for TE, with `cfr[21:12]` and `cfb[9:0]` signed 10-bit (−512..511) (`STATIC`). Chroma is replaced by constants; Y is not reweighted by this register (`INFERRED` for Y). Other bits pass through unchecked; a dead API `0x16d078` packs 8-bit Cb/Cr `<<2` and preserves bits 31:25, 23:22, 11:10 from a fourth argument, which are undocumented fields (`STATIC`).
 
 TE tint table: entry address = `0x1f4c88 + 40·tone + 8·density`, tone `0x1b1a9` (1..6), density `0x1b1aa` (1..5), each entry (Cb, Cr). Because tone and density start at 1, the first real entry is `0x1f4cb8` (tone 1, density 1); older notes give either address for the same table (`STATIC`).
 
@@ -200,7 +200,7 @@ TE tint table: entry address = `0x1f4c88 + 40·tone + 8·density`, tone `0x1b1a9
 | 4 | purple | (+12, +4) | yes |
 | 5 | strong green, Cr only: −45/−60/−80/−106/−142 at density 1..5 | (0, −80) | no (menu `0x5b89c` writes 6, 1, 2, 3, 4) |
 
-Every menu tint stays within ±44 at density 5; the register allows ±511 (`STATIC`). TE never touches Y. A second, software route to fixed chroma (`0x930cc`, constant-UV fill) has no caller (`STATIC`). Chroma gain 0 also gives a true grey frame in colour mode (`HW 2026-11-06 main`; see below).
+Every menu tint stays within ±44 at density 5; the register allows ±511 (`STATIC`). TE never touches Y. A second, software route to fixed chroma (`0x930cc`, constant-UV fill) has no caller (`STATIC`). Chroma gain 0 also gives a true grey frame in color mode (`HW 2026-11-06 main`; see below).
 
 ### White balance
 
@@ -210,13 +210,13 @@ Every menu tint stays within ±44 at density 5; the register allows ±511 (`STAT
 | Manual WB | Stores R, B at `0x1b074`, `0x1b076`, clamped `0x10..0x310` (`0x9af40`), about ×0.16 to ×7.84 | `STATIC` |
 | ISO 1600 | All three WB gains ×2 (`0x08010312` = `0xc8`) when `cp+9` = 8: part of ISO 1600 is a digital gain | `STATIC` |
 | Recorded gains | Camera Info tag 1 holds R, B as register values; on the main body's B&W card `0x65`, `0x7a` (×1.58, ×1.91) on all 59 flash-off frames | `HW main 2.40` |
-| Effect in B&W | WB is programmed in B&W with no mode test; whether the gains act before Y forms (WB as a colour filter) is not tested | `INFERRED` |
+| Effect in B&W | WB is programmed in B&W with no mode test; whether the gains act before Y forms (WB as a color filter) is not tested | `INFERRED` |
 
-### Colour bracket
+### Color bracket
 
-The colour bracket develops frames 0, 1, 2 as B&W, colour and TE through pass 2 `0xafd20` (`0x6f768` reports 3 or 6) (`STATIC`); that all three come from one exposure is `INFERRED` from the manual and `0xa0840`.
+The color bracket develops frames 0, 1, 2 as B&W, color and TE through pass 2 `0xafd20` (`0x6f768` reports 3 or 6) (`STATIC`); that all three come from one exposure is `INFERRED` from the manual and `0xa0840`.
 
-## Colour path
+## Color path
 
 ### What every shot writes
 
@@ -228,14 +228,14 @@ Only chroma gain differs between modes. The matrix and `pUVoffset` are 0 in ever
 
 ### Chroma gain
 
-| Probe write (after stock `0x8ff0e`, both passes, NORMAL colour) | Mean RGB | Mean chroma | Result | Tag |
+| Probe write (after stock `0x8ff0e`, both passes, NORMAL color) | Mean RGB | Mean chroma | Result | Tag |
 |---|---|---|---|---|
 | none (reference) | 128/76/38 | 63.8 | | `HW 2026-11-06 main` |
 | `0x12018004` = 0 | 89/89/89 | 0.0 | live: true grey | `HW 2026-11-06 main` |
 
 Format: 4 × u8, `0x80` = 1.0 (`INFERRED` from the monitor default `80808080`); per-byte roles not yet resolved. Scaling all four bytes by 1.30 gives a uniform ×1.30 chroma gain: Cr/Cr₀ = 1.298 in every band (`HW 2026-11-06 main`). Bits 31:24 are computed without a mask, so a computed value above 255 is truncated (`STATIC`). Values up to `0xff` give about 2× saturation (`INFERRED`).
 
-### Colour matrix MatR/G/B
+### Color matrix MatR/G/B
 
 Registers `0x12018104` (MatR), `0x12018108` (MatG), `0x1201810c` (MatB); setters `0x1725b0/c8/e0` from `0x92598`; store slots `0x08011380/84`, `88/8c`, `90/94`, all zero in every Ricoh body that has them (`STATIC`). Writing one byte (`MatR` = `0x3F000000`) turned the frame red: mean RGB 128/76/38 → 206/32/21, mean chroma 63.8 → 136.8 (`HW 2026-11-06 main`).
 
@@ -258,7 +258,7 @@ Not validated: other light and scenes, and the order of a chroma-gain change and
 
 ### Chroma coring (`pUVoffset`)
 
-`0x120180d8` (setter `0x17231c`, mask `0x3f3f`) is a chroma dead zone, not an offset or a colour cast: the low 6-bit field n maps Cb → sign(Cb)·max(\|Cb\| − n, 0) and the high field (bits 8..13) maps Cr the same way, in 8-bit codes at every luma level. The word is (Cr << 8) \| Cb. With n = `0x1F` the Cr fit has rms 0.48 against coring and 21.5 against an offset (`HW 2026-11-06 main`). The store supplies only one byte (`0x0801137c` or `…7d`), so stock code can reach only the low field; stock value 0 (`STATIC`).
+`0x120180d8` (setter `0x17231c`, mask `0x3f3f`) is a chroma dead zone, not an offset or a color cast: the low 6-bit field n maps Cb → sign(Cb)·max(\|Cb\| − n, 0) and the high field (bits 8..13) maps Cr the same way, in 8-bit codes at every luma level. The word is (Cr << 8) \| Cb. With n = `0x1F` the Cr fit has rms 0.48 against coring and 21.5 against an offset (`HW 2026-11-06 main`). The store supplies only one byte (`0x0801137c` or `…7d`), so stock code can reach only the low field; stock value 0 (`STATIC`).
 
 ### Dead IQ stage
 
@@ -271,7 +271,7 @@ Not validated: other light and scenes, and the order of a chroma-gain change and
 
 None of the three setters has a caller in any of 17 Ricoh ARM images (GR 1.08-2.40, R3, GX8, R2, 500G wide, GX, R1, G4, 400G wide, RZ1), and the defaults loader `0x98cb8` skips `0x28/2c/30` (`STATIC`). The stage is either bypassed in hardware or behind an enable no firmware sets; the read-modify-write sites of `0x12018100` touch only bits 0-5 and 8-9 (`STATIC`). Hue-selective looks therefore need the matrix or a pixel pass.
 
-### Other colour registers
+### Other color registers
 
 | Register | Setter | Format | Stock use | Tag |
 |---|---|---|---|---|
@@ -289,7 +289,7 @@ CC2 offsets with no driver at all: `0x24`, `0x34`, `0x88`, `0x98..0xbc`, `0xc8..
 - Chroma-gain table `0x08011330[1..12]`: stock words use slots 3..7; slots 1, 2, 8..12 all hold `755f5960`. No hidden presets (`STATIC`). R3's table holds presets the GR lacks: `72626160 947f7e7c 4f444343 85676160`.
 - Matrix and UV slots: two per row, all zero (`STATIC`).
 - `SxUV` table `0x08011360[1..6]`: only `[1]` monitor and `[2]` stills used; `[3..6]` = `0x3030` (`STATIC`).
-- Colour words `0x0801130c..`: seven per-mode words; scene states 1/3 use `22222222`; `0x08011328/2c` zero (`STATIC`).
+- Color words `0x0801130c..`: seven per-mode words; scene states 1/3 use `22222222`; `0x08011328/2c` zero (`STATIC`).
 - Tone slot `0x19db30` (selector `0xe`) and TE tone 5 (above).
 
 ### Hook points
@@ -308,7 +308,7 @@ Writing in both develop passes and restoring the values read back through the st
 
 | Item | Fact | Tag |
 |---|---|---|
-| Chroma NR `0x116dbc` | UV only, two resize passes; gate `0x116fb8` needs colour (`cp+0x22` = 0) and ISO ≥ 400 or a Tv condition; B&W never gets it | `STATIC` |
+| Chroma NR `0x116dbc` | UV only, two resize passes; gate `0x116fb8` needs color (`cp+0x22` = 0) and ISO ≥ 400 or a Tv condition; B&W never gets it | `STATIC` |
 | Enhancer | `0x91e78(1)` (from `0x96350` and `0xafd20`) → `0x912bc(1, sharpness, ISO offset)` returns two packed words from store `0x08010a04..af7`; each nibble selects an entry of a smaller store table (table below); no B&W branch | `STATIC` |
 | ISO bands | ISO offset `0x08011de2` vs `0x08010c64` = `0x20` and `0x08010c66` = `0x30`: below 400, 400-799, 800+; `0x91a30` blends toward the 400 band between ISO 100 and 400 | `STATIC` (`EMU` values) |
 | ISO 800+ | YH offset 5 → `0x10`, ENH offset 0 → 4, ENH filter narrows (`0e001254 00000214` → `18001140 00000100`), interpolation low byte `0x30` → `0x20` → `0x03`: coring and filter choice | `STATIC` |
@@ -366,7 +366,7 @@ The stock shading gate is a separate, unused mechanism: a darkening map behind i
 
 (`STATIC`.) Live-view streaming over USB is in [07](07-usb-protocol.md).
 
-## Koma recipes and selective colour
+## Koma recipes and selective color
 
 The recipes are implemented by `tools/koma/features/bwrecipes.py`; the record layout and the store are in [05](05-settings-and-adjustment-store.md). Hardware results below come from earlier frames shot on the main body (`analysis/colour-research/test02/`, composite `docs/img/looks-real.jpg`).
 
@@ -379,7 +379,7 @@ The recipes are implemented by `tools/koma/features/bwrecipes.py`; the record la
 | Upload | At `0x96436`: 16 chunks of 256 entries, each generated into a 512-byte buffer and sent by `0x16d31c(offset, 256, buf)` | `HW` (earlier frames: NOIR, SHINJUKU, MONO and HICON B&W come out with distinct curves) |
 | Cache | `0x1f4db3` := `0xff` after the upload, so the next stock upload is not skipped | `EMU` |
 | Pass 2 | `0xafd3e` reapplies filter, WB tilt and toning; it uploads no LUT | `EMU` |
-| Colour looks | After the same stock writers: SATURATION scales the chroma-gain word (7 steps, ×0.55 to ×1.45 of NORMAL's `8470697c`); the look's ROM matrix goes into MatR/G/B; TINT adds ±1/64 steps to the G row (green-magenta, luma untouched); WARMTH ≠ 0 tilts the R and B white-balance gains by 3.5% per step | `HW` for POSITIVE, NEGATIVE, BLEACH, RETRO (earlier frames: NEGATIVE, BLEACH, RETRO at ×0.40, ×0.29, ×0.41 of POSITIVE's chroma, lifted shadows on NEGATIVE and RETRO, RETRO +18° hue shift toward yellow, no cast errors); `EMU` for WARM NEG, SLIDE 50 |
+| Color looks | After the same stock writers: SATURATION scales the chroma-gain word (7 steps, ×0.55 to ×1.45 of NORMAL's `8470697c`); the look's ROM matrix goes into MatR/G/B; TINT adds ±1/64 steps to the G row (green-magenta, luma untouched); WARMTH ≠ 0 tilts the R and B white-balance gains by 3.5% per step | `HW` for POSITIVE, NEGATIVE, BLEACH, RETRO (earlier frames: NEGATIVE, BLEACH, RETRO at ×0.40, ×0.29, ×0.41 of POSITIVE's chroma, lifted shadows on NEGATIVE and RETRO, RETRO +18° hue shift toward yellow, no cast errors); `EMU` for WARM NEG, SLIDE 50 |
 
 Not yet shot: SOFT MONO, FINE 100, MATTE, HARD MONO, WARM NEG, SLIDE 50; DENSE and FILM 400 are indistinguishable from MONO on the one-hue test scene. The earlier session has no OFF frame, so POSITIVE against stock is not measured directly. The current package (koma04w) has not been re-shot with these looks.
 
@@ -397,7 +397,7 @@ POSITIVE and BLEACH are fitted from look tables recovered from GR DIGITAL IV 2.3
 | RED | `0x4008FF00` | `0xD8C5`, `0xB715`, `0x752C` |
 | GREEN | `0x40086633` | none |
 
-(`EMU`.) On OFF or a colour develop the module writes back exactly what `0x92050` writes (`[0x080113f8]` or `0x4008993a`, masked `0x7f0fffff`). That `0x1201800c` forms Y is `INFERRED`, so the filter effect is not proven.
+(`EMU`.) On OFF or a color develop the module writes back exactly what `0x92050` writes (`[0x080113f8]` or `0x4008993a`, masked `0x7f0fffff`). That `0x1201800c` forms Y is `INFERRED`, so the filter effect is not proven.
 
 Toning writes the B&W(TE) mono word from TE table rows: SEPIA = tone 6, SELENIUM = tone 4 (purple), BLUE = tone 3, GREEN = tone 2, level 1..5 = density; tone 5 is not used (`EMU`).
 
@@ -405,22 +405,22 @@ Toning writes the B&W(TE) mono word from TE table rows: SEPIA = tone 6, SELENIUM
 
 The sharpness getter `0x91268` is wrapped at `0x91a8c` (develop) and `0x4165a` (EXIF); it returns the recipe's sharpness (−2..+2 mapped to stock 1..5) (`EMU`).
 
-### Selective colour
+### Selective color
 
 Implemented by `tools/koma/features/selcolour.py` as the SELECT look.
 
 | Item | Fact | Tag |
 |---|---|---|
 | Hook | `0x117382 bl 0x1173e8` at the tail of `0x11703c`: after the master resize and date imprint, before rate control and encode; all five callers (r1 = 0) reach it; the `cp+0x1d == 9` path `0x118074` does not. The pass ran over the full frame on a camera | `HW 2026-11-06 main` |
-| Settings | COLOUR RED, ORANGE, YELLOW, GREEN, BLUE, MAGENTA (published as 1..6 at `0x1b909`); RANGE NARROW or WIDE (`0x1b90a`). Both live in the SELECT record (p5, p6) and are published per shot in the `RCP6` store header | `EMU` |
+| Settings | COLOR RED, ORANGE, YELLOW, GREEN, BLUE, MAGENTA (published as 1..6 at `0x1b909`); RANGE NARROW or WIDE (`0x1b90a`). Both live in the SELECT record (p5, p6) and are published per shot in the `RCP6` store header | `EMU` |
 | Skip | Not run when `cp+0x22` ≠ 0 (B&W or TE develop) | `EMU` |
-| Class table | 1 KiB, 32 × 32 cells of 8 codes, indexed by `(Cb >> 3) << 5 \| (Cr >> 3)`; one pool block at install; rebuilt only when COLOUR or RANGE changes (≈ 0.84 M instructions). An earlier build used a 16 KiB table | `EMU` |
+| Class table | 1 KiB, 32 × 32 cells of 8 codes, indexed by `(Cb >> 3) << 5 \| (Cr >> 3)`; one pool block at install; rebuilt only when COLOR or RANGE changes (≈ 0.84 M instructions). An earlier build used a 16 KiB table | `EMU` |
 | Classes | Neutral if \|cb\| + \|cr\| ≤ 12; KEEP inside the hue sector; HALF (`(byte + 128) >> 1`) in an 8° soft edge each side; otherwise neutral | `EMU` |
-| Result | COLOUR = RED, NARROW: red and orange stayed saturated, every other hue went grey, full frame, no band boundary (earlier build); SELECT on the earlier frames kept only the red-orange floor | `HW 2026-11-06 main` |
+| Result | COLOR = RED, NARROW: red and orange stayed saturated, every other hue went grey, full frame, no band boundary (earlier build); SELECT on the earlier frames kept only the red-orange floor | `HW 2026-11-06 main` |
 | Fast path | Two neutral pairs store `0x80808080` (19 Thumb instructions per two pairs with the loop) | `EMU` |
 | Cost | 43.0 M instructions for the 8 MP smoke plane (RED NARROW); worst case (whole frame in the soft band) higher. Seconds per shot are not measured | `EMU` |
 
-| Colour | NARROW (°) | WIDE (°) |
+| Color | NARROW (°) | WIDE (°) |
 |---|---|---|
 | MAGENTA | 30-70 | 20-80 |
 | RED | 88-122 | 78-132 |
@@ -433,7 +433,7 @@ Hue angle is `atan2(cr, cb)`; the Cb-first pair order is confirmed by the red ba
 
 ### Grain and vignette
 
-`tools/koma/features/fx.py` adds per-recipe GRAIN and VIGNETTE (OFF/1/2/3 each, recipe bytes published at `RCP6` header +11/+12) as one software pass over the master Y plane, chained at the same `0x117382` hook as selective colour (which works on UV). GRAIN adds xorshift32 noise of ±7 or ±14 levels to pixels in 16..239; VIGNETTE multiplies by a separable parabola per axis that puts a 4:3 frame's corners at 0.76 / 0.57 / 0.44 (−0.4 / −0.8 / −1.2 EV). Planes smaller than about 1660 × 1250 get no vignette. The fused ARM loop costs about 37.5 M instructions for 8 MP (`EMU`; the visual result has not been checked on a camera, and the time per shot is an estimate only).
+`tools/koma/features/fx.py` adds per-recipe GRAIN and VIGNETTE (OFF/1/2/3 each, recipe bytes published at `RCP6` header +11/+12) as one software pass over the master Y plane, chained at the same `0x117382` hook as selective color (which works on UV). GRAIN adds xorshift32 noise of ±7 or ±14 levels to pixels in 16..239; VIGNETTE multiplies by a separable parabola per axis that puts a 4:3 frame's corners at 0.76 / 0.57 / 0.44 (−0.4 / −0.8 / −1.2 EV). Planes smaller than about 1660 × 1250 get no vignette. The fused ARM loop costs about 37.5 M instructions for 8 MP (`EMU`; the visual result has not been checked on a camera, and the time per shot is an estimate only).
 
 ### Live view and recipes
 
@@ -508,13 +508,13 @@ Contrast is recorded nowhere found; whether it hides in constant bytes (`0x1001`
 | Shot upload route differs from the monitor route | `EMU` |
 | Table read at startup before the update gate | `EMU` |
 | Per-shot hook `0x96436` runs and its CC2 writes reach the JPEG | `HW 2026-11-06 main` |
-| Chroma gain, colour matrix, chroma coring live; matrix sign-magnitude, entries add, byte 0 = B | `HW 2026-11-06 main` |
+| Chroma gain, color matrix, chroma coring live; matrix sign-magnitude, entries add, byte 0 = B | `HW 2026-11-06 main` |
 | IQ hue matrix, chroma clip, chroma offset dead (also with the bit-6 enable) | `HW 2026-11-06 main` |
 | A recipe-curve change reaches a JPEG (16-chunk upload, selector cache invalidated) | `HW` (earlier B&W looks) |
 | An edit of a stock tone table reaches a JPEG | not shown |
-| Selective colour pass on the master UV plane | `HW 2026-11-06 main` |
+| Selective color pass on the master UV plane | `HW 2026-11-06 main` |
 | Koma GRAIN and VIGNETTE | `EMU` |
-| Luma weights form Y; B&W filters work | not shown (`INFERRED`; the one-hue test scene cannot measure filter colour) |
+| Luma weights form Y; B&W filters work | not shown (`INFERRED`; the one-hue test scene cannot measure filter color) |
 | WB gains shift B&W tones | not tested |
 | LCD preview follows a modified table | `STATIC` (route), not observed |
 | Recipes in live view | stock: not shown (`STATIC`); Koma `preview`: `EMU` only, no camera result |
@@ -544,10 +544,10 @@ Contrast is recorded nowhere found; whether it hides in constant bytes (`0x1001`
 - [../../analysis/tone-detail-ui/README.md](../../analysis/tone-detail-ui/README.md)
 - [../../analysis/isp-capabilities/README.md](../../analysis/isp-capabilities/README.md)
 - [../../analysis/bw-pipeline/filt.json](../../analysis/bw-pipeline/filt.json) (enhancer register values by ISO and sharpness, `EMU`)
-- [../../archive/research/bw-pipeline.md](../../archive/research/bw-pipeline.md) (stage table, enhancer table, WB, TE table, colour bracket)
+- [../../archive/research/bw-pipeline.md](../../archive/research/bw-pipeline.md) (stage table, enhancer table, WB, TE table, color bracket)
 - [../../archive/research/card-evidence.md](../../archive/research/card-evidence.md) (rate control, MakerNote layout, Camera Info fields)
 - [../../analysis/colour-research/probe1/README.md](../../analysis/colour-research/probe1/README.md), [probe2](../../analysis/colour-research/probe2/README.md), [probe3](../../analysis/colour-research/probe3/README.md) (chroma gain, matrix, coring, dead IQ stage; `HW 2026-11-06 main`)
-- [../../analysis/colour-research/selcolour1/README.md](../../analysis/colour-research/selcolour1/README.md) (selective colour on hardware)
+- [../../analysis/colour-research/selcolour1/README.md](../../analysis/colour-research/selcolour1/README.md) (selective color on hardware)
 - [../../analysis/colour-research/test02/README.md](../../analysis/colour-research/test02/README.md) (recipe frames from an earlier build)
 - [../../analysis/colour-research/liveview/README.md](../../analysis/colour-research/liveview/README.md) (monitor set-up and why recipes do not show)
 - [../img/looks-real.jpg](../img/looks-real.jpg), [../img/select-real.jpg](../img/select-real.jpg)

@@ -5,7 +5,7 @@ Same harness as test_e2e_app.py. The simulated camera runs Koma with the Look IA
 its defaults, the ADJ LEVER row 0x8ce in range; two tests keep the 0xff of builds before the Look IA) and
 gets a real black and white frame R0015710 (faintly warm-toned; tools/komaapp/design/samples/R0015710.JPG) as its
 newest photo, taken today at 14:32 unless a test says otherwise. A black and white last photo is the usual case:
-the gallery draws on the bundled colour sample then (R0015657, tools/komaapp/src/assets/looks/sample.jpg), and the
+the gallery draws on the bundled color sample then (R0015657, tools/komaapp/src/assets/looks/sample.jpg), and the
 editor's split on the photo itself. Every write is checked on the simulated card's PARAM.CUR after the Apply: the look id, IMG SET, the editor
 rows, the records, the FX table and the ADJ LEVER mask, against the layout of tools/koma/features/bwrecipes.py.
 
@@ -35,7 +35,7 @@ from test_e2e_app import Bridge, launch, sync_playwright, KB, VIEW, PHONE  # noq
 from mockcard import FOLDER, _dirent, block_checksum, DEMO_CUR  # noqa: E402
 
 PHOTO = APP / "design" / "samples" / "R0015710.JPG"             # black and white, faintly warm-toned
-SAMPLE = APP / "src" / "assets" / "looks" / "sample.jpg"         # the bundled sample: colour (R0015657)
+SAMPLE = APP / "src" / "assets" / "looks" / "sample.jpg"         # the bundled sample: color (R0015657)
 ACT, IMGSET, ROWS, GRAIN, ADJROW, REC, FXT, ADJM, STDREC = 0x8C0, 0x030, 0x8C1, 0x8CC, 0x8CE, 0x910, 0xA00, 0xA18, 0xA1C
 ORDER = ["STANDARD", "MONO", "SOFT MONO", "HARD MONO", "HICON B&W", "SHINJUKU", "FILM 400", "FINE 100", "DENSE", "NOIR",
          "MATTE", "SELECT", "POSITIVE", "NEGATIVE", "SLIDE 50", "WARM NEG", "BLEACH", "RETRO", "CUSTOM 1", "CUSTOM 2",
@@ -242,18 +242,18 @@ class LooksE2E(unittest.TestCase):
         names = pg.eval_on_selector_all("[data-testid=looks] label.card .name", "els => els.map(e => e.textContent.trim())")
         self.assertEqual(names, ORDER)
         heads = pg.eval_on_selector_all("[data-testid=looks] h2", "els => els.map(e => e.textContent.trim().toUpperCase())")
-        self.assertEqual(heads, ["MONOCHROME", "COLOUR", "CUSTOM"])          # STANDARD first, under no head
+        self.assertEqual(heads, ["MONOCHROME", "COLOR", "CUSTOM"])          # STANDARD first, under no head
         on = pg.eval_on_selector_all("label.card.on .name", "els => els.map(e => e.textContent.trim())")
         self.assertEqual(on, ["MONO"])                                    # the simulated camera has MONO on it
         adj = pg.eval_on_selector_all("label.card", "els => els.filter(e => e.querySelector('[data-testid=adj-tag]'))"
                                                     ".map(e => e.querySelector('.name').textContent.trim())")
         self.assertEqual(set(adj), ADJ_ON)                                # the default ADJ LEVER looks
-        # the last photo is black and white: the cards are drawn on the colour sample, and Details says why
+        # the last photo is black and white: the cards are drawn on the color sample, and Details says why
         src = pg.inner_text("[data-testid=looks-source]")
         self.assertIn("Drawn on a sample photo.", src)
         self.assertIn("APPROXIMATE", src.upper())
         pg.click("[data-testid=looks-details] summary")
-        self.assertIn("The last photo is black and white, so the filters and SELECT's colour would not show.",
+        self.assertIn("The last photo is black and white, so the filters and SELECT's color would not show.",
                       pg.inner_text("[data-testid=looks-details]"))
         pg.click("[data-testid=looks-details] summary")
         self.assertIn("On the camera.", self.bar(pg))
@@ -266,14 +266,14 @@ class LooksE2E(unittest.TestCase):
         self.assertIn("/photos?newest=1", self.urls)
         self.assertFalse([c for c in self.calls if c[0] != "GET" or c[1].startswith(("/live", "/tether", "/keys", "/reboot"))])
         self.assertEqual(pg.locator("[data-testid^=note-]").count(), 0)  # no notes about what a photo cannot show
-        # the renders differ: SHINJUKU is not MONO, and POSITIVE is in colour on the sample
+        # the renders differ: SHINJUKU is not MONO, and POSITIVE is in color on the sample
         diff = pg.evaluate("""() => { const c = n => document.querySelector('label[data-look=' + n + '] canvas');
             const a = c('mono').getContext('2d').getImageData(0, 0, 40, 30).data, b = c('shinjuku').getContext('2d').getImageData(0, 0, 40, 30).data;
             let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]); return d; }""")
         self.assertGreater(diff, 1000)
         self.assertGreater(pg.evaluate(CHROMA, "label[data-look=positive] canvas"), 3.0)
 
-    def test_a_colour_last_photo_is_drawn_on(self):
+    def test_a_color_last_photo_is_drawn_on(self):
         br = self.bridge(photo=False)
         with_photo(br, name="R0015799.JPG", photo=SAMPLE)
         pg = self.gallery(br)
@@ -438,11 +438,11 @@ class LooksE2E(unittest.TestCase):
 
     def test_undo_review_undo_and_return_to_stock(self):
         br = self.bridge()
-        # the camera holds an edited CUSTOM 2 (a colour look saved into the slot on the camera)
+        # the camera holds an edited CUSTOM 2 (a color look saved into the slot on the camera)
         set_bytes(br, dict(zip(range(REC + 12 * 18, REC + 12 * 19), [1, 6, 6, 1, 1, 2, 3, 3, 2, 1, 0xA5,
                                                                         0x5A ^ 1 ^ 6 ^ 6 ^ 1 ^ 1 ^ 2 ^ 3 ^ 3 ^ 2 ^ 1])))
         pg = self.open_editor(br, "custom-2")
-        self.assertIn("SATURATION", pg.inner_text(".ed-rows"))             # its rows follow the colour type
+        self.assertIn("SATURATION", pg.inner_text(".ed-rows"))             # its rows follow the color type
         pg.focus("#d-contrast")
         pg.keyboard.press("ArrowLeft")
         pg.focus("#d-key")
