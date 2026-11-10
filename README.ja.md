@@ -49,6 +49,13 @@ Komaは、リコーの初代GR DIGITAL（2005年）に後継のGRが備える撮
 
 ## 対応機種
 
+> [!WARNING]
+> **リコーGR、GR II、GR III、GR IVには対応していません。** GR DIGITAL II〜IVも対象外です。Komaが動くのは2005年の初代GR DIGITALだけです。
+
+<img src="docs/assets/gr-digital.jpg" alt="初代リコーGR DIGITALの正面。レンズの横にGR DIGITALのロゴ" width="400">
+
+<sub>Photo: [yoppy](https://commons.wikimedia.org/wiki/File:Ricoh_GR_Digital_-_128675954.jpg), CC BY 2.0</sub>
+
 | カメラ | ファームウェア | 状況 |
 |---|---|---|
 | リコーGR DIGITAL（2005年） | 2.40 | 実機で確認済み。 |

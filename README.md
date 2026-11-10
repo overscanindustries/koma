@@ -49,6 +49,13 @@ Koma gives the original Ricoh GR DIGITAL (2005) the shooting features of the GRs
 
 ## Supported hardware
 
+> [!WARNING]
+> **Not for the Ricoh GR, GR II, GR III or GR IV**, or the GR DIGITAL II to IV. Koma runs only on the 2005 GR DIGITAL.
+
+<img src="docs/assets/gr-digital.jpg" alt="The original Ricoh GR DIGITAL from the front, with the GR DIGITAL badge beside the lens" width="400">
+
+<sub>Photo: [yoppy](https://commons.wikimedia.org/wiki/File:Ricoh_GR_Digital_-_128675954.jpg), CC BY 2.0</sub>
+
 | Camera | Firmware | Status |
 |---|---|---|
 | Ricoh GR DIGITAL (2005) | 2.40 | Tested on real hardware. |
