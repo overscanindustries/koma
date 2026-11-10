@@ -90,7 +90,7 @@ Setup builds Koma on your computer from Ricoh's 2.40 update file ([download from
 
 ## Why "Koma"
 
-コマ (*koma*) is Japanese for a single frame of film: one exposure, the smallest unit of a photograph. The word was in the camera long before this project. Ricoh's firmware counts every picture in koma, in strings such as `f_cur_koma_no`, `f_dcim_new_koma` and `Rec Koma NO`. The name was already there.
+コマ (*koma*) is Japanese for a single frame of film. The name comes from the camera itself: Ricoh's 2.40 firmware counts photos in koma, and its debug strings still say so, with names like `f_cur_koma_no`, `f_dcim_new_koma` and `Rec Koma NO`. The logo is コマ in katakana.
 
 ## Documentation
 
