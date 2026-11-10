@@ -43,6 +43,10 @@ Koma gives the original Ricoh GR DIGITAL (2005) the shooting features of the GRs
 - Look editing on your last photo, sent to the camera.
 - Backup and restore of every camera setting, and copying them to another GR DIGITAL.
 
+## Why "Koma"
+
+コマ (*koma*) is Japanese for a single frame of film: one exposure, the smallest unit of a photograph. Ricoh's firmware counts every picture in koma, in strings such as `f_cur_koma_no`, `f_dcim_new_koma` and `Rec Koma NO`. The name was already there.
+
 ## Supported hardware
 
 | Camera | Firmware | Status |
@@ -87,10 +91,6 @@ Setup builds Koma on your computer from Ricoh's 2.40 update file ([download from
 | Shoot tethered with live view. | Import new photos from the card. |
 | <img src="docs/assets/screens/settings.png" alt="Settings: the camera's menu rows with two pending changes and Review and Apply buttons" width="400"> | <img src="docs/assets/screens/webcam.png" alt="Webcam: the camera's picture shown as OBS Virtual Camera, with steps for the call app" width="400"> |
 | Change camera settings and back them up. | Use the camera as a webcam. |
-
-## Why "Koma"
-
-コマ (*koma*) is Japanese for a single frame of film: one exposure, the smallest unit of a photograph. The word was in the camera long before this project. Ricoh's firmware counts every picture in koma, in strings such as `f_cur_koma_no`, `f_dcim_new_koma` and `Rec Koma NO`. The name was already there.
 
 ## Documentation
 
