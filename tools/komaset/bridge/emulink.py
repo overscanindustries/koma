@@ -1,7 +1,7 @@
 """emulink: the bridge's third backend (`komabridge.py --emu`). Simulated; never touches hardware.
 
 Drives the real 2.40 firmware plus a Koma module in the Koma emulator (tools/koma/emu, Unicorn), booted the way the
-tether scenario boots it (tether_scenario.py):
+tether and live-view scenarios boot it:
 module-loader image built in memory, the module as /ATA1/GRMOD.BIN on the modelled card, the loader installs it, the
 model's internal memory is formatted with the menu keys, then USB attach (real 0x131b3a(0) in tOpeMain's poll
 context). After that every command line the bridge writes goes through the firmware's own command state machine
@@ -48,7 +48,8 @@ from grdusb import descriptors  # noqa: E402
 from grdusb.mock import _dirent, _frame  # noqa: E402
 from grdusb.transport import TransportError, TransportTimeout  # noqa: E402
 
-TETHER_SCENARIO = HERE / "tether_scenario.py"
+DEFAULT_MODULE = ROOT / "analysis/koma-0.4-candidate/koma04.grmod"
+TETHER_SCENARIO = ROOT / "analysis/tether-feature/scenario.py"
 
 XSTATE, USB_BUF = 0x1BD2D0, 0x1BD308
 USB_BUF_LITERAL = 0x0BF844E0          # literal 0x537d0 (tDcx init 0x5373e is not run in the model)
@@ -79,14 +80,6 @@ def deps_ok() -> tuple[bool, str]:
     except Exception as error:
         return False, f"{type(error).__name__}: {error}"
     return True, ""
-
-
-def default_module() -> bytes:
-    """The koma04 set as `tools/koma/koma build --features koma04 --opt telemetry.cp15=off` builds it, in memory."""
-    from koma import features as F
-    from koma.linker import link
-    feats = [F.make(n, {"cp15": "off"} if n == "telemetry" else None) for n in F.SETS["koma04"]]
-    return link(feats, publish=True, resident=F.SET_RESIDENT["koma04"]).module
 
 
 def _load_tether():
@@ -148,7 +141,7 @@ class EmuCamera:
     methods submit work there and wait. `lock` guards the small state shared with the HTTP threads."""
 
     def __init__(self, module: bytes | None = None, card: dict | None = None, log=print):
-        self.module = module if module is not None else default_module()
+        self.module = module if module is not None else DEFAULT_MODULE.read_bytes()
         self.card0 = dict(card or {})
         self.log = log
         self.pool = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="emu")
@@ -339,7 +332,7 @@ class EmuCamera:
     def _firmware(self, line: bytes) -> list:
         m = self.s.m
         if m.u32(XSTATE) != 1:
-            m.w32(XSTATE, 1)        # a previous exchange left the machine mid-transfer; start clean
+            m.w32(XSTATE, 1)        # an earlier exchange may have left the machine mid-transfer; start clean
         r = self._dcx(EV_COMMAND, line)
         out = [(1, r.get("reply", b""))] if r.get("reply") else []
         st = r["xstate"]

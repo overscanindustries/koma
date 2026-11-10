@@ -306,15 +306,15 @@ def test_save_to_card():
 def test_exclusion_table_matches_map():
     m = json.loads((ROOT / "tools/komaset/settings-map.json").read_text())
     have = sorted((int(e["offset"], 16), e["size"]) for e in m["exclude_on_merge"])
-    add = json.loads((Path(__file__).resolve().parent / "data/settingsio-map-additions.json").read_text())
+    add = json.loads((ROOT / "analysis/settings-io/map-additions.json").read_text())
     extra = sorted((int(e["offset"], 16), e["size"]) for e in add["exclude_on_merge"])
     extra_offs = {o for o, _ in extra}
     assert sorted(S.MAP_EXCLUDE) == [x for x in have if x[0] not in extra_offs], \
         "settingsio.MAP_EXCLUDE is out of date with tools/komaset/settings-map.json exclude_on_merge"
     assert sorted(S.SIO_EXCLUDE) == extra
     fields = {int(f["offset"], 16): f for f in m["fields"]}
-    for o in range(0x8D0, 0x900):                                       # KSIO range is not claimed by the map
-        assert o not in fields or fields[o]["name"].startswith("settingsio"), hex(o)
+    for o in range(0x8D0, 0x900):                 # per-body KSIO area: settingsio, plus clockkeep's word at 0x8e0
+        assert o not in fields or fields[o]["name"].startswith(("settingsio", "clockkeep")), hex(o)
 
 
 def test_keep_table_matches_ranges():
@@ -349,14 +349,14 @@ def test_no_flash_calls_in_source():
 
 
 def test_sibling_ga01_block_rejected():
-    """GX8/R2 PARAM.DAT blocks carry magic 'Ga01': never imported."""
+    """GX8/R2 PARAM.DAT blocks carry magic 'Ga01' (sibling model): never imported."""
     u0, _ = boot()
     f = S.with_checksum(b"Ga01" + u0.block()[4:])
     u, before = boot({"PARAM.DAT": f})
     assert u.block() == with_ksio(before, S.ST_BAD) and u.card["PARAM.BAD"] == b"BAD MAGIC\r\n"
 
 
-# ---------------------------------------------------------------- QA fixes (2026-11-07): tag, row clamp, short reads
+# ---------------------------------------------------------------- Regression tests: tag, row clamp, short reads
 
 def _with_tag(blk, tag):
     b = bytearray(blk)
@@ -378,7 +378,7 @@ def test_firmware_tag_compared_not_refused():
     assert ksio(u.block())[3] == 1 == S.ST_OK                            # matching tag: status 1
     # another firmware's tag (main Rev024M -> spare 240K2): imported, status 3, PARAM.OK, file consumed; the
     # running body's tag stays in the KSIO header (the per-body KSIO range is never copied)
-    for other in (b"240K2.4", b"Rev024X", tag[:6] + bytes([tag[6] ^ 0x20])):   # last: one byte off at the end
+    for other in (b"240K1.0", b"Rev024X", tag[:6] + bytes([tag[6] ^ 0x20])):   # last: one byte off at the end
         mis = S.with_checksum(_with_tag(f, other))
         assert S.verdict(mis, tag=tag) == "ok:tag" and S.verdict(mis) == "ok"
         u, before = boot({"PARAM.DAT": mis})
@@ -389,7 +389,7 @@ def test_firmware_tag_compared_not_refused():
         assert not undeclared(u, mis)
     assert S.STATUS[S.ST_OK_TAG] == "OK, tag differed" and 5 not in S.REASONS
     # a differing tag never masks a real envelope fault: Koma version still refuses
-    kv = S.with_checksum(_with_tag(f[:0x8B4] + b"\x02" + f[0x8B5:], b"240K2.4"))
+    kv = S.with_checksum(_with_tag(f[:0x8B4] + b"\x02" + f[0x8B5:], b"240K1.0"))
     u, before = boot({"PARAM.DAT": kv})
     assert u.block() == with_ksio(before, S.ST_BAD) and u.card["PARAM.BAD"] == b"BAD KOMA VERSION\r\n"
     # no KSIO sub-header (stock body or older Koma): accepted under the old rules, whatever the tag bytes hold

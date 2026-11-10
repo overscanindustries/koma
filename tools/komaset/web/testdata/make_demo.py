@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the Koma Setup demo fixtures and embed them in ../koma-setup.html.
 
-  demo-main.cur   the owner's main camera block (PARAM.CUR, 2026-11-06, stock 2.40). Copied from
+  demo-main.cur   a real camera block (PARAM.CUR, stock 2.40). Copied from
                   --main if given, else the existing file is reused.
   demo-spare.cur  demo-main.cur with 9 user settings and two camera-specific counters changed,
                   checksum recomputed.
@@ -9,13 +9,13 @@
 The page embeds ../../settings-map.json (the real map) as its built-in settings list, plus both
 blocks, so it works from file:// and ?demo=copy|edit|mode|backup runs end to end.
 
-Checksum (verified on the real block 2026-11-07): sum of big-endian u16 halfwords over
+Checksum (verified on a real block): sum of big-endian u16 halfwords over
 0x000..0xffb, stored as a 4-byte big-endian word at 0xffc. Rerun this script whenever
 settings-map.json changes so the embedded copy stays current.
 
 It also refreshes the "Set up a card" and phone-app pieces:
-  - the expected SHA-256 of each Koma module (koma04 for Koma 1, koma04w for Koma 2), read from build/SHA256SUMS
-    (your own builds), embedded between the MODULE-EMBED markers (the page prefers the live SHA256SUMS when it can fetch it);
+  - the expected SHA-256 of the Koma module, read from the module's SHA256SUMS file, embedded
+    between the MODULE-EMBED markers (the page prefers the live SHA256SUMS when it can fetch it);
   - the app icon (an SVG plus PNGs drawn here, stdlib only) between the ICON-EMBED markers;
   - ../manifest.webmanifest, with theme colours taken from the page's :root tokens.
 
@@ -34,11 +34,10 @@ WEB = HERE.parent
 MAP = WEB.parent / "settings-map.json"
 CS_OFF = 0xFFC
 REPO = HERE.parents[3]
-# Koma generation -> module file: Koma 1 (Rev024M) runs koma04, Koma 2 (240K2, SDHC) runs koma04w.
-MODULES = {"1": "koma04.grmod", "2": "koma04w.grmod"}
-SUMS = REPO / "build" / "SHA256SUMS"
+MODULE_NAME = "koma04.grmod"
+SUMS = REPO / "analysis" / "koma-0.4-candidate" / "SHA256SUMS"
 
-# Spare differs from main in these user settings (stored values, from the map's "values" keys).
+# demo-spare differs from demo-main in these user settings (stored values, from the map's "values" keys).
 SPARE_SETTINGS = {"iso": 7, "photometry": 2, "white_balance": 0, "focus": 2, "pic_quality": 0,
                   "bw_contrast": 3, "beep_sound": 1, "adj_btn_set1": 5, "exposure_comp": 11}
 # Camera-specific bytes that also differ, so the "kept" list has something to show.
@@ -100,21 +99,21 @@ def sub_marker(html, name, body):
     return pat.sub(lambda _: "<!-- %s START -->\n%s\n<!-- %s END -->" % (name, body, name), html)
 
 
-def module_sha(name):
+def module_sha():
     for line in SUMS.read_text().splitlines():
         parts = line.split()
-        if len(parts) == 2 and parts[1].lstrip("*") == name:
+        if len(parts) == 2 and parts[1].lstrip("*") == MODULE_NAME:
             return parts[0].lower()
-    raise SystemExit("%s has no line for %s" % (SUMS, name))
+    raise SystemExit("%s has no line for %s" % (SUMS, MODULE_NAME))
 
 
 def embed_module(html_p):
-    mods = {k: {"name": name, "sha256": module_sha(name)} for k, name in MODULES.items()}
+    sha = module_sha()
     blob = ('<script type="application/json" id="moduleData">' +
-            json.dumps({"modules": mods, "from": "build/SHA256SUMS"}, separators=(",", ":")) + "</script>")
+            json.dumps({"name": MODULE_NAME, "sha256": sha, "from": "analysis/koma-0.4-candidate/SHA256SUMS"},
+                       separators=(",", ":")) + "</script>")
     html_p.write_text(sub_marker(html_p.read_text(), "MODULE-EMBED", blob))
-    for m in mods.values():
-        print("embedded the expected module hash", m["name"], m["sha256"])
+    print("embedded the expected module hash", sha)
 
 
 def tokens(html):

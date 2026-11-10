@@ -1,0 +1,91 @@
+# The koma-gr Python package (the `koma` command): build the wheel and sdist, install the wheel into a fresh venv on
+# each OS and Python 3.10 and 3.13, and smoke-test it against the simulated camera (packaging/smoke.py). Publishes
+# nothing. Runs on pushes to main and pull requests that touch what the wheel carries, and by hand.
+name: Koma package
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "README.md"
+      - "LICENSE"
+      - "packaging/**"
+      - "tools/komalauncher/**"
+      - "tools/komaapp/dist/**"
+      - "tools/komaset/**"
+      - "tools/komacam/**"
+      - "tools/grdusb/**"
+      - "tools/koma/__init__.py"
+      - "tools/koma/loader.py"
+      - "dist-release/**"
+      - ".github/workflows/koma-package.yml"
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "README.md"
+      - "LICENSE"
+      - "packaging/**"
+      - "tools/komalauncher/**"
+      - "tools/komaapp/dist/**"
+      - "tools/komaset/**"
+      - "tools/komacam/**"
+      - "tools/grdusb/**"
+      - "tools/koma/__init__.py"
+      - "tools/koma/loader.py"
+      - "dist-release/**"
+      - ".github/workflows/koma-package.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python packaging/koma_build.py --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: koma-gr
+          path: dist/
+          if-no-files-found: error
+
+  smoke:
+    name: Smoke (${{ matrix.os }}, Python ${{ matrix.python }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+        python: ["3.10", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: koma-gr
+          path: dist
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: libusb (Linux, macOS)
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then sudo apt-get install -y libusb-1.0-0; fi
+          if [ "$RUNNER_OS" = macOS ]; then brew install libusb; fi
+      - name: Install the wheel into a fresh venv
+        shell: bash
+        run: |
+          python -m venv venv
+          if [ "$RUNNER_OS" = Windows ]; then BIN=venv/Scripts; else BIN=venv/bin; fi
+          $BIN/python -m pip install dist/*.whl
+          echo "KOMA=$BIN/koma" >> "$GITHUB_ENV"
+      - name: Smoke test (simulated camera)
+        shell: bash
+        run: python packaging/smoke.py "$KOMA" --port 9718

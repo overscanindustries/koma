@@ -27,7 +27,7 @@ INV = {v: k + 1 for k, v in MAP.items()}
 ADJ_APPLY = {1: 0, 2: 1, 3: 2, 4: 3, 5: 6, 6: 4}         # 0x778e0: cursor -> value, else 5
 AUTO_ROW = B.IMG_ROWS[0]
 
-# Owner decisions 2026-11-06: list order and the look definitions (base, con, key, shd, hil, filter, tone, level, sharp)
+# List order and the look definitions (base, con, key, shd, hil, filter, tone, level, sharp)
 ORDER = ["MONO", "SHINJUKU", "HICON B&W", "HARD MONO", "SOFT MONO", "FILM 400", "FINE 100", "DENSE", "NOIR", "MATTE",
          "SELECT", "POSITIVE", "NEGATIVE", "BLEACH", "RETRO", "WARM NEG", "SLIDE 50", "CUSTOM 1", "CUSTOM 2", "CUSTOM 3"]
 SPEC = {"MONO": ("R3", 0, 0, 0, 0, "OFF", "OFF", 3, 1),
@@ -52,6 +52,12 @@ CBASE = {"BLEACH": "BLEACH"}
 CREGS = ("12018004", "12018104", "12018108", "1201810c", "12018110", "12018114")
 INVP1 = {v: k for k, v in B.P1.items()}
 HDR = B.MAGIC + bytes([B.STORE_VER])                     # 'RCP6' v6 (Koma 0.3)
+# The IMG SET list in GR III order, STANDARD first; ADJ LEVER defaults
+DISPLAY = ["STANDARD", "MONO", "SOFT MONO", "HARD MONO", "HICON B&W", "SHINJUKU", "FILM 400", "FINE 100", "DENSE",
+           "NOIR", "MATTE", "SELECT", "POSITIVE", "NEGATIVE", "SLIDE 50", "WARM NEG", "BLEACH", "RETRO", "CUSTOM 1",
+           "CUSTOM 2", "CUSTOM 3"]
+ADJ_ON = ["STANDARD", "MONO", "HARD MONO", "HICON B&W", "SHINJUKU", "POSITIVE", "CUSTOM 1"]
+GHOST = B.NDISP + 1
 
 
 class RU(Unit):
@@ -97,7 +103,7 @@ class RU(Unit):
         self.thumb(self.sym("on_change"), {UC_ARM_REG_R0: value, UC_ARM_REG_R1: byte})
 
     def rec(self, rid):
-        return self.read(B.REC + (rid - 1) * B.RECLEN, B.RECLEN)
+        return self.read(B.STDREC if rid == B.STD else B.REC + (rid - 1) * B.RECLEN, B.RECLEN)
 
 
 def _commit_fake(u):                     # 0x5b4e4 r0 = 0/1: 0x1b030 = map[cursor]
@@ -161,7 +167,11 @@ def shot(u, mono=1, pass_=1):
 
 
 def rid(name):
-    return [r["name"] for r in B.RECIPES].index(name) + 1
+    return [r["name"] for r in B.ALL].index(name) + 1
+
+
+def pos(name):
+    return DISPLAY.index(name) + 1
 
 
 def select(u, name):
@@ -247,25 +257,31 @@ def v4_store(records):
 def test_install_and_records():
     u = unit()
     for r in B.IMG_ROWS:
-        assert u.u8(r + 8) == B.NOPT == 7 + 20
+        assert u.u8(r + 8) == B.NDISP == 21
         assert struct.unpack(">I", u.read(r + 4, 4))[0] == struct.unpack(">I", u.read(B.ADJ_ITEM, 4))[0]
-    assert u.u8(B.ADJ_ITEM + 4) == B.NOPT
+    assert u.u8(B.ADJ_ITEM + 4) == B.NDISP
     assert u.read(B.ST, 5) == HDR                    # stale tail (0x03 fill) -> fresh store
     assert u.read(B.ST + 8, 5) == bytes(5)                   # published bytes: no recipe (+13 = FX row owner)
     assert u.callee_saved_ok
-    assert (B.N, B.NCUR, B.NCUSTOM, B.NB, B.NBW, B.NCOL) == (20, 17, 3, 8, 10, 6)
+    assert (B.N, B.NCUR, B.NCUSTOM, B.NB, B.NBW, B.NCOL, B.STD) == (20, 17, 3, 8, 10, 6, 21)
+    m = u.read(B.AJM, 4)                                          # fresh store: the default ADJ LEVER mask
+    assert int.from_bytes(m[:3], "little") == B.DEFMASK and m[3] == m[0] ^ m[1] ^ m[2] ^ 0x5A
+    assert u.u8(B.STDREC + 10) != B.VALID and fxt(u, B.STD) == 0
 
 
 def test_list_order_and_labels():
-    """IMG SET / ADJ list = stock 7, 10 B&W looks, SELECT, 6 colour looks, CUSTOM 1..3; the KOMA RECIPE row = OFF + the
-    same names; the editor rows (declared labels) and every per-type variant meet the naming rules."""
-    assert [r["name"] for r in B.RECIPES] == ORDER
-    assert B.ROWS[0]["options"] == ["OFF"] + ORDER
+    """IMG SET list = the 21 looks in GR III order (STANDARD first; no stock HARD / SOFT / B&W / B&W(TE) / SETTING1/2),
+    plus the ghost slot; the look-id row (no page; editor title) = OFF + the looks by id + STANDARD; the editor rows
+    (declared labels) and every per-type variant meet the naming rules."""
+    assert [r["name"] for r in B.RECIPES] == ORDER and B.DISPLAY == DISPLAY
+    assert B.ROWS[0]["options"] == ["OFF"] + ORDER + ["STANDARD"] and B.ROWS[0]["group"] == "recipe-title"
     u = unit()
     opts = struct.unpack(">I", u.read(AUTO_ROW + 4, 4))[0]
-    ptrs = struct.unpack(f">{B.NOPT}I", u.read(opts, 4 * B.NOPT))
-    assert ptrs[:7] == struct.unpack(">7I", fw.ram(B.IMG_OPTS, 28))
-    assert [glyph_text(u, p) for p in ptrs[7:]] == ORDER
+    ptrs = struct.unpack(f">{B.NDISP + 1}I", u.read(opts, 4 * (B.NDISP + 1)))
+    assert [glyph_text(u, p) for p in ptrs[:B.NDISP]] == DISPLAY
+    assert [glyph_text(u, struct.unpack(">I", u.read(u.sym("rnames") + 4 * k, 4))[0]) for k in range(B.NALL + 1)] == \
+        B.ROWS[0]["options"]                                      # menu5's editor title list (shared, not copied)
+    assert set(B.DISPLAY) == {r["name"] for r in B.ALL}
     for r in B.ROWS:                                              # naming rules
         alts = [(r["label"], r["options"])] + list(r.get("variants", {}).get("alts", []))
         for lab, o in alts:
@@ -274,7 +290,7 @@ def test_list_order_and_labels():
             assert len(o) <= len(r["options"]), r["id"]            # declared list is the longest (boot repair)
     assert [r["label"] for r in sorted(B.ROWS[1:], key=lambda r: r["byte"])] == [
         "CURVE", "CONTRAST", "KEY", "SHADOW", "HIGHLIGHT", "SATURATION", "WARMTH", "TINT", "SHARPNESS",
-        "SAVE TO CUSTOM", "RESET", "GRAIN", "VIGNETTE"]
+        "SAVE TO CUSTOM", "RESET", "GRAIN", "VIGNETTE", "ADJ LEVER"]
     per_type = [[r["variants"]["alts"][t][0] for r in B.ROWS if "variants" in r] for t in range(3)]
     assert per_type == [["FILTER EFF.", "TONING", "TONE LEVEL"], ["SATURATION", "WARMTH", "TINT"],
                         ["COLOUR", "RANGE", "SATURATION"]]
@@ -306,55 +322,209 @@ def test_defaults_of_every_look():
     assert u.read(tab, B.NCUR * B.DEFLEN) == bytes(x for r in B.CURATED for x in r["params"] + [r["type"]])
 
 
-def test_menu_commit_recipe_then_stock_clears():
+def test_menu_commit_look_standard_and_ghost():
+    """IMG SET commit: a look's display position -> its id + base; STANDARD -> plain NORMAL, no id (at its defaults);
+    the ghost commits the hidden stock value unchanged, no id."""
     u = unit()
     for name, base in (("MONO", 3), ("HARD MONO", 6), ("POSITIVE", 1), ("SHINJUKU", 3), ("SELECT", 1),
                        ("CUSTOM 3", 3), ("SLIDE 50", 1)):
         i = rid(name)
-        u.w8(AUTO_ROW + 9, B.NSTOCK + i)
+        u.w8(AUTO_ROW + 9, pos(name))
         call_site(u, 0x58882, r0=1)
         assert (u.u8(0x1B030), u.u8(B.ACT)) == (base, i), name
-        assert u.u8(AUTO_ROW + 9) == B.NSTOCK + i                # display cursor kept: row shows the name
-        assert list(u.read(B.EB, B.NPARAM)) == B.RECIPES[i - 1]["params"]
-    u.w8(AUTO_ROW + 9, 4)                                         # stock B&W
+        assert u.u8(AUTO_ROW + 9) == pos(name)                    # display cursor kept: row shows the name
+        assert list(u.read(B.EB, B.NPARAM)) == B.ALL[i - 1]["params"]
+    u.w8(AUTO_ROW + 9, pos("STANDARD"))
     call_site(u, 0x58882, r0=1)
-    assert (u.u8(0x1B030), u.u8(B.ACT)) == (3, 0)
+    assert (u.u8(0x1B030), u.u8(B.ACT), u.u8(AUTO_ROW + 9)) == (1, 0, 1)
+    u.w8(0x1B030, 4)                                              # SETTING1 recalled elsewhere (MY SETTINGS)
+    call_site(u, 0x5B394)                                         # menu load: ghost entry
+    assert (u.u8(AUTO_ROW + 8), u.u8(AUTO_ROW + 9)) == (GHOST, GHOST)
+    call_site(u, 0x58882, r0=1)                                   # left on the ghost: SETTING1 stays
+    assert (u.u8(0x1B030), u.u8(B.ACT)) == (4, 0)
 
 
-def test_menu_load_shows_recipe_or_drops_it():
+def test_menu_load_shows_look_standard_or_ghost():
     u = unit()
     for name, base in (("FILM 400", 3), ("NEGATIVE", 1)):
         i = rid(name)
         u.w8(B.ACT, i)
-        call_site(u, 0x5B394)                                     # load: sync sets the base, cursor = 7 + i
-        assert u.u8(0x1B030) == base and u.u8(AUTO_ROW + 9) == B.NSTOCK + i
+        call_site(u, 0x5B394)                                     # load: sync sets the base, cursor = its position
+        assert u.u8(0x1B030) == base and u.u8(AUTO_ROW + 9) == pos(name) and u.u8(AUTO_ROW + 8) == B.NDISP
         u.w8(0x1B030, 0 if base == 1 else 1)                      # IMG SET changed elsewhere (e.g. MY SETTINGS)
         call_site(u, 0x5B446)
-        assert u.u8(B.ACT) == 0 and u.u8(AUTO_ROW + 9) == INV[0 if base == 1 else 1]
+        assert u.u8(B.ACT) == 0
+        if base == 3:                                             # NORMAL: shown as STANDARD, no ghost
+            assert (u.u8(AUTO_ROW + 8), u.u8(AUTO_ROW + 9)) == (B.NDISP, 1)
+        else:                                                     # HARD: hidden, ghost entry with its stock label
+            assert (u.u8(AUTO_ROW + 8), u.u8(AUTO_ROW + 9)) == (GHOST, GHOST)
+            opts = struct.unpack(">I", u.read(AUTO_ROW + 4, 4))[0]
+            assert u.read(opts + 4 * B.NDISP, 4) == fw.ram(B.IMG_OPTS, 4)          # HARD's stock label word
+    for v, cur in ((2, 3), (3, 4), (6, 5), (5, 7)):                # SOFT, B&W, B&W(TE), SETTING2: their stock labels
+        u.w8(0x1B030, v)
+        call_site(u, 0x5B394)
+        opts = struct.unpack(">I", u.read(AUTO_ROW + 4, 4))[0]
+        assert u.u8(AUTO_ROW + 9) == GHOST and u.read(opts + 4 * B.NDISP, 4) == fw.ram(B.IMG_OPTS + 4 * (cur - 1), 4)
 
 
-def test_adj_step_order_wraps():
-    u = unit()
-    count = u.u8(B.ADJ_ITEM + 4)
-    assert count == 27
-    seen, c = [], 1
-    for _ in range(count + 2):
+def adj_open(u):
+    """ADJ lever opened on IMG SET: the hook builds the list; returns [(label, look id)] and the cursor."""
+    call_site(u, B.SITE_ADJ_OPEN[0])
+    n = u.u8(B.ADJ_ITEM + 4)
+    opts = struct.unpack(">I", u.read(B.ADJ_ITEM, 4))[0]
+    amap = u.sym("adjmap")
+    out = []
+    for k in range(n):                                            # the ghost (id 0): its stock label word
+        w, i = struct.unpack(">I", u.read(opts + 4 * k, 4))[0], u.u8(amap + k)
+        out.append((glyph_text(u, w) if i else w, i))
+    return out, u.u8(B.ADJD + 9)
+
+
+def adj_walk(u, n, start):
+    seen, c = [], start
+    for _ in range(n + 1):
+        c = c + 1 if c < n else 1                                 # stock key handler 0x13cf10: wrap at count
         u.w8(B.ADJD + 9, c)
         call_site(u, B.SITES_ADJ_STEP[0])
         assert u.u8(B.ADJD + 9) == c
         seen.append((u.u8(0x1B030), u.u8(B.ACT)))
-        c = c + 1 if c < count else 1                             # stock key handler 0x13cf10: wrap at count
-    stock = [(MAP[k], 0) for k in range(7)]
-    rec = [(B.imgset_of(r["params"], r["type"]), k + 1) for k, r in enumerate(B.RECIPES)]
-    assert seen == stock + rec + stock[:2]
-    assert [k for _, k in seen[7:27]] == [rid(n) for n in ORDER]
-    for name in ("HARD MONO", "CUSTOM 2", "RETRO", "SELECT"):     # commit on a recipe: no clamp to NORMAL
-        i = rid(name)
-        u.w8(B.ADJD + 9, B.NSTOCK + i)
+    return seen
+
+
+def test_adj_lever_walks_the_on_looks_in_display_order():
+    """The ADJ lever lists the looks with ADJ LEVER = ON (defaults: 7 looks) in display order, wrapping; the
+    current look stays in the list even when OFF (one step leaves it); a hidden stock value is the ghost (last);
+    no look ON: only the current entry. Commit keeps a look (no clamp to NORMAL)."""
+    u = unit()
+    lst, cur = adj_open(u)                                        # IMG SET NORMAL, no look: STANDARD current
+    assert [n for n, _ in lst] == [n for n in DISPLAY if n in ADJ_ON] and cur == 1
+    assert [k for _, k in lst] == [rid(n) for n in DISPLAY if n in ADJ_ON]
+    seen = adj_walk(u, len(lst), cur)
+    want = [(B.imgset_of(B.ALL[rid(n) - 1]["params"], B.ALL[rid(n) - 1]["type"]), rid(n))
+            for n in DISPLAY if n in ADJ_ON]
+    assert seen == want[1:] + [(1, 0), want[1]]                  # back on STANDARD: plain NORMAL, id 0
+    i = rid("NOIR")                                               # current look OFF: listed at its place
+    u.w8(B.ADJD + 9, 1)
+    call_site(u, B.SITES_ADJ_COMMIT[0])
+    u.on_change(B.ACT, i)
+    lst, cur = adj_open(u)
+    names = [n for n, _ in lst]
+    assert names == [n for n in DISPLAY if n in ADJ_ON or n == "NOIR"] and names[cur - 1] == "NOIR"
+    u.w8(B.ADJD + 9, cur + 1 if cur < len(lst) else 1)            # one step: the next ON look (POSITIVE)
+    call_site(u, B.SITES_ADJ_STEP[1])
+    assert u.u8(B.ACT) == rid("POSITIVE")
+    for name in ("HARD MONO", "CUSTOM 1", "STANDARD"):            # commit on a look
+        k = [n for n, _ in adj_open(u)[0]].index(name) + 1
+        u.w8(B.ADJD + 9, k)
         call_site(u, B.SITES_ADJ_COMMIT[0])
-        r = B.RECIPES[i - 1]
-        assert (u.u8(0x1B030), u.u8(B.ACT), u.u8(B.ADJD + 9)) == (B.imgset_of(r["params"], r["type"]), i,
-                                                                   B.NSTOCK + i)
+        r = B.ALL[rid(name) - 1]
+        assert (u.u8(0x1B030), u.u8(B.ADJD + 9)) == (B.imgset_of(r["params"], r["type"]), k), name
+        assert u.u8(B.ACT) == (0 if name == "STANDARD" else rid(name)), name
+    u.w8(0x1B030, 5)                                              # SETTING2 (hidden): the ghost, last
+    lst, cur = adj_open(u)
+    setting2 = struct.unpack(">I", fw.ram(B.IMG_OPTS + 4 * 6, 4))[0]                 # stock cursor 7
+    assert lst[-1] == (setting2, 0) and cur == len(lst) and len(lst) == len(ADJ_ON) + 1
+    seen = adj_walk(u, len(lst), cur)
+    assert seen[-2] == (5, 0)                                     # back on the ghost: SETTING2 again, no id
+
+
+def test_adj_lever_row_per_look():
+    """Editor row ADJ LEVER (0x1b8ce, 0 ON / 1 OFF) follows the active look's bit; a change goes into the mask (with its
+    check byte) and survives a menu reload; a bad check byte reads as the default mask; no look ON -> one entry."""
+    u = unit()
+    for name in DISPLAY:
+        u.on_change(B.ACT, rid(name))
+        assert u.u8(B.AJROW) == (0 if name in ADJ_ON else 1), name
+    u.on_change(B.ACT, rid("NOIR"))
+    u.on_change(B.AJROW, 0)                                       # NOIR -> ON
+    u.on_change(B.ACT, rid("MONO"))
+    u.on_change(B.AJROW, 1)                                       # MONO -> OFF
+    m = u.read(B.AJM, 4)
+    mask = int.from_bytes(m[:3], "little")
+    assert mask == (B.DEFMASK | 1 << (rid("NOIR") - 1)) & ~(1 << (rid("MONO") - 1))
+    assert m[3] == m[0] ^ m[1] ^ m[2] ^ 0x5A
+    call_site(u, 0x5B394)
+    u.on_change(B.ACT, rid("NOIR"))
+    assert u.u8(B.AJROW) == 0
+    u.on_change(B.ACT, rid("MONO"))
+    assert u.u8(B.AJROW) == 1
+    u.w8(B.AJROW, 7)                                              # out of range row: reloaded, mask untouched
+    u.on_change(B.ACT, rid("MONO"))
+    assert u.u8(B.AJROW) == 1 and u.read(B.AJM, 4) == m
+    u.on_change(B.RST, 1)                                         # RESET keeps the lever choice
+    assert u.read(B.AJM, 4) == m
+    u.w8(B.AJM + 3, m[3] ^ 1)                                     # bad check: default mask
+    u.on_change(B.ACT, rid("HICON B&W"))
+    assert u.u8(B.AJROW) == 0
+    u.on_change(B.ACT, rid("NOIR"))
+    assert u.u8(B.AJROW) == 1
+    u.uc.mem_write(B.AJM, bytes([0, 0, 0, 0x5A]))                 # no look ON: only the current entry
+    u.on_change(B.ACT, rid("DENSE"))
+    lst, cur = adj_open(u)
+    assert lst == [("DENSE", rid("DENSE"))] and cur == 1
+    assert adj_walk(u, 1, 1) == [(3, rid("DENSE"))] * 2
+
+
+def test_imgset_right_opens_the_editor_and_standard_normalises():
+    """menu5's RIGHT on an IMG SET entry (imgright): the entry becomes the row value and the active look (r0 = 1); the
+    ghost and other rows: r0 = 0. STANDARD while edited keeps id 21 (editor session); imgdone ends the session: at its
+    defaults (or after RESET) STANDARD goes back to plain NORMAL, id 0, record dropped; edited it stays a look."""
+    from unicorn.arm_const import UC_ARM_REG_R0 as R0, UC_ARM_REG_R1 as R1
+    u = unit()
+    call_site(u, 0x5B394)
+    right = lambda c, row=AUTO_ROW: u.thumb(u.sym("imgright"), {R0: c, R1: row})     # noqa: E731
+    done = lambda: u.thumb(u.sym("imgdone"), {})                                       # noqa: E731
+    assert right(pos("HARD MONO")) == 1
+    assert (u.u8(B.ACT), u.u8(AUTO_ROW + 9), u.u8(0x1B030)) == (rid("HARD MONO"), pos("HARD MONO"), 6)
+    done()
+    assert right(GHOST) == 0 and right(0) == 0 and right(3, row=B.IMG_ROWS[0] - 12) == 0
+    assert u.u8(B.ACT) == rid("HARD MONO")
+    assert right(pos("STANDARD")) == 1                            # STANDARD: an editable look while editing
+    assert (u.u8(B.ACT), u.u8(0x1B030), u.u8(B.SELB)) == (B.STD, 1, B.TYPE_COLOUR)
+    assert list(u.read(B.EB, B.NPARAM)) == B.STANDARD["params"]
+    u.on_change(B.EB + B.P_CON, 5)                                # CONTRAST +1
+    u.on_change(B.EB + B.P_CON, 4)                                # and back: still in the session, id kept
+    assert u.u8(B.ACT) == B.STD
+    done()
+    assert (u.u8(B.ACT), u.u8(0x1B030), u.u8(B.STDREC + 10)) == (0, 1, 0)    # plain NORMAL, no look id
+    assert shot(u) == {} and not u.cc2
+    right(pos("STANDARD"))
+    u.on_change(B.EB + B.P_CON, 6)                                # CONTRAST +2: STANDARD becomes a real look
+    done()
+    p = list(B.STANDARD["params"])
+    p[B.P_CON] = 6
+    assert u.u8(B.ACT) == B.STD and list(u.rec(B.STD)[:9]) == p and xor_ok(u.rec(B.STD))
+    expect_shot(u, p, "STANDARD +2", B.STANDARD["type"])
+    call_site(u, 0x5B394)                                         # menu load: STANDARD shows at position 1
+    assert u.u8(AUTO_ROW + 9) == 1 and u.u8(AUTO_ROW + 8) == B.NDISP
+    right(pos("STANDARD"))
+    u.on_change(B.RST, 1)                                         # RESET: back to plain NORMAL when the editor closes
+    done()
+    assert (u.u8(B.ACT), u.u8(0x1B030)) == (0, 1)
+    right(pos("STANDARD"))                                        # GRAIN on STANDARD also keeps the look
+    u.on_change(B.FXG, 2)
+    done()
+    assert u.u8(B.ACT) == B.STD and fxt(u, B.STD) == 0x52
+    u.on_change(B.FXG, 0)
+    assert u.u8(B.ACT) == 0                                       # outside an editor session: normalised at once
+
+
+def test_store_from_koma04_keeps_records_and_gets_the_look_ia_bytes():
+    """A valid 0.4 'RCP6' store (records + FX table, nothing after it) stays as it is; the ADJ LEVER mask reads as the
+    defaults until a row writes it; STANDARD has no record (defaults). Downgrade-safe: header, records 1..20 and the
+    FX table bytes 1..20 keep their 0.4 layout."""
+    mono, c2 = rid("MONO"), rid("CUSTOM 2")
+    st = bytearray(v5_store({mono: ([5, 8, 4, 4, 4, 3, 0, 2, 4], 0), c2: ([1, 6, 6, 1, 1, 2, 3, 3, 2], 0)}))
+    st[0:5] = HDR
+    fx = bytes([0x55 if k == mono else 0 for k in range(1, B.N + 1)])
+    st += fx + bytes(0x40)
+    u = unit(store=bytes(st))
+    assert u.read(B.ST, 5) == HDR and u.read(B.REC, len(st) - 0x50) == bytes(st[16:-0x40])   # records + FX untouched
+    u.on_change(B.ACT, mono)
+    assert list(u.read(B.EB, B.NPARAM)) == [5, 8, 4, 4, 4, 3, 0, 2, 4] and (u.u8(B.FXG), u.u8(B.FXV)) == (1, 1)
+    assert u.u8(B.AJROW) == 0                                     # default mask (check byte 0 is bad): MONO ON
+    u.on_change(B.ACT, rid("NOIR"))
+    assert u.u8(B.AJROW) == 1
 
 
 def test_every_look_shot():
@@ -463,7 +633,7 @@ def test_every_colour_subsetting_commits_and_applies():
 
 def test_colour_base_and_off_restores_stock():
     """A colour recipe holds 0x1b030 = 1 (NORMAL) and writes the colour registers; OFF leaves plain NORMAL and the next
-    shot is stock (no module writes, no LUT); IMG SET moved away (e.g. VIVID) -> the recipe no longer applies."""
+    shot is stock (no module writes, no LUT); IMG SET moved away (e.g. VIVID) -> the recipe does not apply."""
     u = unit(imgset=3)
     select(u, "NEGATIVE")
     assert u.u8(0x1B030) == 1
@@ -612,7 +782,7 @@ def test_store_v4_migrates_to_v5():
     and the colour looks start at their defaults; the active id is cleared (every migration does, F3)."""
     mono = rid("MONO")
     mono_p = [5, 8, 4, 4, 4, 3, 0, 2, 4]                          # FINE 100 curve, contrast +4, RED, sharp +2
-    cust_p = [3, 2, 4, 6, 4, 0, 1, 4, 0]                          # an owner CUSTOM 2 (sepia 5)
+    cust_p = [3, 2, 4, 6, 4, 0, 1, 4, 0]                          # a user CUSTOM 2 (sepia 5)
     store = v4_store({mono: mono_p, 12: cust_p, 11: [9, 9, 9, 9, 9, 9, 9, 9, 9]})   # (11's params out of range)
     u = unit(store=store, act=12)                                 # CUSTOM 2 active in v4
     c2 = rid("CUSTOM 2")
@@ -657,7 +827,7 @@ def test_matrices_against_matrix_model():
     """Against the vendored matrix model v2 (probe 3): every byte of the frozen ROM rows is sign-magnitude with bit 6
     clear; the words decode through the model; encode(registers_to_delta(words)) gives the words back; TINT moves
     mid-grey chroma toward green (-Cb, -Cr) for + steps and magenta for - steps, monotonically, luma untouched. (The
-    words' derivation is in features/bwrecipes.py.)"""
+    words' derivation from the tier-B fits is re-checked in test_provenance, research checkout only.)"""
     import numpy as np
     MM = B.matrix_model()
     for look, r in enumerate(B.CLOOKS):
@@ -686,8 +856,9 @@ def test_bases_lossless_and_budget():
         assert B.decode(B.encode(B.base_table(i))) == list(B.base_table(i))
     assert len(B.bases_blob()) == 1024 * B.NB <= 8 * 1024
     f = link([B.make({})]).manifest["features"][0]
-    # 0.2.1: 13,456 B; Koma 0.3 budget for bwrecipes growth (looks lane) is 1,100 B (integration-0.3.md section 4)
-    assert f["resident_bytes"] <= 13456 + 1100, f["resident_bytes"]
+    # Resident size budget: STANDARD, ADJ LEVER list / mask, imgright, the shared editor-title list (`rnames`, which
+    # menu5 does not copy), ghost NORMAL (stdclean) and the host-mask shadow (amsh) fit in 14,680 B.
+    assert f["resident_bytes"] <= 14700, f["resident_bytes"]
 
 
 def test_sharpness():
@@ -711,36 +882,15 @@ def test_toning_gate_when_imgset_leaves_base():
     assert not u.te and not u.cc2
 
 
-def test_koma_page_recipe_survives_menu_close():
-    """KOMA-page RECIPE chosen while the IMG SET row is untouched: the menu-close commit keeps it. Then OFF on the KOMA
-    page with a stale recipe cursor."""
-    u = unit()
-    call_site(u, 0x5B394)                                         # menu open: IMG SET NORMAL, cursor 2
-    assert u.u8(AUTO_ROW + 9) == INV[1]
-    for name, base in (("SHINJUKU", 3), ("POSITIVE", 1)):
-        i = rid(name)
-        u.w8(B.ACT, i)                                            # KOMA page commit (menu5 writes, then on_change)
-        call_site(u, 0x58882, r0=1)                               # menu close: stock commit
-        assert (u.u8(0x1B030), u.u8(B.ACT)) == (base, i)
-        assert u.u8(AUTO_ROW + 9) == B.NSTOCK + i
-        call_site(u, 0x5B394)                                     # reopen: row shows the recipe
-        assert u.u8(AUTO_ROW + 9) == B.NSTOCK + i
-    u.w8(B.ACT, 0)                                                # KOMA page: OFF
-    call_site(u, 0x58882, r0=1)
-    assert (u.u8(0x1B030), u.u8(B.ACT)) == (1, 0)                 # plain NORMAL (POSITIVE's base), recipe stays off
-    call_site(u, 0x5B394)
-    u.w8(AUTO_ROW + 9, 4)                                         # user picks B&W on the IMG SET row itself
-    call_site(u, 0x58882, r0=1)
-    assert (u.u8(0x1B030), u.u8(B.ACT)) == (3, 0)
-
-
 def test_adj_step_reads_the_type_word():
     """adj-hang triage: 0x1bf090 is a big-endian word."""
     u = unit()
-    i = rid("FILM 400")
-    u.w8(B.ADJD + 9, B.NSTOCK + i)
+    i = rid("HICON B&W")
+    lst, _ = adj_open(u)
+    k = [n for n, _ in lst].index("HICON B&W") + 1
+    u.w8(B.ADJD + 9, k)
     call_site(u, B.SITES_ADJ_STEP[4])
-    assert (u.u8(0x1B030), u.u8(B.ACT), u.u8(B.ADJD + 9)) == (3, i, B.NSTOCK + i)
+    assert (u.u8(0x1B030), u.u8(B.ACT), u.u8(B.ADJD + 9)) == (3, i, k)
     v = unit(adj_type=3)                                          # another ADJ item (ISO) steps: plain, id untouched
     v.w8(B.ACT, i)                                                # (after install: a fresh store clears the id, F3)
     v.w8(B.ADJD + 9, 2)
@@ -755,9 +905,9 @@ def test_adj_hooks_return_in_every_state():
     from koma.unitemu import STACK
     sites = [B.SITE_ADJ_OPEN[0]] + B.SITES_ADJ_STEP + B.SITES_ADJ_COMMIT
     for adj_type in (B.ADJ_IMGSET, 3):
-        for act in (0, rid("HARD MONO"), rid("POSITIVE"), B.N, B.N + 1, 0xFF):
+        for act in (0, rid("HARD MONO"), rid("POSITIVE"), B.N, B.STD, B.STD + 1, 0xFF):
             u = unit(adj_type=adj_type)
-            for cur in (0, 1, 7, 8, B.NOPT, B.NOPT + 1, 0xFF):
+            for cur in (0, 1, 7, 8, B.NDISP, B.NDISP + 1, 0xFF):
                 for site in sites:
                     u.w8(B.ACT, act)
                     u.w8(B.ADJD + 9, cur)
@@ -770,7 +920,7 @@ def test_adj_hooks_return_in_every_state():
                     assert u.u8(0x1B030) <= 6                             # only stock values in IMG SET
     u = unit()
     u.uc.mem_write(B.ST, b"\xff" * 16)                            # trashed store header: sync rebuilds, still returns
-    u.w8(B.ADJD + 9, B.NSTOCK + 1)
+    u.w8(B.ADJD + 9, 2)
     call_site(u, B.SITES_ADJ_STEP[0])
     assert u.read(B.ST, 5) == HDR
 
@@ -783,7 +933,7 @@ def test_adj_option_off_drops_every_adj_record():
     assert not {B.ADJ_ITEM, B.ADJ_HINT_LIT} & {p.addr for p in f.pointers}
     assert B.ADJ_ITEM + 4 not in {p.addr for p in f.patches}
     u = unit(opts={"adj": "off"})
-    assert u.u8(B.ADJ_ITEM + 4) == 7 and u.u8(B.IMG_ROWS[0] + 8) == B.NOPT
+    assert u.u8(B.ADJ_ITEM + 4) == 7 and u.u8(B.IMG_ROWS[0] + 8) == B.NDISP
 
 
 def test_menu5_editor_rows_follow_the_type():
@@ -923,7 +1073,7 @@ def test_store_v5_migrates_to_v6():
     assert u.read(B.REC, B.N * 12) == store[16:]                       # every record unchanged
     assert all(fxt(u, k) == 0 for k in range(1, B.N + 1))
     assert (u.u8(B.ACT), u.u8(B.SAVE), u.u8(B.RST)) == (0, 0, 0)       # GRAIN / VIGNETTE rows reload on selection
-    u.on_change(B.ACT, c3)                                             # the owner's CUSTOM 3 is still a SLIDE 50 copy
+    u.on_change(B.ACT, c3)                                             # the user's CUSTOM 3 is still a SLIDE 50 copy
     assert list(u.read(B.EB, B.NPARAM)) == [1, 6, 6, 1, 1, 2, 3, 3, 2] and u.u8(0x1B030) == 1
     assert (u.u8(B.FXG), u.u8(B.FXV)) == (0, 0)
 
@@ -1038,6 +1188,7 @@ def test_fx_rows_order_and_absent_without_fx():
     from koma.linker import collect_rows
     ids = lambda names: [r["id"] for r in collect_rows([F.make(n) for n in names])[0] if r["group"] == "recipe-edit"]  # noqa: E731
     with_fx = ids(F.KOMA03)
-    assert with_fx[-5:] == ["rp_sharp", "rp_grain", "rp_vig", "rp_save", "rp_reset"]
+    assert with_fx[-6:] == ["rp_sharp", "rp_grain", "rp_vig", "rp_adjlever", "rp_save", "rp_reset"]
     without = ids([n for n in F.KOMA03 if n != "fx"])
-    assert "rp_grain" not in without and "rp_vig" not in without and without[-3:] == ["rp_sharp", "rp_save", "rp_reset"]
+    assert "rp_grain" not in without and "rp_vig" not in without and without[-4:] == [
+        "rp_sharp", "rp_adjlever", "rp_save", "rp_reset"]

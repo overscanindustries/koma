@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#161718">
+<title>Koma</title>
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<script>
+  // Theme before first paint, so there is no flash: the owner's choice, else the system's, else dark.
+  (function () {
+    var t = null;
+    try { t = localStorage.getItem('koma.theme'); } catch (e) {}
+    if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+  <script type="module" crossorigin src="./assets/index-BR8fV9wY.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-C9Iw3uUj.css">
+</head>
+<body>
+<div id="app"></div>
+</body>
+</html>

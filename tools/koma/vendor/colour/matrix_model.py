@@ -1,6 +1,6 @@
 """Empirical model v2 of the GR DIGITAL 2.40 CC2 colour stage: matrix MatR/MatG/MatB (0x12018104/108/10c), pUVoffset
 coring (0x120180d8) and chroma gain (0x12018004). Fitted to colour probes 2 and 3
-. numpy only. Same API as v1 (probe2/matrix_model.py)
+(analysis/colour-research/probe2/README.md, probe3/README.md). numpy only. Same API as v1 (probe2/matrix_model.py)
 plus a `chroma_gain` argument.
 
 What changed from v1 (O = observed on hardware in probe 3):

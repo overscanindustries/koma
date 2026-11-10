@@ -1,4 +1,4 @@
-"""The earlier lane builders Koma reuses (vendored under koma/vendor, imported lazily so builds that don't need them
+"""The earlier builders Koma reuses (vendored under koma/vendor, imported lazily so builds that don't need them
 never read the firmware at import time)."""
 from __future__ import annotations
 

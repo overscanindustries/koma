@@ -150,7 +150,7 @@ def _settings_ranges(side):
     if core.get("init"):
         out.append((int(core["range"][0], 16), int(core["range"][1], 16)))
     for f in (side or {}).get("features", []):
-        for s in f["settings"]:
+        for s in f["settings"] + f.get("ram_writes", []):     # ram_writes: init-written image RAM (Feature.ram_writes)
             out.append((int(s["range"][0], 16), int(s["range"][1], 16)))
     return out
 

@@ -1,4 +1,4 @@
-"""adjdiag: diagnostic for the ADJ hang. Not a release feature.
+"""adjdiag: diagnostic for the ADJ hang Not a release feature.
 
 What it watches: every CPU1 (sub-CPU) exchange waits for CPU1's answer at 0xca564 `bl 0x5d978(sem, timeout)` inside
 0xca524, with timeout = the key-scan period word 0x2c9e58 (50 stock, 20 under fastkeys poll=on). The callers retry
@@ -19,8 +19,8 @@ Record (ASCII, fixed length; decode by eye): KOMA ADJDIAG V1, then NAME =XXXXXXX
 Reading it: XFER byte1 (bytes done) < byte2 (frame length) means CPU1 was still clocking the frame when the 20-tick
 budget ran out (budget too short); bytes done = 0 means CPU1 never answered the first byte.
 Hook site 0xca564 is in 0xca524's body, which the emulator stubs (so it is absent from the phase-A line set); on the
-camera it runs before the loader hook, and the HW telemetry SMC test (SMC2 = A5, KOMALOG-v04-boot) shows a CPU
-store to already-executed code is fetched fresh, so the patched bl takes effect.
+camera it runs before the loader hook, and a CPU store to already-executed code is fetched fresh on hardware, so the
+patched bl takes effect.
 """
 from __future__ import annotations
 

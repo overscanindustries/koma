@@ -1,4 +1,4 @@
-"""waitdiag (temporary diagnostic): Codex's before-bytes, the wait ring and phase words under unit emulation on the 2.40
+"""waitdiag (temporary diagnostic): the expected before-bytes, the wait ring and phase words under unit emulation on the 2.40
 payload (the original callees stubbed; a code hook advances the tick 0x1a8a00 while the "wait" runs), and the -KSTA
 extension through the real parser / dispatcher."""
 from __future__ import annotations
@@ -73,7 +73,7 @@ def _site(u, site, target, regs, ret=0, ticks=0, stack0=0):
     return r0
 
 
-def test_codex_before_bytes_match_the_image():
+def test_expected_before_bytes_match_the_image():
     for site, b in W.before_bytes():
         assert fw.ram(site, 4) == b, hex(site)
     f = W.make({})

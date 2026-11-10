@@ -1,7 +1,6 @@
 """Opt-in CC1 sensor-timing stand-in for the shutter path. Nothing imports this by default.
 
-Replaces only the logged last-write storage of page 0x12014000 when a caller maps it. Native evidence (canonical REA
-records):
+Replaces only the logged last-write storage of page 0x12014000 when a caller maps it. Native evidence:
 
   +0x1c  read-only to firmware. The only accessor is 0x170a30, called only by 0x947e4 and 0x94858; writer accessor
          0x170a3c has no callers. Both pollers wait for bit 31, then test bits 23:16 against a window: 0x14..0xbe,

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firmware versions 1.08 to 2.40</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',system-ui,sans-serif;background:#f5f5f5;color:#2d3142;padding:3rem 2rem}
+.frame{max-width:1280px;margin:0 auto}
+.eyebrow{font-family:'Geist Mono',ui-monospace,monospace;font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:#4f5d75;margin-bottom:.5rem}
+h1{font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}
+.sub{font-size:.9rem;color:#4f5d75;max-width:70ch;margin-bottom:1.5rem;line-height:1.5}
+svg{width:100%;min-width:960px;display:block}
+.foot{font-family:'Geist Mono',ui-monospace,monospace;font-size:.66rem;color:#4f5d75;border-top:1px solid rgba(45,49,66,.12);margin-top:1.5rem;padding-top:.75rem;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Version history · internals 12</p>
+<h1>Firmware versions 1.08 to 2.40</h1>
+<p class="sub">Seven of ten releases are held. Cards alternate above and below the axis; spacing is by release order, not by date.</p>
+<svg viewBox="0 0 1200 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="version-timeline-title version-timeline-desc">
+<title id="version-timeline-title">Firmware versions 1.08 to 2.40</title>
+<desc id="version-timeline-desc">Ten Ricoh releases from 1.08 (2005-11) to 2.40 (2007-11), with which payloads are held or missing and each release headline.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<line x1="24" y1="198" x2="1176" y2="198" stroke="#4f5d75" stroke-width="1.2"/>
+<line x1="124" y1="132" x2="124" y2="180" stroke="#7a8399" stroke-width="1"/>
+<line x1="232" y1="216" x2="232" y2="260" stroke="#7a8399" stroke-width="1"/>
+<line x1="340" y1="132" x2="340" y2="180" stroke="#7a8399" stroke-width="1"/>
+<line x1="448" y1="216" x2="448" y2="260" stroke="#7a8399" stroke-width="1"/>
+<line x1="556" y1="132" x2="556" y2="180" stroke="#7a8399" stroke-width="1"/>
+<line x1="664" y1="216" x2="664" y2="260" stroke="#7a8399" stroke-width="1"/>
+<line x1="772" y1="132" x2="772" y2="180" stroke="#7a8399" stroke-width="1"/>
+<line x1="880" y1="216" x2="880" y2="260" stroke="#7a8399" stroke-width="1"/>
+<line x1="988" y1="132" x2="988" y2="180" stroke="#7a8399" stroke-width="1"/>
+<line x1="1096" y1="216" x2="1096" y2="260" stroke="#7a8399" stroke-width="1"/>
+<rect x="24" y="48" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="24" y="48" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="124.0" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v1.08</text>
+<text x="124.0" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2005-11-16 · 2,163,704 B</text>
+<text x="124.0" y="94" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">held: Win</text>
+<text x="124.0" y="106" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">RAW area shift, Exif values,</text>
+<text x="124.0" y="118" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">spot AF, PictBridge, 3:2 LCD</text>
+<rect x="96" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="96" y="180" width="56" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="124.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">1.08</text>
+<rect x="132" y="260" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="132" y="260" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="232.0" y="280" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v1.09</text>
+<text x="232.0" y="294" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2006-02-10 · 2,164,232 B</text>
+<text x="232.0" y="306" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">held: Win + Mac</text>
+<text x="232.0" y="318" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">exposure level with SIGMA</text>
+<text x="232.0" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">EF-500 DG SUPER / ST flashes</text>
+<rect x="204" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="204" y="180" width="56" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="232.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">1.09</text>
+<rect x="240" y="48" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="240" y="48" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="340.0" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v2.01</text>
+<text x="340.0" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2006-03-24 · 2,175,768 B</text>
+<text x="340.0" y="94" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">held: Win + Mac</text>
+<text x="340.0" y="106" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">DIAL DIRECTION, SYNCHRO. MONITOR,</text>
+<text x="340.0" y="118" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ADJ SHTR BTN SET</text>
+<rect x="312" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="312" y="180" width="56" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="340.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.01</text>
+<rect x="348" y="260" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="348" y="260" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="448.0" y="280" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v2.02</text>
+<text x="448.0" y="294" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2006-04-27 · 2,175,840 B</text>
+<text x="448.0" y="306" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">held: Win + Mac</text>
+<text x="448.0" y="318" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">AF accuracy with AF target</text>
+<text x="448.0" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">shift</text>
+<rect x="420" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="420" y="180" width="56" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="448.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.02</text>
+<rect x="456" y="48" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="456" y="48" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="556.0" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v2.10</text>
+<text x="556.0" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2006-07-28 · 2,179,812 B</text>
+<text x="556.0" y="94" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">held: Mac only</text>
+<text x="556.0" y="106" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ADJ BTN SET 1-4 assignable;</text>
+<text x="556.0" y="118" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">slots 3/4 read OFF after update</text>
+<rect x="528" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="528" y="180" width="56" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="556.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.10</text>
+<rect x="564" y="260" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="564" y="260" width="200" height="84" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="664.0" y="280" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v2.20</text>
+<text x="664.0" y="294" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2006-11-22 · no payload</text>
+<text x="664.0" y="306" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">MISSING: no capture found</text>
+<text x="664.0" y="318" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">N3:2 (8M), 0.3 EV bracket step,</text>
+<text x="664.0" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">RAW+JPEG FINE/NORMAL/N640</text>
+<rect x="636" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="636" y="180" width="56" height="36" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="664.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.20</text>
+<rect x="672" y="48" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="672" y="48" width="200" height="84" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="772.0" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v2.21</text>
+<text x="772.0" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2006-12-27 · no payload</text>
+<text x="772.0" y="94" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">MISSING: 2025 redirect stubs</text>
+<text x="772.0" y="106" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Quick Review fix (RAW 3:2 + B&amp;W</text>
+<text x="772.0" y="118" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">+ N640), macro AF</text>
+<rect x="744" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="744" y="180" width="56" height="36" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="772.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.21</text>
+<rect x="780" y="260" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="780" y="260" width="200" height="84" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="880.0" y="280" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v2.30</text>
+<text x="880.0" y="294" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2007-03-30 · no payload</text>
+<text x="880.0" y="306" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">MISSING: no capture found</text>
+<text x="880.0" y="318" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">SEPIA, B&amp;W/SEPIA CONTRAST and</text>
+<text x="880.0" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">SHARPNESS, CL-BKT</text>
+<rect x="852" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="852" y="180" width="56" height="36" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="880.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.30</text>
+<rect x="888" y="48" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="888" y="48" width="200" height="84" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="988.0" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v2.31</text>
+<text x="988.0" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2007-04-20 · 2,187,168 B</text>
+<text x="988.0" y="94" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">held: Win + Mac</text>
+<text x="988.0" y="106" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">updater works on Vista</text>
+<text x="988.0" y="118" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">(host side; payload 02 31)</text>
+<rect x="960" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="960" y="180" width="56" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="988.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.31</text>
+<rect x="996" y="260" width="200" height="84" rx="6" fill="#f5f5f5"/>
+<rect x="996" y="260" width="200" height="84" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="1096.0" y="280" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">v2.40</text>
+<text x="1096.0" y="294" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">2007-11-22 · 2,201,960 B</text>
+<text x="1096.0" y="306" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">held: Win + Mac (original)</text>
+<text x="1096.0" y="318" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">B&amp;W (TE) toning, INFO DISP,</text>
+<text x="1096.0" y="330" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">FLASH EXPO. COMP, GT-1 lens</text>
+<rect x="1068" y="180" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="1068" y="180" width="56" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1096.0" y="202" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.40</text>
+<text x="24" y="388" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">2.20, 2.21 and 2.30 never turned up in the Wayback CDX, Common Crawl, live probes or searches; their changes are seen only inside the 2.10 to 2.31 hop.</text>
+<text x="24" y="408" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">qrflect7: 1.08 has its own, 1.09 to 2.31 share one byte-identical file, 2.40 ships a new one. Main camera runs 2.40; the spare went 1.08 to 2.40 on 2026-11-06.</text>
+<text x="24" y="428" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">No anti-downgrade check was found (static). Release dates are Ricoh's; sizes are payload bytes from the held qrflect3 headers.</text>
+<line x1="32" y1="460" x2="1168" y2="460" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="32" y="480" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="100" y="470" width="20" height="12" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="128" y="479" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">held</text>
+<rect x="175" y="470" width="20" height="12" rx="3" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="203" y="479" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">missing</text>
+<rect x="264" y="470" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="292" y="479" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">current on the main camera</text>
+</svg>
+<p class="foot">Sources: internals chapter 12 (release timeline); analysis/fw-history/README.md (version ladder, changelog per version, bounded negatives). Evidence class: STATIC.</p>
+</div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 """Thumb (ARMv4T, big-endian) assembly for Koma: llvm-mc -> (bytes, symbols, relocations).
 
-Unlike the earlier emulator-side assembler, R_ARM_ABS32 relocations are allowed and returned: they are the words whose
+Unlike tools/emu_frontier2_asm.assemble, R_ARM_ABS32 relocations are allowed and returned: they are the words whose
 value is a body offset (`ldr rX, =label`, `.word label`). The installer adds the runtime body base to each of them.
 Any other relocation type is a build error.
 """

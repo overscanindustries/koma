@@ -1,6 +1,6 @@
 """recipe-slots: 5 recipe slots in the settings tail 0x1b800..0x1b8af + per-shot hook at 0x96436 (still develop).
 
-Port of the earlier recipe-slots builder. Reused verbatim from that file: the slot/tail format, the slot defaults, the
+Port of the standalone recipe-slots module. Reused verbatim: the slot/tail format, the slot defaults, the
 curves, the before-byte CHECKS, and the Thumb routines tail_init / active_slot / recall / hook plus their tables.
 Replaced by Koma: that module's own installer (verify / BL patch / IRQ mask) -> Koma records, and the hook's hard
 `ldr r3, =0x8ff0f` -> `ldr r3, =hook_next` so the hook can chain with other features on the same site.
@@ -12,7 +12,7 @@ from . import _legacy
 
 NAME = "recipe-slots"
 SUMMARY = "5 recipe slots (IMG SET/contrast/sharpness/depth/curve/colour regs), per-shot hook 0x96436"
-OPTIONS = {"slot": "active slot forced at boot: 1..5, or 'keep' to keep the tail's byte (menu lane). Default 1",
+OPTIONS = {"slot": "active slot forced at boot: 1..5, or 'keep' to keep the tail's byte. Default 1",
            "reseed": "1: module slot data overwrites the tail every boot; 0: keep user-edited slots. "
                      "Default 1 when a slot is forced, 0 for 'keep'"}
 

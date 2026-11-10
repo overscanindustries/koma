@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1200 792" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="usb-session-title usb-session-desc">
+<title id="usb-session-title">USB session: framing and command flow</title>
+<desc id="usb-session-desc">Frame layout used in both directions and the host to camera sequence for a command, a download and an upload on the ORIGINAL-mode USB protocol.</desc>
+<defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="32" y="176" width="760" height="100" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="44" y="192" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">COMMAND AND REPLY (HARDWARE, BOTH BODIES)</text>
+<rect x="32" y="292" width="760" height="180" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="44" y="308" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DOWNLOAD: RETR OR -NLST (HARDWARE)</text>
+<rect x="32" y="488" width="760" height="196" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="44" y="504" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">UPLOAD: -STOR (COMMAND TEXT FROM THE TOOL SPEC)</text>
+<line x1="300" y1="96" x2="300" y2="712" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,4"/>
+<line x1="600" y1="96" x2="600" y2="712" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="832" y="104" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">FRAME, BOTH DIRECTIONS (OFFSET / VALUE)</text>
+<path d="M300 228 L600 228" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M600 256 L300 256" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M300 332 L600 332" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M600 364 L300 364" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M600 396 L300 396" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M600 428 L300 428" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M300 528 L600 528" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M600 564 L300 564" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M300 600 L600 600" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M600 636 L300 636" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="436" y="208" width="28" height="12" rx="2" fill="#f5f5f5"/>
+<text x="450.0" y="217" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">-VER</text>
+<rect x="412" y="236" width="76" height="12" rx="2" fill="#f5f5f5"/>
+<text x="450.0" y="245" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">200 9.17 02.40</text>
+<rect x="416" y="312" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="448.0" y="321" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RETR &lt;PATH&gt;</text>
+<rect x="416" y="344" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="450.0" y="353" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">150 + SIZE N</text>
+<rect x="420" y="376" width="60" height="12" rx="2" fill="#f5f5f5"/>
+<text x="450.0" y="385" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DATA, CH 2</text>
+<rect x="436" y="408" width="24" height="12" rx="2" fill="#f5f5f5"/>
+<text x="448.0" y="417" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">250</text>
+<rect x="412" y="508" width="72" height="12" rx="2" fill="#f5f5f5"/>
+<text x="448.0" y="517" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">-STOR SZ PATH</text>
+<rect x="436" y="544" width="24" height="12" rx="2" fill="#f5f5f5"/>
+<text x="448.0" y="553" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">150</text>
+<rect x="420" y="580" width="60" height="12" rx="2" fill="#f5f5f5"/>
+<text x="450.0" y="589" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DATA, CH 2</text>
+<rect x="436" y="616" width="24" height="12" rx="2" fill="#f5f5f5"/>
+<text x="448.0" y="625" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">250</text>
+<rect x="200" y="48" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="200" y="48" width="200" height="48" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="300.0" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Host</text>
+<text x="300.0" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">grdusb or Ricoh PC client</text>
+<rect x="500" y="48" width="200" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="500" y="48" width="200" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="600.0" y="68" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Camera, ORIGINAL mode</text>
+<text x="600.0" y="82" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">bulk IN / OUT</text>
+<rect x="92" y="112" width="416" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="92" y="112" width="416" height="48" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="300.0" y="132" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Bring-up</text>
+<text x="300.0" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">GET_CONFIGURATION, set_configuration(1) always, 2 s settle, claim iface 0</text>
+<rect x="832" y="116" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="832" y="116" width="56" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="860.0" y="138" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0</text>
+<rect x="896" y="116" width="272" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="896" y="116" width="272" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="908" y="138" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">01</text>
+<rect x="832" y="160" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="832" y="160" width="56" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="860.0" y="182" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">1</text>
+<rect x="896" y="160" width="272" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="896" y="160" width="272" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="908" y="182" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">channel: 1 command or reply, 2 data</text>
+<rect x="832" y="204" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="832" y="204" width="56" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="860.0" y="226" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2-3</text>
+<rect x="896" y="204" width="272" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="896" y="204" width="272" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="908" y="226" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">00 00 from host, ff ff from camera</text>
+<rect x="832" y="248" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="832" y="248" width="56" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="860.0" y="270" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">4-7</text>
+<rect x="896" y="248" width="272" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="896" y="248" width="272" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="908" y="270" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">payload length, little-endian</text>
+<rect x="832" y="292" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="832" y="292" width="56" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="860.0" y="314" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">8..</text>
+<rect x="896" y="292" width="272" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="896" y="292" width="272" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="908" y="314" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">payload (commands end CR LF)</text>
+<rect x="832" y="336" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="832" y="336" width="56" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="860.0" y="358" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">8+n</text>
+<rect x="896" y="336" width="272" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="896" y="336" width="272" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="908" y="358" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">03 trailer</text>
+<rect x="832" y="380" width="56" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="832" y="380" width="56" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="860.0" y="402" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">then</text>
+<rect x="896" y="380" width="272" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="896" y="380" width="272" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="908" y="402" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">0-3 zero bytes, pad to multiple of 4</text>
+<rect x="832" y="432" width="336" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="832" y="432" width="336" height="60" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="844" y="452" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Example: -VER as sent on both bodies</text>
+<text x="844" y="466" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">01 01 00 00 06 00 00 00 2d 56 45 52 0d 0a 03 00</text>
+<text x="844" y="478" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">16 bytes: payload "-VER\r\n", trailer 03, one pad byte</text>
+<text x="616" y="256" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">one 28-byte frame, about 1 ms</text>
+<text x="616" y="396" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">up to 65536 B per frame</text>
+<text x="616" y="364" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">N = file size</text>
+<text x="616" y="600" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">up to 65536 B per frame</text>
+<text x="44" y="740" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">Read each reply and finish or drain a transfer before the next command; in a data phase only -ABOR is accepted.</text>
+<line x1="32" y1="752" x2="1168" y2="752" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="32" y="772" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="100" y="762" width="20" height="12" rx="3" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="128" y="771" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">host</text>
+<rect x="175" y="762" width="20" height="12" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="203" y="771" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">camera / frame field</text>
+<rect x="328" y="762" width="20" height="12" rx="3" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="356" y="771" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">offset</text>
+<rect x="413" y="762" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="441" y="771" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">observed on hardware</text>
+<rect x="566" y="762" width="20" height="12" rx="3" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="594" y="771" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">setup</text>
+<line x1="646" y1="768" x2="670" y2="768" stroke="#4f5d75" stroke-width="1.2"/>
+<polygon points="670,765 676,768 670,771" fill="#4f5d75"/>
+<text x="684" y="771" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">message</text>
+</svg>

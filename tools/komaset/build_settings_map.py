@@ -535,10 +535,10 @@ for o, n, l, vals, dflt, sec, src in [
     field(o, n, l, K, "enum", values=dict(enumerate(vals)), default=dflt, order=o - 0x8b4, section=sec,
           ev="tools/koma/features/%s ROWS (byte %s, default %d)" % (src, "0x1b%03x" % o, dflt), conf="STATIC")
 field(0x8bb, "menu_layout", "MENU LAYOUT", K, "enum", values={0: "5-TAB", 1: "STOCK + KOMA", 2: "GR II"}, order=7,
-      section="System", conf="I", ev="proposed Koma settings layout")
+      section="System", conf="I", ev="docs/koma/SETTINGS-EXTERNAL.md proposal")
 field(0x8bc, "koma_features", "KOMA FEATURES", K, "enum", values={0: "FULL", 1: "ESSENTIALS"}, order=8,
-      section="System", conf="I", ev="proposed Koma settings layout")
-SIO = "tools/koma/features/settingsio.py"
+      section="System", conf="I", ev="docs/koma/SETTINGS-EXTERNAL.md proposal")
+SIO = "tools/koma/features/settingsio.py; analysis/settings-io/README.md"
 field(0x8bd, "save_to_card", "SAVE TO CARD", K, "enum", values={0: "NO", 1: "YES", 2: "SAVED", 3: "FAILED"},
       body=True, ui="hidden", conf="EMU", ev=SIO + " (row byte 0x1b8bd; on_change writes /ATA1/PARAM.DAT; reset to 0 at boot)",
       help="An on-camera action that writes the settings to the card. Not edited here; it resets to NO at every boot.")
@@ -549,7 +549,7 @@ field(0x8be, "stallfix_flags", "STALL FIX FLAGS", K, "u8", rng=(0, 255), body=Tr
 field(0x8bf, "focus_peaking", "PEAKING", K, "enum", values={0: "OFF", 1: "RED", 2: "YELLOW"}, default=0, order=23,
       section="Display", conf="EMU",
       ev="tools/koma/features/peaking.py ROWS (byte 0x1b8bf, default 0); read once per live-view frame by the VD-task "
-         "hook 0x95af4",
+         "hook 0x95af4 (analysis/peaking/map-additions.json)",
       help="Outlines what is in focus on the screen.")
 field(0x8d0, "settingsio_magic", "SETTINGS FILE MARKER 'KSIO'", K, "bytes", size=4, body=True, ui="hidden", conf="EMU",
       ev=SIO + " (KSIO sub-header at 0x1b8d0, written every boot)",
@@ -562,43 +562,53 @@ field(0x8d5, "settingsio_tag", "FIRMWARE TAG", K, "bytes", size=7, body=True, ui
 field(0x8dc, "settingsio_status", "LAST IMPORT", K, "enum", values={0: "NONE", 1: "OK", 2: "BAD", 3: "OK, tag differed"}, body=True,
       ui="hidden", conf="EMU", ev=SIO + " (0x1b8dc, set on each PARAM.DAT import attempt)",
       help="Whether the last settings file from the card was accepted.")
+field(0x8e0, "clockkeep_decision", "CLOCK KEEPER DECISION", K, "bytes", size=4, body=True, ui="hidden", conf="EMU",
+      ev="tools/koma/features/clockkeep.py (RESULT 0x1b8e0: 'C', decision, flags, file state; written at each boot)",
+      help="What the clock keeper did at the last power-on. Diagnostic; not edited here.")
 excl(0x8bd, 1, "SAVE TO CARD action state of this body's menu; never imported (the camera keeps it, the init resets it each boot).")
-excl(0x8d0, 48, "Settings-io sub-header (KSIO magic, version, firmware tag, last-import status) and its reserve 0x8dd..0x8ff: "
+excl(0x8d0, 48, "Settings-io sub-header (KSIO magic, version, firmware tag, last-import status), the clock keeper's decision word 0x8e0..0x8e3 and the reserve: "
                 "describes the body, not the user's settings.")
 sys.path.insert(0, str(HERE.parent))
 try:
     from koma.features import bwrecipes as B          # noqa: E402
     BROWS = [(r["byte"] - 0x1b000, r["id"], r["label"], r["options"], r["default"], r.get("variants")) for r in B.ROWS]
     NREC, REC, RECLEN = B.N, B.REC - 0x1b000, B.RECLEN
+    NALL, STDREC, AJM = B.NALL, B.STDREC - 0x1b000, B.AJM - 0x1b000
 except Exception as e:                                  # pragma: no cover - fallback keeps the map buildable
     raise SystemExit("cannot import tools/koma/features/bwrecipes.py: %s" % e)
 for i, (o, rid, l, opts, dflt, var) in enumerate(BROWS):
     ev = "tools/koma/features/bwrecipes.py ROWS id %s (byte 0x1b%03x)" % (rid, o)
     if var:
-        ev += "; label/options vary with the active recipe type (selector 0x1b908): " + "; ".join(
+        ev += "; label/options vary with the active look's type (selector 0x1b908): " + "; ".join(
             "%s=%s" % (a[0], "/".join(a[1])) for a in var["alts"])
     field(o, "recipe_" + rid, l, K, "enum", values=dict(enumerate(opts)), default=dflt, order=9 + i,
-          section="Recipe" if rid == "rcp_active" else "Edit recipe", ev=ev, conf="STATIC")
+          section="Look" if rid == "rcp_active" else "Edit look", ev=ev, conf="STATIC")
 ST = 0x900
 RH = "tools/koma/features/bwrecipes.py 'RCP6' store header at 0x1b900"
-field(ST, "rcp6_magic", "RECIPE STORE MAGIC", "recipe", "bytes", size=4, ui="hidden", ev=RH + " (+0 'RCP6')",
-      conf="STATIC", help="Marks the recipe store.")
-for k, n, l, rng in [(4, "version", "STORE VERSION", (0, 255)), (5, "edit_owner", "EDIT-ROW OWNER ID", (0, 20)),
-                     (6, "last_applied", "LAST APPLIED ID", (0, 20)), (7, "count", "RECORD COUNT", (0, 255)),
+field(ST, "rcp6_magic", "LOOK STORE MAGIC", "recipe", "bytes", size=4, ui="hidden", ev=RH + " (+0 'RCP6')",
+      conf="STATIC", help="Marks the look store.")
+for k, n, l, rng in [(4, "version", "STORE VERSION", (0, 255)), (5, "edit_owner", "EDIT-ROW OWNER ID", (0, NALL)),
+                     (6, "last_applied", "LAST APPLIED ID", (0, NALL)), (7, "count", "RECORD COUNT", (0, 255)),
                      (8, "active_type", "ACTIVE TYPE", (0, 2)), (9, "select_colour", "SELECT COLOUR", (0, 6)),
                      (10, "select_range", "SELECT RANGE", (0, 1)), (11, "grain", "GRAIN (PUBLISHED)", (0, 3)),
-                     (12, "vignette", "VIGNETTE (PUBLISHED)", (0, 3)), (13, "fx_owner", "FX ROW OWNER", (0, 20))]:
+                     (12, "vignette", "VIGNETTE (PUBLISHED)", (0, 3)), (13, "fx_owner", "FX ROW OWNER", (0, NALL))]:
     field(ST + k, "rcp6_" + n, l, "recipe", "u8", rng=rng, ui="hidden", conf="STATIC", ev=RH + " (+%d)" % k,
-          help="Recipe store header field, rewritten by Koma.")
+          help="Look store header field, rewritten by Koma.")
 field(ST + 14, "rcp6_pad", "STORE HEADER PAD", "recipe", "bytes", size=2, ui="hidden", conf="STATIC",
       ev=RH + " (+14..15 = 0)", help="Padding.")
-for i in range(NREC):
-    nm = B.RECIPES[i]["name"]
-    field(REC + RECLEN * i, "recipe_record_%02d" % (i + 1), "RECIPE %d %s" % (i + 1, nm), "recipe", "bytes",
-          size=RECLEN, ev="bwrecipes.py records: p0..p8, kind, 0xa5, xor(bytes 0..9)^0x5a", conf="STATIC",
-          order=i + 1, help="Stored parameters of recipe %s." % nm)
-field(REC + RECLEN * NREC, "recipe_fx_table", "RECIPE FX TABLE", "recipe", "bytes", size=NREC, conf="STATIC",
-      ev="bwrecipes.py FX table at 0x1ba00: one byte per recipe, 0x50 | grain | vignette << 2", order=NREC + 1)
+for i in range(NALL):                                   # Look IA: STANDARD is look 21, its record at STDREC
+    nm = B.ALL[i]["name"]
+    field(REC + RECLEN * i if i < NREC else STDREC, "recipe_record_%02d" % (i + 1), "LOOK %d %s" % (i + 1, nm),
+          "recipe", "bytes", size=RECLEN, ev="bwrecipes.py records: p0..p8, kind, 0xa5, xor(bytes 0..9)^0x5a"
+          + ("" if i < NREC else " (STANDARD: 0x1ba1c, after the FX table)"), conf="STATIC",
+          order=i + 1, help="Stored parameters of the look %s." % nm)
+field(REC + RECLEN * NREC, "recipe_fx_table", "LOOK FX TABLE", "recipe", "bytes", size=NALL, conf="STATIC",
+      ev="bwrecipes.py FX table at 0x1ba00: one byte per look (id 1..21; STANDARD's at 0x1ba14), "
+         "0x50 | grain | vignette << 2", order=NALL + 1)
+field(AJM, "look_adj_lever_mask", "ADJ LEVER LOOKS", "recipe", "bytes", size=4, conf="STATIC",
+      ev="bwrecipes.py ADJ LEVER mask at 0x1ba18: bits 0..23 = look id - 1 (little-endian), then m0^m1^m2^0x5a; "
+         "a bad check byte reads as the default (STANDARD, MONO, HARD MONO, HICON B&W, SHINJUKU, POSITIVE, CUSTOM 1)",
+      order=NALL + 2)
 
 field(0xffc, "checksum", "CHECKSUM", "internal", "u32", size=4, rng=(0, 0xffffffff), ui="hidden", conf="HW",
       ev="0x3d9b8 sums big-endian u16 words over 0x000..0xffb into a u32; 0x4949c stores it with str (32-bit) at "
@@ -614,11 +624,11 @@ for o, why in [(0x038, "1.x group marker"), (0x0da, "print group marker"), (0x18
 excl(0x0ce, 1, "Transient, reset at every boot.")
 excl(0x8b0, 5, "Koma header (magic + layout version) is written by the Koma core at boot; merge only if both bodies "
                "run the same Koma settings version.")
-excl(0x900, 16, "Koma recipe-store header (owner ids, published values); rewritten by Koma at boot and per shot.")
+excl(0x900, 16, "Koma look-store header (owner ids, published values); rewritten by Koma at boot and per shot.")
 
 
 # ---------------------------------------------------------------------------------------------------- plain-language pass
-# Owner-facing help and labels. The editor shows these; the inline strings above are engineering notes that this
+# User-facing help and labels. The editor shows these; the inline strings above are engineering notes that this
 # table replaces at build time (hidden fields keep their terse engineering help).
 HELP = {
     "img_set": "The look of your pictures: a colour style, black and white, toned black and white, or one of your own SETTING1 or SETTING2 looks.",
@@ -686,7 +696,7 @@ HELP = {
     "te_sharpness": "How crisp the edges are in toned black-and-white pictures. Five steps; 3 is the standard.",
     "te_tone": "The colour of the toning on toned black-and-white pictures.",
     "te_density": "How strong the toning colour is. Five steps; 3 is the standard.",
-    # Koma (wording from the Koma feature modules)
+    # Koma features
     "snap_dist": "The distance the camera focuses at in SNAP focus. Pick the distance you usually shoot street subjects from.",
     "full_snap": "With ON, a quick full press of the shutter focuses at the SNAP distance and shoots at once, instead of waiting for autofocus.",
     "auto_iso_max": "The highest ISO that AUTO ISO may choose. STOCK keeps the camera's own limit.",
@@ -695,21 +705,23 @@ HELP = {
     "long_exp_limit": "The longest exposure allowed in M mode: the stock 180 seconds, or 240 seconds.",
     "menu_layout": "How the MENU button is organised: Koma's five tabs, the stock menu with Koma rows added, or a layout modelled on the GR II.",
     "koma_features": "FULL turns on every Koma feature. ESSENTIALS keeps only SDHC card support and small quality-of-life fixes.",
-    "recipe_rcp_active": "The recipe applied to your next pictures. OFF uses the camera's normal look.",
-    "recipe_rp_curve": "The basic tone curve of the recipe you are editing.",
-    "recipe_rp_contrast": "Overall contrast of the recipe you are editing.",
-    "recipe_rp_key": "Makes the recipe you are editing lighter (high key) or darker (low key) overall.",
-    "recipe_rp_shadow": "Contrast in the dark areas of the recipe you are editing.",
-    "recipe_rp_hilite": "Contrast in the bright areas of the recipe you are editing.",
-    "recipe_rp_p5": "Colour strength, or the colour filter for black and white. The name and choices change with the recipe type.",
-    "recipe_rp_p6": "Toning, warmth or colour range, depending on the recipe type.",
-    "recipe_rp_p7": "Toning strength, tint or saturation, depending on the recipe type.",
-    "recipe_rp_sharp": "Sharpness of the recipe you are editing.",
-    "recipe_rp_save": "Copies the recipe you are editing into one of the three CUSTOM slots, then returns to OFF.",
-    "recipe_rp_reset": "Choose YES to put the recipe you are editing back to its original values, then it returns to NO.",
-    "recipe_rp_grain": "Adds film-like grain to the recipe you are editing.",
-    "recipe_rp_vig": "Darkens the corners of the recipe you are editing, like an old lens.",
-    "recipe_fx_table": "The grain and vignette amounts stored for each recipe. Edited through the recipe rows.",
+    "recipe_rcp_active": "The look applied to your next pictures (on the camera: IMG SET). OFF uses the camera's own IMG SET value.",
+    "recipe_rp_curve": "The basic tone curve of the look you are editing.",
+    "recipe_rp_contrast": "Overall contrast of the look you are editing.",
+    "recipe_rp_key": "Makes the look you are editing lighter (high key) or darker (low key) overall.",
+    "recipe_rp_shadow": "Contrast in the dark areas of the look you are editing.",
+    "recipe_rp_hilite": "Contrast in the bright areas of the look you are editing.",
+    "recipe_rp_p5": "Colour strength, or the colour filter for black and white. The name and choices change with the look type.",
+    "recipe_rp_p6": "Toning, warmth or colour range, depending on the look type.",
+    "recipe_rp_p7": "Toning strength, tint or saturation, depending on the look type.",
+    "recipe_rp_sharp": "Sharpness of the look you are editing.",
+    "recipe_rp_save": "Copies the look you are editing into one of the three CUSTOM slots, then returns to OFF.",
+    "recipe_rp_reset": "Choose YES to put the look you are editing back to its original values, then it returns to NO.",
+    "recipe_rp_grain": "Adds film-like grain to the look you are editing.",
+    "recipe_rp_vig": "Darkens the corners of the look you are editing, like an old lens.",
+    "recipe_rp_adjlever": "ON: the ADJ lever steps through the look you are editing. OFF: the look stays in the IMG SET list only.",
+    "recipe_fx_table": "The grain and vignette amounts stored for each look. Edited through the look rows.",
+    "look_adj_lever_mask": "Which looks the ADJ lever steps through. Edited through ADJ LEVER of each look.",
 }
 LABEL = {"scene_flash_a": "FLASH (TEXT SCENE)", "manual_shutter": "SHUTTER SPEED", "manual_aperture": "APERTURE"}
 SET_TEXT = {"my1": "Saved as part of MY SETTINGS 1.", "my2": "Saved as part of MY SETTINGS 2."}
@@ -736,13 +748,13 @@ HW_KEEP = {"magic", "checksum", "marker_1x", "marker_print", "marker_201", "mark
 
 
 def build():
-    # HW only where hardware corroborates the meaning (owner-known setting, card EXIF, or structure verified on the
-    # main camera's block); a value merely seen in range on hardware stays STATIC.
+    # HW only where hardware corroborates the meaning (a known setting, card EXIF, or structure verified on a
+    # real block); a value merely seen in range on hardware stays STATIC.
     for f in F:
         if f["confidence"] == "HW" and f["name"] not in HW_KEEP:
             f["confidence"] = "STATIC"
 
-    # plain-language pass: owner-facing help, labels, section and order
+    # plain-language pass: user-facing help, labels, section and order
     base_label = {}
     for f in F:
         if f["name"] in LABEL:
@@ -756,11 +768,11 @@ def build():
             lab = f["label"].split(" ", 1)[1]
             f["label"] = LABEL.get(f["name"].split("_", 1)[1], lab)
         if f["page"] == "recipe" and f["name"].startswith("recipe_record_"):
-            f["help"] = "The stored values of recipe %s. Edited through the recipe rows, not by hand." % \
+            f["help"] = "The stored values of the look %s. Edited through the look rows, not by hand." % \
                 f["label"].split(" ", 2)[2]
-            f["section"] = "Recipe store"
-        if f["name"] == "recipe_fx_table":
-            f["section"] = "Recipe store"
+            f["section"] = "Look store"
+        if f["name"] in ("recipe_fx_table", "look_adj_lever_mask"):
+            f["section"] = "Look store"
     byname = {f["name"]: f for f in F}
     n = 0
     for sec, names in SHOOT_ORDER:

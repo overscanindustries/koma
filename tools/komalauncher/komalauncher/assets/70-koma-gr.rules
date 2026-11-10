@@ -1,0 +1,9 @@
+# Koma: lets the logged-in user open the GR DIGITAL over USB (libusb) without root.
+# Only the camera's USB CONNECTION ORIGINAL identity, 05ca:2218 (tools/grdusb/descriptors.py); MASS STORAGE (0109)
+# and PTP (0331) stay with the system's own drivers. 70-: uaccess tags must come before 73-seat-late.rules.
+#
+#   sudo install -m 0644 70-koma-gr.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# or, from the AppImage: ./Koma-*.AppImage --install-udev-rule
+SUBSYSTEM=="usb", ATTR{idVendor}=="05ca", ATTR{idProduct}=="2218", TAG+="uaccess"

@@ -1,6 +1,5 @@
 """preview: the LCD live view shows the active recipe (Koma 0.3). Needs bwrecipes; shares its tables and leaf routines.
 
-
 Why: Koma writes recipe registers only inside still develop. Every way back into live view re-runs Ricoh's monitor
 preset after that (STATIC): monitor start 0x985a0, post-shot resume 0x95cd0, setting change 0x338cc. Each ends its
 colour set-up with the mono/TE writer 0x8ff0e(cp+0x22); the setting change then rewrites the chroma gain once more
@@ -443,29 +442,32 @@ pv_warm:
     bx lr
 """
 
-# (addr, bytes as the 2.40 disassembly shows them, why): verified at install, never written
+# (addr, stock byte count or short hex, why), resolved by fw.pinned: verified at install, never written
 CHECKS = [
-    (0x98718, "1df83019784129 01d10070817880", "0x985a0: r0 = cp+0x22 (r7 = cp) before bl 0x8ff0e at 0x98726"),
-    (0x95E16, "1df83019784129 01d10070857880", "0x95cd0: r0 = cp+0x22 before bl 0x8ff0e at 0x95e24"),
+    (0x98718, 14, "0x985a0: r0 = cp+0x22 (r7 = cp) before bl 0x8ff0e at 0x98726"),
+    (0x95E16, 14, "0x95cd0: r0 = cp+0x22 before bl 0x8ff0e at 0x95e24"),
     (0x8F2DA, "1df830197880", "0x8f280: r0 = cp+0x22 before bl 0x8ff0e at 0x8f2e0"),
     (0x8F1EE, "2000", "0x8f18c: r0 = 0 (monitor preset) before bl 0x922bc at 0x8f1f0"),
     (0x8F1F4, "1c28bcb8", "0x8f18c: return value of 0x922bc unused (r0 = r5 after)"),
     (0x923FA, "a801", "0x922bc: r0 = &word (sp+4) for the setter call at 0x923fc"),
-    (CHROMA_SET, "680049016048477012018000", "0x171924 chroma setter: 0x12018004 = *r0"),
+    (CHROMA_SET, 12, "0x171924 chroma setter: 0x12018004 = *r0"),
     (0x98814, "76f8", "0x985a0: monitor-active 0x1f502f := 1"),
     (0x97644, "7008", "capture: monitor-active 0x1f502f := 0"),
 ]
+CHECKS_SHA256 = "5405c53fe51070d7484ac1544d587ad79e2fec4bb3c3508c815989b75ae6d21b"
 CURVE_CHECKS = [
-    (CC1_UP, "b5f0b0841c0c1c151c06", "0x166334(offset, size, buf) CC1 LUT upload prologue"),
+    (CC1_UP, 10, "0x166334(offset, size, buf) CC1 LUT upload prologue"),
     (0x90350, "001f4da8", "cache base: CC1 cache 0x1f4db0 = base + 8 (CC2 0x1f4db3 = + 0xb)"),
     (LUT_LOAD, "b590b082", "0x92050 stock monitor LUT load prologue (no arguments)"),
 ]
+CURVE_CHECKS_SHA256 = "2fd3a08eda9ecc12f7884d84aae60a476247d278f85f6a3046f0df2d03295742"
 WARM_CHECKS = [
-    (WB_RG, "6800490161084770", "0x1725f8: 0x12018110 = *r0"),
-    (WB_B, "6800490205c00dc06148", "0x172610: 0x12018114 = *r0 & 0x1ff"),
-    (0x174E94, "e59fc000e12fff1c", "veneer 0x174e94: ldr r12, [pc]; bx r12"),
-    (0x174E88, "e59fc000e12fff1c", "veneer 0x174e88: ldr r12, [pc]; bx r12"),
+    (WB_RG, 8, "0x1725f8: 0x12018110 = *r0"),
+    (WB_B, 10, "0x172610: 0x12018114 = *r0 & 0x1ff"),
+    (0x174E94, 8, "veneer 0x174e94: ldr r12, [pc]; bx r12"),
+    (0x174E88, 8, "veneer 0x174e88: ldr r12, [pc]; bx r12"),
 ]
+WARM_CHECKS_SHA256 = "b418c1f85d6d7f7c4e895bad730f020d06d5c1356b80abe53f10ef8118cf7812"
 
 
 def make(opts):
@@ -476,19 +478,20 @@ def make(opts):
     if opts.get("live", "on") == "off":
         return Feature(NAME, VERSION, SUMMARY + " [live=off: no records]", options=opts)
     curve, warmth = opts.get("curve") == "on", opts.get("warmth") == "on"
-    ns = dict(smoke_reachable=False)       # smoke stops in develop
+    ns = dict(smoke_reachable=False)       # smoke stops in develop; the emulator scenario drives them
     hooks = [Hook(SITE_START, MONO, "pv_m0", "next_m0", "monitor start 0x985a0: recipe after the stock mono writer", **ns),
              Hook(SITE_RESUME, MONO, "pv_m1", "next_m1", "post-shot resume 0x95cd0: recipe after the mono writer", **ns),
              Hook(SITE_SETTING, MONO, "pv_m2", "next_m2", "setting change 0x8f280: recipe after the mono writer", **ns),
              Hook(SITE_CHROMA, CHROMA_PRESET, "pv_c", "next_c", "setting change 0x8f18c: chroma after 0x922bc(0)", **ns),
              Hook(SITE_TAP, CHROMA_SET, "pv_tap", "next_tap", "0x922bc's chroma setter: remember the stock word")]
     pointers = []
-    checks = CHECKS + (CURVE_CHECKS if curve else []) + (WARM_CHECKS if warmth else [])
+    checks = (fw.pinned(CHECKS, CHECKS_SHA256) + (fw.pinned(CURVE_CHECKS, CURVE_CHECKS_SHA256) if curve else [])
+              + (fw.pinned(WARM_CHECKS, WARM_CHECKS_SHA256) if warmth else []))
     if warmth:
         pointers = [Pointer(VEN_RG, struct.pack(">I", WB_RG | 1), "pv_wb_rg", thumb=True,
                             why="monitor WB veneer 0x174e94 (RG 0x12018110) -> WARMTH while live"),
                     Pointer(VEN_B, struct.pack(">I", WB_B | 1), "pv_wb_b", thumb=True,
                             why="monitor WB veneer 0x174e88 (B 0x12018114) -> WARMTH while live")]
     return Feature(NAME, VERSION, SUMMARY, source=source(curve, warmth), options=opts, hooks=hooks, pointers=pointers,
-                   checks=[Check(a, bytes.fromhex(h.replace(" ", "")), w) for a, h, w in checks],
+                   checks=[Check(a, b, w) for a, b, w in checks],
                    requires=["bwrecipes"], exports=["pv_apply"])

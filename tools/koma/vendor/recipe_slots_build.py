@@ -1,4 +1,4 @@
-# Vendored from the earlier recipe-slots build.py (recipe-slots module builder). Edits: imports, firmware/data paths, writers removed.
+# Vendored from analysis/recipe-slots/build.py (recipe-slots module builder). Edits: imports, firmware/data paths, writers removed.
 """Recipe slots for GR DIGITAL 2.40: build a resident GRMOD card module. Offline: writes bytes, touches no card/camera.
 
 One module = installer + per-shot hook + slot defaults + tone curves (see README.md for the design and evidence).

@@ -1,12 +1,15 @@
-"""Cross-feature seams no single feature's tests cover.
+"""QA 0.3.0: seams between features that no single feature's tests cover.
 
-Covered: menu5 xlate (review F1) for every row of the 13-row 0.3 editor, in koma03 and in a minimal menu5,bwrecipes,fx build;
+Covered: the shipped drops installed back to back on one settings block (0.2.x RCP5 store -> 0.3 -> 0.2.2-adjfix ->
+0.3), CUSTOM records and FX bytes byte for byte, stale FX garbage zeroed on migrate, 0.2.1 resets as documented;
+menu5 xlate (review F1) for every row of the 13-row 0.3 editor, in koma03 and in a minimal menu5,bwrecipes,fx build;
 the EDIT RECIPE display order; both live-view entry paths refresh preview's chroma tap (0x922bc(0)) before the
 preview hook site, so a still develop's tap (0x922bc(1) at 0x9642c / 0xafd34) never reaches the screen.
 """
 from __future__ import annotations
 
 import struct
+from pathlib import Path
 
 from _util import fw
 from koma import features as F
@@ -17,6 +20,76 @@ from koma.linker import link
 from koma.unitemu import RES_POOL, Unit
 from unicorn.arm_const import UC_ARM_REG_R0
 
+DROPS = Path(__file__).resolve().parents[3] / "analysis/koma-0.1/drops"
+SBLK = (0x1B800, 0x1BC00)            # Koma tail + recipe store + FX table, carried from one boot to the next
+FXT = B.REC + B.N * B.RECLEN
+
+
+def _drop(name):
+    return (DROPS / name).read_bytes()
+
+
+def _boot(module, block):
+    """Install a module on a settings block left by the previous boot; return the block after install."""
+    u = Unit(module)
+    if block is not None:
+        u.uc.mem_write(SBLK[0], block)
+    assert u.install() == 0
+    return u, u.read(SBLK[0], SBLK[1] - SBLK[0])
+
+
+def _rec(params, kind):
+    r = bytearray(params) + bytes([kind, B.VALID, 0])
+    x = 0x5A
+    for b in r[:10]:
+        x ^= b
+    r[11] = x
+    return bytes(r)
+
+
+def _at(block, a, n=1):
+    return block[a - SBLK[0]:a - SBLK[0] + n]
+
+
+def test_drop_swap_keeps_custom_and_fx():
+    """Swap path: a 0.2.x RCP5 store with an edited MONO and CUSTOM 3 (and old garbage where 0.3's FX table
+    goes) -> 0.3 migrates (records byte for byte, FX table zeroed, header RCP6) -> the user sets GRAIN on CUSTOM 3 ->
+    0.2.2-adjfix keeps the RCP6 store untouched -> 0.3 again keeps records and FX bytes. 0.2.1 resets (documented)."""
+    mono, c3 = 1, B.N
+    blk = bytearray(b"\x03" * (SBLK[1] - SBLK[0]))
+    blk[0xB0:0xD0] = b"\xff" * 0x20                                # no Koma tail yet: core init gives defaults
+    st = bytearray(b"RCP5\x05\xff\xff" + bytes([B.N]) + bytes(8))
+    for i in range(1, B.N + 1):
+        st += bytes(12)
+    st[16 + (mono - 1) * 12:16 + mono * 12] = _rec([5, 8, 4, 4, 4, 3, 0, 2, 4], 0)
+    st[16 + (c3 - 1) * 12:16 + c3 * 12] = _rec([1, 6, 6, 1, 1, 2, 3, 3, 2], 0x51)
+    o = B.ST - SBLK[0]
+    blk[o:o + len(st)] = st
+    blk[FXT - SBLK[0]:FXT - SBLK[0] + B.N] = b"\x5f" * B.N            # garbage from another life
+    recs = bytes(st[16:])
+
+    _, b1 = _boot(_drop("koma-0.3.grmod"), bytes(blk))
+    assert _at(b1, B.ST, 5) == b"RCP6\x06" and _at(b1, B.ST + 7) == bytes([B.N])
+    assert _at(b1, B.REC, B.N * 12) == recs
+    assert _at(b1, FXT, B.N) == bytes(B.N)
+    assert _at(b1, B.ACT) == b"\0"
+
+    b1 = bytearray(b1)
+    b1[FXT - SBLK[0] + c3 - 1] = 0x50 | 2 | 1 << 2                 # GRAIN 2, VIGNETTE 1 on CUSTOM 3 (menu commit)
+    b1[B.ACT - SBLK[0]] = c3
+    _, b2 = _boot(_drop("koma-0.2.2-adjfix.grmod"), bytes(b1))
+    assert _at(b2, B.ST, 5) == b"RCP6\x06" and _at(b2, B.REC, B.N * 12) == recs
+    assert _at(b2, FXT, B.N) == _at(bytes(b1), FXT, B.N)
+    assert _at(b2, B.ACT) == bytes([c3])
+
+    _, b3 = _boot(_drop("koma-0.3.grmod"), b2)
+    assert _at(b3, B.ST, 5) == b"RCP6\x06" and _at(b3, B.REC, B.N * 12) == recs
+    assert _at(b3, FXT + c3 - 1) == bytes([0x50 | 2 | 1 << 2])
+    assert _at(b3, B.ACT) == bytes([c3])
+    assert (_at(b3, B.FXG), _at(b3, B.FXV)) == (b"\x02", b"\x01")      # rows reloaded from CUSTOM 3's FX byte
+
+    _, b4 = _boot(_drop("koma-0.2.1.grmod"), b3)                     # 0.2.1 does not know RCP6: resets (documented)
+    assert _at(b4, B.ST, 5) == b"RCP5\x05"
 
 
 def _xlate_rows(feats):
@@ -41,7 +114,7 @@ def test_editor_rows_never_fall_through_to_setup():
 def test_edit_recipe_order():
     r = link([F.make(n) for n in F.SETS["koma03"] if n != "telemetry"])
     ed = [x["label"] for x in r.manifest["rows"] if x["group"] == "recipe-edit"]
-    assert ed[-5:] == ["SHARPNESS", "GRAIN", "VIGNETTE", "SAVE TO CUSTOM", "RESET"], ed
+    assert ed[-6:] == ["SHARPNESS", "GRAIN", "VIGNETTE", "ADJ LEVER", "SAVE TO CUSTOM", "RESET"], ed   # Look IA
 
 
 def _bls(start, end):

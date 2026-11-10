@@ -21,9 +21,10 @@ decimal digits.
     reply is "200 -KSET <off>=<val>" (canonical decimal). Window (tools/komaset/settings-map.json):
         0x8b5..0x8cf  Koma rows (linker.ROW_BYTES; MENU LAYOUT / KOMA FEATURES act at the next boot)
         0x910..0x9ff  recipe records (20 x 12 B: p0..p8, kind, 0xa5, xor)
-        0xa00..0xa13  recipe FX table
+        0xa00..0xa14  look FX table (0xa14: STANDARD, Look IA)
+        0xa15..0xa27  Look IA: pad, ADJ LEVER mask 0xa18..0xa1a + check 0xa1b, STANDARD's record 0xa1c..0xa27
     Never: below 0x8b5 (stock bytes and the Koma header), 0x8d0..0x8ff (settings-io sub-header and its reserve),
-    0x900..0x90f (RCP6 header), 0xa14.. (incl. the checksum 0xffc).
+    0x900..0x90f (RCP6 header), 0xa28.. (incl. the checksum 0xffc).
     Live apply (option apply=on, the default): when idle (see v1.2 below; includes the monitor running, [0x1f502f] == 1;
     capture clears it before develop) and off >= 0x8c0 (recipe rows, records, FX table): $bwrecipes.on_change(val, addr) (the menu's own reconcile:
     edit rows -> record store, RECIPE row -> IMG SET base 1/3/6, SAVE TO CUSTOM / RESET), then
@@ -38,7 +39,7 @@ decimal digits.
     [0x1fb3e4] to 0x1a after the dispatch (the parser rewrites it for every command): the frame then takes exactly
     -LVFR's single-chunk path (bd348 = 0 -> close 0x8001 = no-op -> reply [0x1bd344]).
 
-v1.1 stock whitelist: EV 0x053, ISO 0x059, WB 0x054, WB detail 0x0a6,
+Stock whitelist: EV 0x053, ISO 0x059, WB 0x054, WB detail 0x0a6,
 metering 0x050, IMG SET 0x030, SETTING1/2 0x031..0x036, TE tone 0x1a9 / density 0x1aa, each only with the values stock
 writes (else 451 value), only when idle (app state 2, 0x6eb1c() in {0, 4}, 0x6ef7c() == 0: no menu / ADJ / detail
 screen, 0x6f104() == 0, monitor running; else "451 -KSET busy"); written through the stock setter where one exists
@@ -57,14 +58,14 @@ the ID outside the table) becomes -KSTA, no arguments: one data frame of big-end
 widened to u32). Plain loads only, no call, no wait, no state test: it answers in any app state (9, 2, ...) and in the
 middle of a resolve. Same -PRET-shaped reply as -KGET (150, one frame, 250; ID rewritten to 0x1a for the data phase).
 
-v1.4 (2026-11-07): -KSTA layout 2. The 27 layout-1 words keep their offsets; 13 snapshot words follow (Codex's wait
+-KSTA layout 2: the 27 layout-1 words keep their offsets; 13 snapshot words follow (wait
 candidates: LCD semaphore handles 0x1a8d14 / 18, 0x1a8d40 / 4c, 0x1a9210, 0x1a923c, 0x23a880, 0x1b97e4 / e8, 0x1bf1d0
 and the handshake words 0x1bec44 / 48 / 4c). In layout 2 the version word's NN is the number of these fixed words (the
 version word included); an extension block may follow: if the resident word `ksta_ext` (exported, 0 at install) holds
 a routine address, the handler calls it with r0 = the next payload byte and appends the r0 bytes it returns (waitdiag
 registers its wait ring there; without it the frame is the fixed part only). Hosts take the frame length from the data.
 
--PEEK <addr_hex>,<len> (v1.4, read-only RAM peek): the dead -PWOF record (ID 0, handler `bx lr` at 0xcd396, no caller
+-PEEK <addr_hex>,<len> (read-only RAM peek): the dead -PWOF record (ID 0, handler `bx lr` at 0xcd396, no caller
 outside the table) becomes -PEEK with `a,b` parsing. The parser takes verbs of 3..5 characters and answers 501 for a
 record with ID 0, and the dispatcher 0xcc304 finds the handler by ID (first match), so the record gets the unused ID
 0x25 (the IDs in use stop at 0x24; nothing compares the parsed ID with 0x25: 0x53a0c tests 3, 0xcb858 0x18, the data
@@ -95,16 +96,16 @@ SET_HANDLER_BEFORE, GET_HANDLER_BEFORE = bytes.fromhex("000cd399"), bytes.fromhe
 ID_SET, ID_GET = 0x16, 0x17
 REC_STA, ID_STA = 0x1FB760, 0x19                # v1.3: -FUPL record -> -KSTA (no arguments)
 STA_NAME_BEFORE, STA_HANDLER_BEFORE = bytes.fromhex("000cb644"), bytes.fromhex("000cd39d")
-REC_PEEK, ID_PEEK = 0x1FB6AC, 0x25               # v1.4: -PWOF record (ID 0) -> -PEEK <addr_hex>,<len>, ID 0x25
+REC_PEEK, ID_PEEK = 0x1FB6AC, 0x25               # -PWOF record (ID 0) -> -PEEK <addr_hex>,<len>, ID 0x25
 PEEK_NAME_BEFORE, PEEK_HANDLER_BEFORE = bytes.fromhex("000cb61c"), bytes.fromhex("000cd397")
 PEEK_MAX, PEEK_LO, PEEK_END = 256, 0x1A8000, 0x3E5000   # len 1..256; [addr, addr+len) inside [PEEK_LO, PEEK_END):
-                                                     # state / pool RAM + the static resident block (Codex review)
+                                                     # state / pool RAM + the static resident block
 S501_PEEK = "501 -PEEK range\r\n"
 
-# -KSTA words (name, address, load width 4 / 2 / 1). Sources: tether.py / handbook ch.04 (USB block 0x23a864, remtin
-# flag 0x1bd1b8 block), Codex's ERROR 03 path (0x1fb9bc; 0x29b28 end: entry flag 0x1bf0dc, then at 0x29c1c it copies
+# -KSTA words (name, address, load width 4 / 2 / 1). Sources: tether.py (USB block 0x23a864, remtin
+# flag 0x1bd1b8 block), the ERROR 03 path (0x1fb9bc; 0x29b28 end: entry flag 0x1bf0dc, then at 0x29c1c it copies
 # 0x6eb7c = [0x1befac], 0x6eb94 = [0x1befb0] (u8), 0x6ebac = [0x1befb1] (u8) into the end record), the APO block
-# 0x2b9e50 (0x52080), battlog's battery driver words (lane/koma031 battlog.py) and the
+# 0x2b9e50 (0x52080), battlog's battery driver words and the
 # RTOS tick word 0x1a8a00 (0x5df20 -> 0x1e1b0).
 KSTA_WORDS = [
     ("usb_23a86c", 0x23A86C, 4), ("usb_23a870", 0x23A870, 4), ("run_state", 0x23A874, 4),
@@ -120,7 +121,7 @@ KSTA_WORDS = [
     ("cam_state", 0x1A918C, 4), ("tick", 0x1A8A00, 4),
 ]
 KSTA_WORDS_V1 = list(KSTA_WORDS)                 # layout 1 (v1.3): 27 words + version
-# v1.4 layout 2: snapshot words appended (Codex's wait candidates, scratchpad review/codex-arm2.log)
+# layout 2: snapshot words appended (wait candidates)
 KSTA_WORDS += [
     ("lcd_sem_1a8d14", 0x1A8D14, 4), ("lcd_sem_1a8d18", 0x1A8D18, 4), ("lcd_1a8d40", 0x1A8D40, 4),
     ("lcd_1a8d4c", 0x1A8D4C, 4), ("sem_1a9210", 0x1A9210, 4), ("sem_1a923c", 0x1A923C, 4),
@@ -152,7 +153,7 @@ def ksta_decode(data: bytes) -> dict:
 
 BLOCK = 0x1B000
 BLOCK_LEN = 0x1000
-WINDOW = [(0x8B5, 0x8D0, "Koma rows"), (0x910, 0xA00, "recipe records"), (0xA00, 0xA14, "recipe FX table")]
+WINDOW = [(0x8B5, 0x8D0, "Koma rows"), (0x910, 0xA00, "recipe records"), (0xA00, 0xA28, "look FX table, ADJ LEVER mask, STANDARD record")]
 APPLY_FROM = 0x8C0                               # recipe rows, records and FX table: reconcile + preview re-apply
 ROW_BASE = 0x8B0
 KGET_MAX = 0x1000
@@ -171,7 +172,7 @@ FW_150, FW_250 = 0xCCD50, 0xCCD74
 FW_501 = 0xCC15C                                 # parser string "501 Syntax error in parameters or arguments.\r\n"
 OBUF = 0x2DF7BC                                  # parser's -SDIS field buffer (32 B before the verb buffer 0x2df7dc);
                                                  # read only for records with [7] = 1, and -SDIS was the only one
-# v1.1: stock bytes. Whitelist (stock-live-bytes.md section 4): (offset, value class, stock setter or 0, name)
+# v1.1: stock bytes. Whitelist: (offset, value class, stock setter or 0, name)
 STOCK_APPLY = 0x553D4                            # stock apply: 0x54d84 snapshot -> message 0x2103 to tCameraMain
 SETTERS = [0x6DC18, 0x6DFB0, 0x6DC7C, 0x6E034]   # EV, ISO, WB, metering (setter index 1..4)
 CLASSES = [set(range(1, 26, 2)), {0, 1, 2, 4, 6, 7, 8}, {0, 1, 2, 3, 4, 5, 7}, set(range(17)), {0, 1, 2},
@@ -188,7 +189,7 @@ UI_CMD = 0x1BEFC2                                # 0x6f104: command outstanding 
 SITE_SETTING = 2                                 # preview site id of the setting-change path
 KEY_SCAN = 0x2B9D84                              # v1.2: merged key scan (u8 per code; 0x50fc0 GPIO 0x30 -> [26],
 KEY_INJ = 0x2B9DD8                               # active low via 0x2571e; 0x50eb0 overlays injected 1/3), injected keys
-KEY_RL1 = 26                                     # (sink 0x51740); RL1 = half-press (handbook/08 key table)
+KEY_RL1 = 26                                     # (sink 0x51740); RL1 = half-press
 
 S150 = "150 data connection for -PRET.\r\n"    # firmware strings, reused (0xccd50 / 0xccd74)
 S250 = "250 -PRET command success.\r\n"
@@ -349,7 +350,7 @@ ks_koma:
     movs r2, #{(w3 - w2) // 2:#x}
     lsls r2, r2, #1
     cmp r1, r2
-    bhs ks_rep                      @ not 0x910..0xa13
+    bhs ks_rep                      @ not 0x910..0xa27
 3:  ldr r1, ={BLOCK:#x}
     adds r1, r1, r4
     strb r5, [r1]                   @ the one write to the settings block
@@ -769,4 +770,4 @@ def make(opts):
         requires=["bwrecipes", "preview"] if on else [])
 
 
-# `koma smoke` never attaches USB.
+# `koma smoke` never attaches USB; the emulator scenario drives the handlers through the stock dispatcher.

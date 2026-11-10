@@ -3,7 +3,7 @@
 Koma ships no Ricoh code. It reads the user's own stock 2.40 file, chosen in this order:
   1. `koma --firmware PATH` (or firmware.use(PATH))
   2. the KOMA_FIRMWARE environment variable
-  3. firmware/ in this checkout (DEFAULT_FIRMWARE, see firmware/README.md)
+  3. the research checkout's copy, if this tree sits inside it (DEFAULT_FIRMWARE)
 PATH may be qrflect3 from Ricoh's 2.40 updater, gr-240.exe itself, a zip holding qrflect3, or the bare 2.40 payload
 (qrflect3 minus its 512-byte header). Every form is verified by sha256. Builds need only the payload; `koma smoke`
 needs the full qrflect3 (it boots the emulator from the update container).
@@ -119,6 +119,23 @@ def ram(addr: int, n: int) -> bytes:
     if off < 0 or off + n > len(raw):
         raise ValueError(f"{addr:#x}+{n} is outside the 2.40 payload")
     return raw[off:off + n]
+
+
+def pinned(rows, sha256: str) -> list[tuple]:
+    """Resolve a table of (addr, spec, ...) rows to (addr, bytes, ...). spec is a byte count read from 2.40 at addr,
+    or a short hex literal kept as written. The bytes read, concatenated in row order, must hash to sha256, so the
+    source carries no copy of Ricoh's code while an edited address or length still fails the build."""
+    h, out = hashlib.sha256(), []
+    for addr, spec, *rest in rows:
+        if isinstance(spec, int):
+            b = ram(addr, spec)
+            h.update(b)
+        else:
+            b = bytes.fromhex(spec.replace(" ", ""))
+        out.append((addr, b, *rest))
+    if h.hexdigest() != sha256:
+        raise FirmwareError(f"stock bytes of a pinned table hash to {h.hexdigest()}, expected {sha256}")
+    return out
 
 
 def in_payload(addr: int, n: int) -> bool:

@@ -532,24 +532,26 @@ coltab:
     .byte {coltab}
 """
 
+# (addr, stock byte count or short hex, why), resolved by fw.pinned
 CHECKS = [
-    (0x95AD4, "b5f0487c25008ac2270021002a00d0014c79e005220182c2628162c16301e7f7f003ff982801d01e",
+    (0x95AD4, 40,
      "0x95ad4 VD-task body up to the hooked bl 0x99a28 at 0x95af4 and its cmp r0,#1"),
-    (0x99A28, "4801780047700000", "0x99a28: return byte [0x1f5034] (the wrapped call)"),
-    (0x95F68, "1c20f7feffe189f82800d002f7fffdae", "task 0x95f40: calls 0x95ad4 while [0x1f4e76] != 0"),
-    (0x959C4, "b500480489802800d0024803f788fb92bc084718001f4e68002cf408",
+    (0x99A28, 8, "0x99a28: return byte [0x1f5034] (the wrapped call)"),
+    (0x95F68, 16, "task 0x95f40: calls 0x95ad4 while [0x1f4e76] != 0"),
+    (0x959C4, 28,
      "0x959c4: activates HISR VdTaskWait 0x2cf408 (posts the VD-task semaphore)"),
-    (0x95A30, "002cf460000959e1002cf40856645461", "0x959fc: HISR VdTaskWait, entry 0x959e1"),
-    (0x9DFE8, "f000fa86f7f7fcea", "VD callback 0x9dfb4 calls 0x959c4 every monitor VD"),
+    (0x95A30, 16, "0x959fc: HISR VdTaskWait, entry 0x959e1"),
+    (0x9DFE8, 8, "VD callback 0x9dfb4 calls 0x959c4 every monitor VD"),
     (0x9DFBE, "6a6030016260", "VD callback: VD count [0x1f50f8+0x24] = 0x1f511c += 1"),
     (0x9931C, "60b9", "0x991fa stores the display slot at 0x1f501c"),
     (0x98814, "76f8", "monitor start sets 0x1f502f = 1"),
     (0x2A0E4, "0023a864", "0x2a090 literal: app-state struct (state at +0x10 = 0x23a874)"),
-    (0x174C04, "47780000eafbdbfb", "Thumb stub -> 0x6bbfc (OSD flush)"),
+    (0x174C04, 8, "Thumb stub -> 0x6bbfc (OSD flush)"),
     (0xD3D48, "00302d58", "literal of 0xd4018: plane 1 shadow 0x302d58"),
     (0x82868, "002cf640", "0x825c8 literal: live Y plane pointers"),
-    (0x92D1C, "480047700023b068", "0x92d1c: zoom struct (step = byte +5 >> 1)"),
+    (0x92D1C, 8, "0x92d1c: zoom struct (step = byte +5 >> 1)"),
 ]
+CHECKS_SHA256 = "445d04dc2b04dadc9489b48552f9fb9308c9dcd8bffb12c3941e783214f19e40"
 
 
 def make(opts):
@@ -568,7 +570,7 @@ def make(opts):
                      yrowstep=step * YSTRIDE, prowskip=step * OSDROW - g["groups"] * g["gstride"],
                      bmbytes=g["bm_bytes"], cap=cap, ystride=YSTRIDE, samples=_samples(step),
                      boff=", ".join(str(b) for b in g["boff"]), coltab=f"0, {red}, {yellow}, 0")
-    checks = [Check(a, bytes.fromhex(h), w) for a, h, w in CHECKS]
+    checks = [Check(a, b, w) for a, b, w in fw.pinned(CHECKS, CHECKS_SHA256)]
     for c in checks:
         assert fw.ram(c.addr, len(c.before)) == c.before, f"peaking check {c.addr:#x} does not match 2.40"
     return Feature(

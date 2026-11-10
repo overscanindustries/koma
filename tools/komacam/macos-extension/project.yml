@@ -1,0 +1,46 @@
+# xcodegen spec (brew xcodegen is installed): `xcodegen generate` writes Komacam.xcodeproj. DRAFT: never generated,
+# built, signed or installed. Team X57GZ92C8A (Forthright Consulting LLC, paid account: needed for the
+# system-extension entitlement with Developer ID; Apple Development works for local testing).
+name: Komacam
+options:
+  bundleIdPrefix: com.forthright
+  deploymentTarget:
+    macOS: "13.0"
+settings:
+  base:
+    DEVELOPMENT_TEAM: X57GZ92C8A
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  KomacamHost:
+    type: application
+    platform: macOS
+    sources: [KomacamHost]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.forthright.komacam
+        CODE_SIGN_ENTITLEMENTS: KomacamHost/KomacamHost.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Komacam
+    dependencies:
+      - target: KomacamExtension
+        embed: true
+        codeSign: true
+        copy:
+          destination: custom
+          subpath: Contents/Library/SystemExtensions
+  KomacamExtension:
+    type: system-extension
+    platform: macOS
+    sources:
+      - path: KomacamExtension
+        excludes: ["*.plist", "*.entitlements"]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.forthright.komacam.extension
+        INFOPLIST_FILE: KomacamExtension/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: KomacamExtension/KomacamExtension.entitlements
+        PRODUCT_NAME: com.forthright.komacam.extension

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1200 824" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flash-layout-title flash-layout-desc">
+<title id="flash-layout-title">OneNAND flash layout</title>
+<desc id="flash-layout-desc">Stack of the OneNAND flash regions from block 0 to block 0x1ff, showing what each holds and which update file rewrites it.</desc>
+<defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<text x="32" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">BLOCK</text>
+<text x="188" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">HOLDS</text>
+<text x="720" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">FLASH OFFSET</text>
+<text x="864" y="40" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">REWRITTEN BY AN UPDATE?</text>
+<rect x="32" y="56" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="56" width="148" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="106.0" y="78" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0 / sectors 0..0x7d</text>
+<rect x="188" y="56" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="56" width="520" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="200" y="76" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Monitor 1.00 payload</text>
+<text x="200" y="90" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">63,660 B (0xf8ac) of a 0xfc00 B window</text>
+<text x="200" y="102" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">spare tag MON; type 1, 1.00, 2005-08-06</text>
+<rect x="720" y="56" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="56" width="128" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="784.0" y="78" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x0</text>
+<rect x="864" y="56" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="56" width="304" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="1016.0" y="78" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">never: no official package ships type 1</text>
+<rect x="32" y="124" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="124" width="148" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="106.0" y="146" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0 / sector 0x7e</text>
+<rect x="188" y="124" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="124" width="520" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="200" y="144" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Monitor info header</text>
+<text x="200" y="158" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">512 B reflector header, spare tag INF</text>
+<text x="200" y="170" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">payload checksum 0x0196d9b0</text>
+<rect x="720" y="124" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="124" width="128" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="784.0" y="146" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0xfc00</text>
+<rect x="864" y="124" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="124" width="304" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="1016.0" y="146" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">never</text>
+<rect x="32" y="192" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="192" width="148" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="106.0" y="214" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">1 .. 0xc</text>
+<rect x="188" y="192" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="192" width="520" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="200" y="212" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Replace table and spare pool</text>
+<text x="200" y="226" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">table scanned in 1..0xb (tag REP), pool from 0xc down</text>
+<text x="200" y="238" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">captured block 1 is erased: no block remapped</text>
+<rect x="720" y="192" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="192" width="128" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="784.0" y="214" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x10000</text>
+<rect x="864" y="192" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="192" width="304" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="1016.0" y="214" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">only if a block fails</text>
+<rect x="32" y="260" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="260" width="148" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="106.0" y="282" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0xd .. 0x2e</text>
+<rect x="188" y="260" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="260" width="520" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="200" y="280" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Main application body</text>
+<text x="200" y="294" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">2,201,960 B, 34 logical blocks (mapped), 2.40</text>
+<text x="200" y="306" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">flash 0xd0000..0x2e9968 = runtime 0x1c000 on</text>
+<rect x="720" y="260" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="260" width="128" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="784.0" y="282" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0xd0000</text>
+<rect x="864" y="260" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="260" width="304" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1016.0" y="282" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">type 2 (qrflect3): erase + program</text>
+<rect x="32" y="328" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="328" width="148" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="106.0" y="350" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x2f .. 0x3b</text>
+<rect x="188" y="328" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="328" width="520" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="200" y="348" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Unused part of the main window</text>
+<text x="200" y="362" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">13 blocks, all 0xFF on the main camera</text>
+<text x="200" y="374" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">window limit 47 blocks = 0x2f0000 B from 0xd</text>
+<rect x="720" y="328" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="328" width="128" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="784.0" y="350" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x2f0000</text>
+<rect x="864" y="328" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="328" width="304" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="1016.0" y="350" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">not used by 2.40</text>
+<rect x="32" y="396" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="396" width="148" height="60" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="106.0" y="418" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x3c / sector 0x7e</text>
+<rect x="188" y="396" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="396" width="520" height="60" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="200" y="416" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Main info header</text>
+<text x="200" y="430" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">type 2, 2.40, 2007-10-24; marks main valid</text>
+<text x="200" y="442" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">checked by the Monitor before it loads main</text>
+<rect x="720" y="396" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="396" width="128" height="60" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="784.0" y="418" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x3c0000</text>
+<rect x="864" y="396" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="396" width="304" height="60" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="1016.0" y="418" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">type 2: erased first, programmed last</text>
+<rect x="32" y="464" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="464" width="148" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="106.0" y="486" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x3d</text>
+<rect x="188" y="464" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="464" width="520" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="200" y="484" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Adjustment store</text>
+<text x="200" y="498" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">0x2000 B programmed, magic 0xAA, stored sum</text>
+<text x="200" y="510" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">calibration and tone words; qrflect3 never touches it</text>
+<rect x="720" y="464" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="464" width="128" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="784.0" y="486" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x3d0000</text>
+<rect x="864" y="464" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="464" width="304" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1016.0" y="486" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">type 5 (qrflect7): UEE00 commit</text>
+<rect x="32" y="532" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="532" width="148" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="106.0" y="554" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x3e .. 0x52</text>
+<rect x="188" y="532" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="532" width="520" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="200" y="552" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Extend data (fonts, resources)</text>
+<text x="200" y="566" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">21 blocks, type 6, 1.00, 2005-09-23, 1,339,232 B</text>
+<text x="200" y="578" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">info header in block 0x52, sector 0x7e</text>
+<rect x="720" y="532" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="532" width="128" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="784.0" y="554" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x3e0000</text>
+<rect x="864" y="532" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="532" width="304" height="60" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="1016.0" y="554" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">never: 2.40 ships no type-6 file</text>
+<rect x="32" y="600" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="600" width="148" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="106.0" y="622" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x53</text>
+<rect x="188" y="600" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="600" width="520" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="200" y="620" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">Unassigned</text>
+<text x="200" y="634" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">no reader or writer found (bounded), erased</text>
+<rect x="720" y="600" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="600" width="128" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="784.0" y="622" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x530000</text>
+<rect x="864" y="600" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="600" width="304" height="60" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="1016.0" y="622" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">none found</text>
+<rect x="32" y="668" width="148" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="668" width="148" height="60" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="106.0" y="690" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x54 .. 0x1ff</text>
+<rect x="188" y="668" width="520" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="188" y="668" width="520" height="60" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="200" y="688" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="start">/IROM internal file store</text>
+<text x="200" y="702" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">0x1ac blocks, 26.75 MiB: SCRIPT.MG1, CONFIG.TST, JPEGs</text>
+<text x="200" y="714" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="start">RAM settings 0x1b000 saved on power-off; destination untraced</text>
+<rect x="720" y="668" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="720" y="668" width="128" height="60" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="784.0" y="690" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x540000</text>
+<rect x="864" y="668" width="304" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="864" y="668" width="304" height="60" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="1016.0" y="690" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">written at runtime; kept by updates</text>
+<text x="32" y="752" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">Not to scale. Flash offset = block x 0x10000. Blocks 0x66 and up were not captured from the main camera.</text>
+<line x1="32" y1="784" x2="1168" y2="784" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="32" y="804" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="100" y="794" width="20" height="12" rx="3" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="128" y="803" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">kept as shipped</text>
+<rect x="228" y="794" width="20" height="12" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="256" y="803" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">rewritten by an update</text>
+<rect x="390" y="794" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="418" y="803" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">validity marker</text>
+<rect x="518" y="794" width="20" height="12" rx="3" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="546" y="803" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">unused or conditional</text>
+<rect x="675" y="794" width="20" height="12" rx="3" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="703" y="803" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">runtime store</text>
+</svg>

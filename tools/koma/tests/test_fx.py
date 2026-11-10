@@ -182,8 +182,8 @@ def test_build_options_drop_each_half():
 
 # ------------------------------------------------------------------ full frames, bare machine
 def test_full_frame_cost_and_model():
-    """3264 x 2448, both effects at 3: <= 40 M instructions (the lane budget), lines 0 / mid / last == model. Also the
-    grain-only and vignette-only costs. Prints the counts (LANE-REPORT)."""
+    """3264 x 2448, both effects at 3: <= 40 M instructions (the budget), lines 0 / mid / last == model. Also the
+    grain-only and vignette-only costs. Prints the counts."""
     u = unit()
     w, h = 3264, 2448
     plane = X.synthetic_plane(X.STRIDE8, w, h)

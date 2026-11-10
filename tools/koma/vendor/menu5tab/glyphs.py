@@ -1,5 +1,5 @@
-# Vendored from the earlier menu-5tab glyphs.py (menu glyph strings). Edits: imports, firmware/data paths, writers removed.
-"""English menu strings as firmware glyph strings (font page 1).
+# Vendored from analysis/menu-5tab/glyphs.py (menu glyph strings). Edits: imports, firmware/data paths, writers removed.
+"""English menu strings as firmware glyph strings (font page 1; analysis/menu-redesign/font/README.md).
 enc() matches menu-redesign variants.enc. label_table_src() emits a 9-language table (all slots -> one string)."""
 
 P1 = {ch: 0x02 + i for i, ch in enumerate(" !&'()+-./0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ")}

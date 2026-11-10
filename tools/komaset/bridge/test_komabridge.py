@@ -79,6 +79,7 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(s["camera"]["firmware_display"], "2.40")
         self.assertEqual(s["camera"]["usb_mode"], "ORIGINAL")
         self.assertEqual(s["bridge_version"], KB.BRIDGE_VERSION)
+        self.assertIsNone(s["problem"])
 
     def test_status_polling_sends_ver_once(self):
         for _ in range(5):
@@ -102,7 +103,7 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(s["code"], "no_param_cur")
 
     def test_get_settings_by_retr_when_root_listing_would_time_out(self):
-        # Big card (widefs FAT32): -NLST /EXT0 hangs (HW 2026-11-08). GET and POST /settings must never list the root.
+        # Big card (widefs FAT32): -NLST /EXT0 hangs. GET and POST /settings must never list the root.
         def boom(self, path):
             raise AssertionError(f"listed {path}")
         orig = KB.BridgeSession.list_raw
@@ -150,12 +151,12 @@ class BridgeTest(unittest.TestCase):
         self.assertFalse([c for c in sent if c.startswith("-STOR")], sent)
 
     def test_post_settings_tag_mismatch(self):
-        # camera = spare (240K2), file = main's block (Rev024M): same Koma version -> written, with a warning
+        # camera = earlier Koma build (240K2), file = a block from a loader build (Rev024M): same Koma version -> written, with a warning
         m = KB.load_map()
         cur = bytearray(DEMO)
         cur[0x8b0:0x8b5] = b"KOMA\x01"
         cur[0x8d0:0x8d4] = b"KSIO"
-        cur[0x8d5:0x8dc] = b"240K2.4"
+        cur[0x8d5:0x8dc] = b"240K1.0"
         KB.komaset.set_checksum(cur, m)
         self.body.card["/EXT0/PARAM.CUR"] = bytes(cur)
         new = bytearray(cur)
@@ -164,7 +165,7 @@ class BridgeTest(unittest.TestCase):
         b64 = base64.b64encode(bytes(new)).decode()
         status, _, s = self.jreq("POST", "/settings", {"data": b64})
         self.assertEqual(status, 200, s)
-        self.assertEqual(s["warnings"], ["These cameras run different firmware tags (Rev024M, 240K2.4). "
+        self.assertEqual(s["warnings"], ["These cameras run different firmware tags (Rev024M, 240K1.0). "
                                          "Settings still copy; Koma version matches."])
         self.assertEqual(self.body.card["/EXT0/PARAM.DAT"], bytes(new))
         # same tag: no warning
@@ -208,7 +209,13 @@ class BridgeTest(unittest.TestCase):
         self.assertNotIn("/EXT0/PARAM.DAT", self.body.card)
         self.assertEqual(self.body.card["/EXT0/PARAM.OK"], bytes(blk))
         _, _, g = self.jreq("GET", "/settings")
-        self.assertEqual(base64.b64decode(g["data"]), bytes(blk))
+        cur = base64.b64decode(g["data"])
+        # the export after the import: the sent settings, this body's KSIO sub-header (status 1 = applied), new checksum
+        self.assertEqual(cur[:0x8D0], bytes(blk[:0x8D0]))
+        self.assertEqual(cur[0x900:0xFFC], bytes(blk[0x900:0xFFC]))
+        self.assertEqual(cur[0x8D0:0x8D4], b"KSIO")
+        self.assertEqual(cur[0x8DC], 1)
+        self.assertEqual(int.from_bytes(cur[0xFFC:], "big"), KB.komaset.compute_checksum(bytearray(cur), KB.load_map()))
         self.transports_clean()
 
     def test_photos_list(self):
@@ -359,6 +366,26 @@ class TetherTest(unittest.TestCase):
 
     def sent(self):
         return [c.strip() for t in self.body.transports for c in t.sent if c.startswith("-CCTL")]
+
+    def test_start_queued_behind_a_stop_does_nothing(self):
+        """A start sent before a stop but run after it (lock order) must not leave remote control on."""
+        self.make(tether=True)
+        self.assertTrue(self.post("/tether/start")["ok"])
+        stops = self.link.tether_stops
+        real_run = self.link.run
+
+        def run_after_stop(fn):   # the stop wins the lock first
+            if self.link.tether_stops == stops:
+                KB.tether_stop(self.link)
+            return real_run(fn)
+        self.link.run = run_after_stop
+        r = KB.tether_start(self.link)
+        self.link.run = real_run
+        self.assertFalse(r["ok"], r)
+        self.assertTrue(r["stopped"])
+        self.assertFalse(self.link.remote_on)
+        self.assertTrue(self.post("/tether/start")["ok"])   # a start after the stop works as before
+        self.assertTrue(self.link.remote_on)
 
     def test_start_shoot_stop_with_feature(self):
         self.make(tether=True)
@@ -901,7 +928,6 @@ class RemoteTest(unittest.TestCase):
         return [c.strip() for t in self.body.transports for c in t.sent if c.startswith("-CCTL keyset")]
 
     # ---- decode
-    @unittest.skipUnless(mockcard.osd_pages_present(), "the emulator OSD dumps (testdata/osd-*.bin) are not shipped")
     def test_mode2_decode_known_page(self):
         meta = json.loads((mockcard.OSD_DIR / "osd-pages.json").read_text())
         rows = (mockcard.OSD_DIR / "osd-menu.bin").read_bytes()
@@ -925,7 +951,7 @@ class RemoteTest(unittest.TestCase):
         self.assertEqual(d["palette"][1], (254, 254, 254))   # 0xda0000: white menu text
         self.assertEqual(d["palette"][4], (58, 58, 58))      # 0x320000: menu background
         self.assertEqual(d["palette"][11], (253, 254, 194))  # 0xd4e604: selected row
-        # fixed palette (scale 0) at the size the firmware lane expects, 320x240 = 38,400 bytes
+        # fixed palette (scale 0) at the firmware's page size, 320x240 = 38,400 bytes
         page = bytes(((x // 8) % 16) << 4 | ((x // 8) % 16) for x in range(160)) * 240
         self.assertEqual(len(page), 38400)
         d2 = decode_png(KB.osd_png(KB.parse_lvfr(mockcard.lvfr_payload(2, 0, 0, 320, 240, 0, page))))
@@ -939,12 +965,11 @@ class RemoteTest(unittest.TestCase):
                     mockcard.lvfr_payload(2, 0, 0, 320, 240, 65, page + bytes(260))):
             with self.assertRaises(KB.ProtocolError):
                 KB.osd_png(KB.parse_lvfr(bad))
-        # a short appended palette: entries past it render magenta, as tools/koma/emu/grdui/display.py does
+        # a short appended palette: entries past it render magenta, as tools/grdui/display.py does
         d3 = decode_png(KB.osd_png(KB.parse_lvfr(mockcard.lvfr_payload(2, 0, 0, 320, 240, 2, page + bytes(4) + pal[4:8]))))
         self.assertEqual(d3["palette"][1], (254, 254, 254))
         self.assertEqual(d3["palette"][2], (255, 0, 255))
 
-    @unittest.skipUnless(mockcard.osd_pages_present(), "the emulator OSD dumps (testdata/osd-*.bin) are not shipped")
     def test_mode2_zero_palette_falls_back_to_rom_table(self):
         """Register readback of entries 1..15 all zero (may happen on hardware): the ROM default table 0x1fba30 is used
         and the OSD status carries the note; a real appended palette is used as sent, with no note."""
@@ -1046,7 +1071,6 @@ class RemoteTest(unittest.TestCase):
         self.assertEqual(sent[:len(self.NAV)], [f"-CCTL keyset,3,{c}" for c in self.NAV])  # a tap sends no release
         self.assertEqual(sent[len(self.NAV):], ["-CCTL keyset,1,13", "-CCTL keyset,0,13"])
 
-    @unittest.skipUnless(mockcard.osd_pages_present(), "the emulator OSD dumps (testdata/osd-*.bin) are not shipped")
     def test_mode2_parts_while_monitor_stopped(self):
         self.make()
         # stock USB state (no remote control at all): mode 2 still answers, mode 1 does not
@@ -1137,10 +1161,10 @@ class KsetAllowlistTest(unittest.TestCase):
     def test_window_is_a_range_rule(self):
         # 0x900 (recipe store header) and ALL of 0x8d0..0x8ff (KSIO header + reserve) refused, as the firmware does;
         # the Koma rows, a record and the FX table's end ok
-        for off in (0x8C0, 0x910, 0xA13, 0x8B5, 0x8CF, 0x9FF, 0xA00):
+        for off in (0x8C0, 0x910, 0xA13, 0x8B5, 0x8CF, 0x9FF, 0xA00, 0xA14, 0xA18, 0xA1B, 0xA27):   # + Look IA bytes
             self.assertEqual(KB.write_command("-KSET", f"{off},3"), f"-KSET {off},3\r\n".encode())
             self.assertTrue(KB.kset_writable(off))
-        for off in list(range(0x8D0, 0x900)) + [0x900, 0x90F, 0x8B4, 0x8B0, 0xA14, 0x000, 0xFFC, 0x05A, 0x058, 4095]:
+        for off in list(range(0x8D0, 0x900)) + [0x900, 0x90F, 0x8B4, 0x8B0, 0xA28, 0x000, 0xFFC, 0x05A, 0x058, 4095]:
             self.assertFalse(KB.kset_writable(off), hex(off))
             with self.assertRaises(KB.WriteRefused, msg=hex(off)):
                 KB.write_command("-KSET", f"{off},3")
@@ -1346,7 +1370,8 @@ class RamTest(_Served, unittest.TestCase):
                  ({"off": 0x5A, "val": 1}, 403, "out_of_window"), ({"off": 0x8E0, "val": 1}, 403, "out_of_window"),
                  ({"off": 0x53, "val": 14}, 422, "bad_value"),    # EV: odd values only
                  ({"off": 0x59, "val": 3}, 422, "bad_value"),     # ISO: no stock value 3
-                 ({"off": 0x8C0, "val": 21}, 422, "bad_value"),   # RECIPE enum is 0..20
+                 ({"off": 0x8C0, "val": 22}, 422, "bad_value"),   # look id enum is 0..21 (21 = STANDARD, Look IA)
+                 ({"off": 0xA28, "val": 1}, 403, "out_of_window"),     # past STANDARD's record
                  ({"off": 0x8C2, "val": 9}, 422, "bad_value"),    # CONTRAST enum is 0..8
                  ({"off": 0x8CC, "val": 4}, 422, "bad_value"),    # GRAIN 0..3
                  ({"off": 0x8BB, "val": 3}, 422, "bad_value"),    # MENU LAYOUT 0..2
@@ -1433,7 +1458,7 @@ class RamTest(_Served, unittest.TestCase):
         self.assertEqual(base64.b64decode(d["data"])[0x53 - 0x30], 17)
 
     def test_busy_after_ev_change_is_retried(self):
-        # hardware (session 7 step 8): right after an EV change the camera answers 451 -KSET busy for a moment
+        # right after an EV change the camera answers 451 -KSET busy for a moment
         self.assertEqual(self.jreq("POST", "/tether/start")[0], 200)
         self.link.kset_busy_wait_s, self.link.kset_busy_poll_s = 1.0, 0.05
         self.body.kset_busy_after_s = 0.3
@@ -1494,11 +1519,57 @@ class RamTest(_Served, unittest.TestCase):
         self.assertNotEqual(flat, hard)
         self.assertEqual(mockcard.active_tone(self.body.ram), (8, 4))
 
+    def test_look_ia_adj_lever_and_standard_over_batch(self):
+        """Look IA flow, as the web editor sends it: ADJ LEVER ON for a look that is not active (mask 0xa18..0xa1a +
+        check 0xa1b), then an edit of STANDARD (look 21: record 0xa1c..0xa27, FX byte 0xa14). Both reach the camera."""
+        self.assertEqual(self.jreq("POST", "/ram", {"off": 0x8C0, "val": 1})[0], 200)            # MONO active
+        noir = 9                                                                                   # NOIR's id
+        mask = (0x1 | 0x2 | 0x4 | 0x8 | 1 << 11 | 1 << 17 | 1 << 20) | 1 << (noir - 1)
+        m = [mask & 255, mask >> 8 & 255, mask >> 16 & 255]
+        writes = [{"off": 0xA18 + k, "val": v} for k, v in enumerate(m + [m[0] ^ m[1] ^ m[2] ^ 0x5A])]
+        status, _, d = self.jreq("POST", "/ram/batch", writes)
+        self.assertEqual(status, 200, d)
+        self.assertEqual(bytes(self.body.ram[0xA18:0xA1C]), bytes(w["val"] for w in writes))
+        std = bytearray(mockcard.record_bytes(bytes([1, 6, 4, 4, 4, 3, 3, 3, 2, 0x21]))[:12])     # STANDARD, CONTRAST +2
+        writes = [{"off": 0x8C0, "val": 21}] + [{"off": 0xA1C + k, "val": v} for k, v in enumerate(std)] + \
+            [{"off": 0xA14, "val": 0x52}]
+        status, _, d = self.jreq("POST", "/ram/batch", writes)
+        self.assertEqual(status, 200, d)
+        self.assertEqual(bytes(self.body.ram[0xA1C:0xA28]), bytes(std))
+        self.assertEqual((self.body.ram[0x8C0], self.body.ram[0xA14]), (21, 0x52))
+        self.assertEqual(self.jreq("POST", "/ram/batch", [{"off": 0xA28, "val": 1}])[0], 403)  # past the record
+
+    def test_look_ia_mask_batch_with_a_non_default_active_look(self):
+        """NOIR active with its ADJ LEVER ON (not its default); the web editor turns SELECT ON. The
+        batch carries the mask bytes in offset order with the check byte 0xa1b last (looksWrites), every byte reaches the
+        camera, and the result is the intended mask (the camera side is tools/koma/tests/test_look_ia.py)."""
+        noir, sel = 9, 11
+        base = 0x12080F | 1 << (noir - 1)                                     # defaults + NOIR
+        m = [base & 255, base >> 8 & 255, base >> 16 & 255]
+        st = [{"off": 0x8C0, "val": noir}] + [{"off": 0xA18 + k, "val": v} for k, v in enumerate(m + [m[0] ^ m[1] ^ m[2] ^ 0x5A])]
+        self.assertEqual(self.jreq("POST", "/ram/batch", st)[0], 200)
+        new = base | 1 << (sel - 1)
+        nb = [new & 255, new >> 8 & 255, new >> 16 & 255]
+        nb.append(nb[0] ^ nb[1] ^ nb[2] ^ 0x5A)
+        old = bytes(self.body.ram[0xA18:0xA1C])
+        writes = [{"off": 0xA18 + k, "val": v} for k, v in enumerate(nb) if old[k] != v]   # what looksWrites sends
+        self.assertEqual(writes[-1]["off"], 0xA1B)
+        for t in self.body.transports:
+            t.sent.clear()
+        status, _, d = self.jreq("POST", "/ram/batch", writes)
+        self.assertEqual(status, 200, d)
+        self.assertEqual(self.ksets(), [f"-KSET {w['off']},{w['val']}" for w in writes])
+        self.assertEqual(bytes(self.body.ram[0xA18:0xA1C]).hex(), bytes(nb).hex())
+
     def test_page_and_map_served(self):
-        status, headers, page = self.req("GET", "/")
+        status, headers, page = self.req("GET", "/legacy")
         self.assertEqual(status, 200)
         self.assertTrue(headers["Content-Type"].startswith("text/html"))
         self.assertIn(b"<title>Koma Setup</title>", page)
+        status, headers, page = self.req("GET", "/")  # the Koma app when built, else still the old page
+        self.assertEqual(status, 200)
+        self.assertTrue(headers["Content-Type"].startswith("text/html"))
+        self.assertIn(b"<title>Koma</title>" if KB.app_index() else b"<title>Koma Setup</title>", page)
         status, headers, data = self.req("GET", "/settings-map.json")
         self.assertEqual(status, 200)
         self.assertIn("fields", json.loads(data))
@@ -1511,23 +1582,28 @@ class RamTest(_Served, unittest.TestCase):
             self.assertTrue(headers["Content-Type"].startswith(ctype), (path, headers["Content-Type"]))
             self.assertTrue(data, path)
         self.assertIn("Koma Setup", json.loads(self.req("GET", "/manifest.webmanifest")[2])["name"])
-        for path in ("/build/", "/build/koma04.grmod.json", "/build/../README.md", "/build/%2e%2e/README.md",
-                     "/build/koma04.grmod/../SHA256SUMS"):
+        for path in ("/analysis/", "/analysis/koma-0.4-candidate/build-koma04.log",
+                     "/analysis/koma-0.4-candidate/../../README.md",
+                     "/analysis/koma-0.4-candidate/%2e%2e/%2e%2e/README.md",
+                     "/analysis/%2e%2e/STATUS.md", "/analysis/koma-0.4-candidate/koma04.grmod/../SHA256SUMS"):
             self.assertIn(self.req("GET", path)[0], (403, 404), path)
-        self.assertEqual(self.req("GET", "/docs/install.md")[0], 404)
+        self.assertEqual(self.req("GET", "/docs/koma/README.md")[0], 404)
         self.assertEqual(self.req("POST", "/sw.js")[0], 404)
 
-    def test_module_routes(self):
-        """Both Koma packages and the sums are exact static routes: koma04 (Koma 1) and koma04w (Koma 2)."""
-        routes = KB.STATIC_ROUTES
-        for name in ("koma04.grmod", "koma04w.grmod", "SHA256SUMS"):
-            self.assertEqual(routes["/build/" + name][0], KB.REPO_ROOT / "build" / name)
+    def test_static_route_whose_file_is_absent(self):
+        """A static route whose file is missing (e.g. an installed wheel without it) answers 404, never fails."""
+        from pathlib import Path
+        from unittest import mock
+        routes = {**KB.STATIC_ROUTES, "/absent.txt": (Path("/nonexistent/absent.txt"), "text/plain; charset=utf-8")}
+        with mock.patch.object(KB, "STATIC_ROUTES", routes):
+            self.assertEqual(self.req("GET", "/absent.txt")[0], 404)
 
     transports_clean = BridgeTest.transports_clean
 
 
 STATIC_CASES = [
     ("/", "text/html"),
+    ("/legacy", "text/html"),
     ("/manifest.webmanifest", "application/manifest+json"),
     ("/sw.js", "application/javascript"),
 ]
@@ -1537,8 +1613,8 @@ class LanTest(_Served, unittest.TestCase):
     token = "test-token-0123456789"
 
     def test_token_refused_without(self):
-        for path in ("/status", "/settings", "/ram?off=2240&len=1", "/live/status", "/build/",
-                     "/build/../README.md", "/build/koma04.grmod.json"):
+        for path in ("/status", "/settings", "/ram?off=2240&len=1", "/live/status", "/analysis/",
+                     "/analysis/koma-0.4-candidate/../../README.md", "/analysis/koma-0.4-candidate/build-koma04.log"):
             status, _, d = self.jreq("GET", path)
             self.assertEqual(status, 403, path)
             self.assertEqual(d["code"], "token")
@@ -1561,7 +1637,7 @@ class LanTest(_Served, unittest.TestCase):
             self.assertEqual(self.req(method, path)[0], 403, (method, path))
 
     def test_token_accepted(self):
-        status, headers, page = self.req("GET", f"/?token={self.token}")
+        status, headers, page = self.req("GET", f"/legacy?token={self.token}")
         self.assertEqual(status, 200)
         self.assertIn(b"Koma Setup", page)
         # any Host, any Origin that presents the token (a phone on the LAN)
@@ -1600,6 +1676,125 @@ class LanTest(_Served, unittest.TestCase):
         got, _, _ = cv2.QRCodeDetector().detectAndDecode(cv2.resize(a, None, fx=8, fy=8,
                                                                      interpolation=cv2.INTER_NEAREST))
         self.assertEqual(got, url)
+
+
+class _FakeApp:
+    """A stand-in tools/komaapp/dist in a temp dir, so these tests do not depend on a build being present."""
+
+    def setUp(self):
+        import tempfile
+        self._tmp = tempfile.TemporaryDirectory()
+        d = Path(self._tmp.name) / "dist"
+        (d / "assets").mkdir(parents=True)
+        (d / "index.html").write_text("<!doctype html><title>Koma</title><script src=./assets/app-1.js></script>")
+        (d / "assets" / "app-1.js").write_text("console.log(1)")
+        (d / "assets" / "app-1.css").write_text("body{}")
+        (d / "assets" / "font.woff2").write_bytes(b"wOF2")
+        (d / "favicon.svg").write_text("<svg/>")
+        (Path(self._tmp.name) / "secret.txt").write_text("outside dist")
+        self._old = KB.APP_DIST
+        KB.APP_DIST = d
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        KB.APP_DIST = self._old
+        self._tmp.cleanup()
+
+
+class AppServeTest(_FakeApp, _Served, unittest.TestCase):
+    def test_app_at_root_and_legacy_kept(self):
+        status, headers, page = self.req("GET", "/")
+        self.assertEqual(status, 200)
+        self.assertTrue(headers["Content-Type"].startswith("text/html"))
+        self.assertIn(b"<title>Koma</title>", page)
+        self.assertEqual(self.req("GET", "/index.html")[2], page)
+        status, _, legacy = self.req("GET", "/legacy")
+        self.assertEqual(status, 200)
+        self.assertIn(b"<title>Koma Setup</title>", legacy)
+        self.assertEqual([c for t in self.body.transports for c in t.sent], [])  # no camera traffic for files
+
+    def test_assets_and_types(self):
+        for path, ctype, body in (("/assets/app-1.js", "application/javascript", b"console.log(1)"),
+                                  ("/assets/app-1.css", "text/css", b"body{}"),
+                                  ("/assets/font.woff2", "font/woff2", b"wOF2"),
+                                  ("/favicon.svg", "image/svg+xml", b"<svg/>")):
+            status, headers, data = self.req("GET", path)
+            self.assertEqual(status, 200, path)
+            self.assertTrue(headers["Content-Type"].startswith(ctype), (path, headers["Content-Type"]))
+            self.assertEqual(data, body, path)
+        self.assertEqual(self.req("POST", "/assets/app-1.js")[0], 404)
+
+    def test_no_traversal_or_unknown_files(self):
+        for path in ("/assets/../index.html", "/assets/%2e%2e/secret.txt", "/../secret.txt", "/%2e%2e/secret.txt",
+                     "/assets/nope.js", "/assets/sub/app-1.js", "/.hidden", "/assets/.app-1.js", "/secret.txt"):
+            status, _, data = self.req("GET", path, headers={"Accept": "*/*"})
+            self.assertIn(status, (403, 404), path)
+            self.assertNotIn(b"outside dist", data, path)
+
+    def test_no_spa_fallback(self):
+        """The app routes by the hash; no other address serves its index, page load or not."""
+        html = {"Accept": "text/html,application/xhtml+xml"}
+        for path in ("/shoot", "/settings/camera", "/nothing.js", "/a/b"):
+            status, _, data = self.req("GET", path, headers=html)
+            self.assertEqual(status, 404, path)
+            self.assertNotIn(b"<title>Koma</title>", data, path)
+        self.assertEqual(self.req("GET", "/docs/koma/README.md", headers=html)[0], 404)
+        self.assertIn(self.req("GET", "/analysis/x", headers=html)[0], (403, 404))
+        status, _, d = self.jreq("GET", "/settings", headers=html)
+        self.assertEqual(status, 200)
+        self.assertEqual(d["name"], "PARAM.CUR")
+
+    def test_app_file_never_shadows_a_bridge_root(self):
+        """A file in the app's public/ named like an endpoint or a bridge file is not served (nor let past the token)."""
+        d = KB.APP_DIST
+        for name in ("status", "settings", "settings-map.json", "reboot", "api", "legacy", "sw.js",
+                     "manifest.webmanifest", "keys", "dial", "ram", "live", "tether", "photos"):
+            (d / name).write_text("APP-SHADOW-FILE")
+            self.assertIsNone(KB.app_file("/" + name), name)
+        self.assertIsNotNone(KB.app_file("/favicon.svg"))
+        self.assertIsNotNone(KB.app_file("/assets/app-1.js"))
+        status, _, d1 = self.jreq("GET", "/status")
+        self.assertEqual(status, 200)
+        self.assertIn("connected", d1)
+        status, _, page = self.req("GET", "/legacy")
+        self.assertIn(b"<title>Koma Setup</title>", page)
+        status, _, sw = self.req("GET", "/sw.js")
+        self.assertNotIn(b"APP-SHADOW-FILE", sw)
+        status, _, m = self.req("GET", "/settings-map.json")
+        self.assertNotIn(b"APP-SHADOW-FILE", m)
+
+    def test_legacy_slash_redirects(self):
+        import http.client
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=5)
+        conn.request("GET", "/legacy/", headers={"Host": f"127.0.0.1:{self.port}"})
+        r = conn.getresponse()
+        r.read()
+        self.assertEqual(r.status, 301)
+        self.assertEqual(r.getheader("Location"), "/legacy")
+        conn.close()
+
+    def test_without_build_root_is_the_old_page(self):
+        KB.APP_DIST = Path(self._tmp.name) / "missing"
+        status, _, page = self.req("GET", "/")
+        self.assertEqual(status, 200)
+        self.assertIn(b"<title>Koma Setup</title>", page)
+        self.assertEqual(self.req("GET", "/shoot", headers={"Accept": "text/html"})[0], 404)
+
+
+class AppServeLanTest(_FakeApp, _Served, unittest.TestCase):
+    token = "test-token-0123456789"
+
+    def test_app_files_without_token(self):
+        for path in ("/", "/assets/app-1.js", "/favicon.svg", "/legacy"):
+            self.assertEqual(self.req("GET", path)[0], 200, path)
+        self.assertEqual(self.req("GET", "/status")[0], 403)
+        self.assertEqual(self.req("GET", "/shoot", headers={"Accept": "text/html"})[0], 403)
+        (KB.APP_DIST / "status").write_text("APP-SHADOW-FILE")  # an app file named like an endpoint does not skip the token
+        status, _, data = self.req("GET", "/status")
+        self.assertEqual(status, 403)
+        self.assertNotIn(b"APP-SHADOW-FILE", data)
+        self.assertEqual([c for t in self.body.transports for c in t.sent], [])
 
 
 class KeepaliveTest(unittest.TestCase):
@@ -1648,6 +1843,31 @@ class DefaultsTest(unittest.TestCase):
         self.assertEqual(link.lvfr_wait_s, 30.0)
         self.assertEqual((link.lvfr_rearm_s, link.lvfr_rearms), (5.0, 5))
         self.assertTrue(0.25 <= link.lvfr_poll_s <= 0.5)
+
+
+class ProblemTest(unittest.TestCase):
+    """/status names why no camera is open: usb, two, open, mode; cleared when a camera opens."""
+    def test_problem_codes(self):
+        body = mockcard.MockBody()
+        backend = KB.MockBackend(body)
+        link = KB.Link(backend)
+        real_scan, real_open = backend.scan, backend.open
+
+        def no_usb():
+            raise RuntimeError("No backend available")
+        backend.scan = no_usb
+        self.assertEqual(link.status()["problem"], "usb")
+        backend.scan = lambda: [body.device(), body.device()]
+        self.assertEqual(link.status()["problem"], "two")
+
+        def refused():
+            raise KB.TransportError("[Errno 13] Access denied (insufficient permissions)")
+        backend.scan, backend.open = real_scan, refused
+        self.assertEqual(link.status()["problem"], "open")
+        backend.open = real_open
+        s = link.status()
+        self.assertTrue(s["connected"])
+        self.assertIsNone(s["problem"])
 
 
 def fake_time_link(body):
@@ -1723,7 +1943,7 @@ class LvfrWaitTest(unittest.TestCase):
 
 
 class LvfrRearmTest(unittest.TestCase):
-    """Hardware 2026-11-07 (sessions 8/9): remtin + diaset,4 can answer 200 and not take. The -LVFR wait re-arms
+    """Observed on hardware: remtin + diaset,4 can answer 200 and not take. The -LVFR wait re-arms
     (remtin + diaset,4) after lvfr_rearm_s without a 150, logs a -KSTA snapshot each time, and no shutter key is
     pressed unless a 150 was seen."""
 
@@ -1800,8 +2020,8 @@ class VerSettleTest(unittest.TestCase):
         return [c.strip() for t in body.transports for c in t.sent]
 
     def test_default_is_off_for_every_backend(self):
-        """Tether 1.6 swallows 0xa201 in record state 2, and the old wait let it retract the lens in state 9 instead
-        (hardware 2026-11-07): remtin follows connect at once, real camera included."""
+        """Tether 1.6 swallows 0xa201 in record state 2, and a wait after -VER would let it retract the lens in state 9, so
+        remtin follows connect at once, real camera included."""
         self.assertEqual(KB.Link(KB.MockBackend(mockcard.MockBody())).ver_settle_s, 0.0)
         real = type("RealLike", (), {"simulated": False, "name": "x"})()
         self.assertEqual(KB.Link(real).ver_settle_s, 0.0)
@@ -1970,7 +2190,7 @@ class CliTest(unittest.TestCase):
 
 
 class ShotSettleTest(unittest.TestCase):
-    """Shot settle (HW 2026-11-08): no card command until -KSTA shows cam_state 2 and monitor_run 1."""
+    """Shot settle: no card command until -KSTA shows cam_state 2 and monitor_run 1."""
 
     def make(self):
         self.body = mockcard.MockBody(tether=True, shot_delay_s=0.3, grow_s=0.2)

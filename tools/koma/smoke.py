@@ -118,8 +118,8 @@ def run(module: bytes, side: dict | None = None, only: list[str] | None = None, 
         m.at(a, lambda mm, n=n: ev["exits"].append((n, mm.vt, mm.r(0))))
     m.at(DEVELOP, lambda mm: ev["develop"].append(mm.vt) if phase["v"] == "shot" else None)
     # Feature-declared install-time stubs (module SMOKE_STUBS = {addr: why}): firmware calls a feature's init makes that
-    # the model cannot survive (e.g. fastkeys' fastpoll20 starves MainCtrl behind the model's bit-banged serial loop,
-    # speed lane README section 6). Stubbed only while the loader runs the module; each call's r0 is recorded.
+    # the model cannot survive (e.g. fastkeys' fastpoll20 starves MainCtrl behind the model's bit-banged serial loop).
+    # Stubbed only while the loader runs the module; each call's r0 is recorded.
     stub_calls = []
     for n in names:
         mod = F.module(n) if n in F.REGISTRY else None

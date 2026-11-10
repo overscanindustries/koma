@@ -31,7 +31,8 @@ Only the module itself (installer, records, resident image, freed after install)
 
 Resident manifest (resident offset 0; published at 0x58194 when publish is on):
   +0x00 'KOMA'  +0x04 u16 format, u16 nfeatures  +0x08 u32 build id  +0x0c u32 status (1 = installed)
-  +0x10 char version[24] (NUL padded, e.g. "KOMA V0.1 1A2B3C4D")
+  +0x10 char version[24] (NUL padded, "KOMA V1.0.0 1A2B3C4D G1": package version, build id, minimum Koma firmware
+        generation; docs/versioning.md. Neither loader reads it: both check only the GRMD container)
   +0x28 nfeatures x { char name[16], char version[8], u32 hash32, u32 resident bytes }
 """
 from __future__ import annotations
@@ -51,7 +52,26 @@ from .installer import INSTALLER_SRC
 
 from .vendor import grmod   # pack_module / parse_module: the loader's container
 
-KOMA_VERSION = "0.4.0"
+KOMA_VERSION = "1.0.0"            # Koma package X.Y.Z (docs/versioning.md), the public release
+RICOH_VERSION = "2.40"            # the Ricoh firmware every Koma build patches
+# Internal compatibility field: the lowest Koma firmware generation this package runs on (1 = the flash-1 card-module
+# loader, 2 = adds SDHC and the /IROM fallback). Never shown to users; the app says "Needs a newer Koma firmware."
+MIN_FIRMWARE_GEN = 1
+
+
+def menu_version(version: str = KOMA_VERSION) -> str:
+    """KOMA menu version row (<= 9 chars): Ricoh 2.40 + Koma major.minor, e.g. "2.40K1.0" (VERSIONING.md)."""
+    major, minor = version.split(".")[:2]
+    return f"{RICOH_VERSION}K{major}.{minor}"
+
+
+def photo_tag(version: str = KOMA_VERSION) -> str:
+    """Photo MakerNote firmware tag (7 chars): "240K1.0" (Ricoh 2.40 + K + Koma major.minor; VERSIONING.md)."""
+    major, minor = version.split(".")[:2]
+    tag = f"{RICOH_VERSION.replace('.', '')}K{major}.{minor}"
+    assert len(tag) <= 7, tag
+    return tag
+
 BODY_MAGIC, MANIFEST_MAGIC = b"KMOD", b"KOMA"
 FORMAT = 1
 K_CHECK, K_DATA, K_BL, K_PTR, K_BLHI = 0, 1, 2, 3, 4
@@ -71,7 +91,7 @@ FLAG_STATIC = 2
 # Static resident: the low-RAM gap between the KernPool end and the update
 # validator ceiling. No literal pointer and no CPU or engine-register write into it (or its 0x08000000 alias) in the
 # 2.40 image scan and the koma03 emulator write-watch (boot, shot, menu, playback, USB ORIGINAL, power-off). Inferred
-# unused (I), not proven on hardware: KOMALOG's CANRY line and the README's hardware test settle it.
+# unused (I), not proven on hardware: the build's canary check settles it.
 STATIC_SPAN = (0x3DADEC, 0x422800)
 STATIC_DEFAULT = (STATIC_SPAN[0] + 31) & ~31          # 0x3dae00
 CANARY_MAGIC, CANARY_LEN = 0x4B535441, 16             # 'KSTA'
@@ -91,7 +111,7 @@ def parse_resident(spec) -> int | None:
             pass
     raise LinkError([f"--resident {spec!r}: use pool, static or static:ADDR"])
 
-# ------------------------------------------------------------------ Koma settings (CONTRACT-0.1.md "Settings")
+# ------------------------------------------------------------------ Koma settings
 SET_MAGIC, SET_VERSION_ADDR, SET_VERSION = 0x1B8B0, 0x1B8B4, 1
 # KOMA FEATURES mode byte (settingsio-menu row). A build with that row gets the
 # ESSENTIALS gate: features outside features.ESSENTIAL (after promotion, essential_split) have their inits and records
@@ -101,8 +121,8 @@ ROW_BYTES = (0x1B8B5, 0x1B8D0)            # bytes a ROWS entry may use (0x1b8b0.
 ROW_LABEL_MAX, ROW_LABEL_SOFT, ROW_OPT_MAX = 16, 14, 9   # 16 = stock label column; 14 = contract/naming target
 GLYPHS = set(" !&'()+-./0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ*\u221e")   # vendor/menu5tab/glyphs.py P1
 
-# ------------------------------------------------------------------ lint (ROADMAP "the build tool enforces")
-# (a) Flash / store-write routines (2.40 application addresses; handbook 03 §tables, 05). No feature may load their address (ldr =, .word, .equ), BL to them from patch bytes,
+# ------------------------------------------------------------------ lint
+# (a) Flash / store-write routines (2.40 application addresses). No feature may load their address (ldr =, .word, .equ), BL to them from patch bytes,
 #     or hook a call to them.
 FORBIDDEN_CALLS = {
     0x4949C: "user-settings save to NAND (power-off save)",
@@ -120,13 +140,11 @@ FORBIDDEN_CALLS = {
 }
 # (b) exception to "a stock settings byte may only receive a value stock also writes": features allowed a bulk
 #     Settings(bulk=True) range (no per-byte values). settingsio copies a validated PARAM.DAT over the block at boot;
-#     its envelope checks plus the host byte-map validation are the guard, and stock 0x3d4a4 coerces at the next load
-#    .
+#     its envelope checks plus the host byte-map validation are the guard, and stock 0x3d4a4 coerces at the next load.
 BULK_SETTINGS_WRITERS = {"settingsio": "boot import of a validated /ATA1/PARAM.DAT"}
 PHASE_A = fw.DATA / "phase-a-lines32.json"   # adj-cache-exposure report, phase A line set
-# Early-site exceptions (feature -> {site: why}). The phase-A rule guards against a stale I-cache line; the camera's
-# telemetry SMC test shows a CPU store to
-# already-executed code is fetched fresh. Only the temporary waitdiag diagnostic may patch these shared RTOS wrappers.
+# Early-site exceptions (feature -> {site: why}). The phase-A rule guards against a stale I-cache line; hardware
+# telemetry (SMC2 = A5, FRESH = 3C) shows a CPU store to already-executed code is fetched fresh. Only the temporary waitdiag diagnostic may patch these shared RTOS wrappers.
 #
 # Suspended-BL hazard and the "suffix unchanged" rule (every site here). A Thumb BL is two halfwords: the prefix
 # F000|off[22:12] sets LR = site+4 + (off[22:12] << 12), the suffix F800|off[11:1] jumps to LR + (off[11:1] << 1). These
@@ -192,7 +210,7 @@ def lint(features: list[Feature]) -> list[str]:
                 errors.append(f"{f.name}: hook {h.site:#x} wraps a call to {h.target:#x} "
                               f"({FORBIDDEN_CALLS[h.target & ~1]})")
         sites = [(p.addr, p.end, f"patch {p.addr:#x}") for p in f.patches]
-        sites += [(h.site, h.end, f"hook {h.site:#x}") for h in f.hooks]
+        sites += [(h.site, h.end, f"hook {h.site:#x}") for h in f.hooks if not h.early_ok]
         sites += [(r.site, r.end, f"redirect {r.site:#x}") for r in f.redirects]
         sites += [(q.addr, q.end, f"pointer {q.addr:#x}") for q in f.pointers]
         early_ok = EARLY_SITE_OK.get(f.name, {})
@@ -304,8 +322,10 @@ def settings_init_src(rows) -> str:
     not here: the resident block's size depends on it, so the installer is its only writer."""
     s = ["koma_settings_init:", "    push {r4, lr}", f"    ldr r4, =0x{SET_MAGIC:x}", "    adr r1, koma_set_magic",
          "    movs r2, #0", "koma_si_cmp:", "    ldrb r0, [r4, r2]", "    ldrb r3, [r1, r2]", "    cmp r0, r3",
-         "    bne koma_si_fresh", "    adds r2, #1", "    cmp r2, #4", "    blo koma_si_cmp",
-         "    ldrb r0, [r4, #4]", f"    cmp r0, #{SET_VERSION}", "    bne koma_si_fresh"]
+         "    bne koma_si_far", "    adds r2, #1", "    cmp r2, #4", "    blo koma_si_cmp",
+         "    ldrb r0, [r4, #4]", f"    cmp r0, #{SET_VERSION}", "    beq koma_si_rep",
+         # the repair list below can outgrow a conditional branch (+-256 B; 31 rows with Look IA's ADJ LEVER row)
+         "koma_si_far:", "    b koma_si_fresh", "koma_si_rep:"]
     for i, r in enumerate(rows):          # magic present: only repair out-of-range bytes
         off = r["byte"] - SET_MAGIC
         s += [f"    ldrb r0, [r4, #{off}]", f"    cmp r0, #{len(r['options'])}", f"    blo koma_si_ok{i}",
@@ -470,6 +490,16 @@ def check_conflicts(features: list[Feature], image_check: bool = True):
                 errors.append(f"{f.name} pointer {q.addr:#x}: must be 4-aligned")
         if not f.source.strip() and not f.late_source and (f.redirects or f.pointers):
             errors.append(f"{f.name}: declares redirects/pointers but has no source")
+    # init-written image RAM (Feature.ram_writes): inside the payload, clear of every record of every feature
+    rec_spans = [(getattr(x, "addr", getattr(x, "site", None)), x.end, f.name) for f in features
+                 for x in f.patches + f.checks + f.hooks + f.redirects + f.pointers]
+    for f in features:
+        for a0, a1, why in f.ram_writes:
+            if not (a0 < a1 and fw.in_payload(a0, a1 - a0)) or not why:
+                errors.append(f"{f.name} ram_writes {a0:#x}..{a1:#x}: must be a non-empty payload range with a reason")
+            for b0, b1, fb in rec_spans:
+                if _overlap(a0, a1, b0, b1):
+                    errors.append(f"{f.name} ram_writes {a0:#x}..{a1:#x} overlaps a {fb} record {b0:#x}..{b1:#x}")
     # settings
     owned, touched = [(SET_MAGIC, SET_VERSION_ADDR + 1, "koma (settings magic/version)")], []
     for f in features:
@@ -590,6 +620,8 @@ def _cstr(s: str, n: int) -> bytes:
 
 
 def feature_hash(f: Feature) -> str:
+    # Hashes the assembly text verbatim, `@` comments included, and the hash lands in the module body: editing a
+    # comment inside a feature's source changes the build id and the package SHA-256.
     h = hashlib.sha256()
     h.update(f"{f.name}\0{f.version}\0{sorted(f.options.items())}\0{f.source}\0{f.init}".encode())
     for p in f.patches:
@@ -898,10 +930,11 @@ def link(features: list[Feature], publish: bool = True, image_check: bool = True
         body += struct.pack(">I", len(trel)) + b"".join(struct.pack(">I", r) for r in trel)
 
     # ---------------- build id + version string (id = sha256 of the body with both fields zero)
-    build_id, version = 0, f"KOMA V{KOMA_VERSION}"
+    # (the trailing " G<n>" is MIN_FIRMWARE_GEN; it fits the 24-byte field with its NUL: 23 characters)
+    build_id, version = 0, f"KOMA V{KOMA_VERSION} G{MIN_FIRMWARE_GEN}"
     if has_resident:
         bid = int(hashlib.sha256(bytes(body)).hexdigest()[:8], 16)
-        version = f"KOMA V{KOMA_VERSION} {bid:08X}"
+        version = f"KOMA V{KOMA_VERSION} {bid:08X} G{MIN_FIRMWARE_GEN}"
         struct.pack_into(">I", body, syms["koma_build_id"], bid)
         body[syms["koma_version"]:syms["koma_version"] + VERSION_LEN] = _cstr(version, VERSION_LEN)
         build_id = bid
@@ -912,6 +945,7 @@ def link(features: list[Feature], publish: bool = True, image_check: bool = True
 
     manifest = dict(
         koma_version=KOMA_VERSION, version_string=version, version_short=f"V{KOMA_VERSION}",
+        menu_version=menu_version(), photo_tag=photo_tag(), min_firmware_gen=MIN_FIRMWARE_GEN,
         build_id=f"{build_id:08X}", format=FORMAT, publish=publish,
         publish_addr=f"{fw.PUBLISH:#x}" if publish else None,
         module=dict(bytes=len(module), sha256=hashlib.sha256(module).hexdigest(),
@@ -942,12 +976,15 @@ def link(features: list[Feature], publish: bool = True, image_check: bool = True
                        hooks=[dict(site=f"{h.site:#x}", target=f"{h.target:#x}", handler=h.handler,
                                    handler_offset=f"{syms[ns(f.name) + h.handler] - o_res:#x}",
                                    chain_next=next_equ[(f.name, h.next)], why=h.why,
-                                   **({"rewrites_r0": True} if h.rewrites_r0 else {})) for h in f.hooks],
+                                   **({"rewrites_r0": True} if h.rewrites_r0 else {}),
+                                   **({"early_ok": h.early_ok} if h.early_ok else {})) for h in f.hooks],
                        settings=[dict(range=[f"{x.start:#x}", f"{x.end:#x}"], owned=x.owned, why=x.why)
                                  for x in f.settings] + [dict(range=[f"{r['byte']:#x}", f"{r['byte'] + 1:#x}"],
                                                               owned=True, why=f"KOMA row {r.get('id')}")
                                                          for r in f.rows if "byte" in r],
                        init=f.init, requires=f.requires, conflicts=f.conflicts,
+                       **({"ram_writes": [dict(range=[f"{a0:#x}", f"{a1:#x}"], why=w) for a0, a1, w in f.ram_writes]}
+                          if f.ram_writes else {}),
                        **({"overlays": dict(select=f"{f.overlay_select:#x}" if f.overlay_select else None,
                                             area_bytes=syms[ns(f.name) + "ovl_end"] - syms[ns(f.name) + "ovl"],
                                             bytes=[syms[ns(f.name) + "ovl_end"] - syms[ns(f.name) + "ovl"]

@@ -1,4 +1,4 @@
-# Vendored from the earlier menu-5tab stage1.py (stage-1 snap-distance row). Edits: imports, firmware/data paths, writers removed.
+# Vendored from analysis/menu-5tab/stage1.py (stage-1 snap-distance row). Edits: imports, firmware/data paths, writers removed.
 """Stage 1 module (offline build): ONE new row on the still (AUTO) shooting page, persisted in the settings tail.
 
 Row 15 "SNAP FOCUS DIST" (1M 1.5M 2M 2.5M 3.5M 5M INF) on still page table 0x1c1ee8 (14 -> 15 rows).

@@ -138,12 +138,12 @@ class T(unittest.TestCase):
         return b
 
     def test_merge_tag_mismatch_warns_and_copies(self):
-        # main (Rev024M) -> spare (240K2): same Koma settings version, different firmware tags: copies with a warning
-        t, s = self.ksio(synth(), b"240K2.4"), self.ksio(synth(11), b"Rev024M")
+        # Rev024M -> 240K2: same Koma settings version, different firmware tags: copies with a warning
+        t, s = self.ksio(synth(), b"240K1.0"), self.ksio(synth(11), b"Rev024M")
         tp, sp, out = self.w("t", t), self.w("s", s), str(self.d / "m")
         rc, _, err = run("merge", "--target", tp, "--source", sp, "-o", out)
         self.assertEqual(rc, 0, err)
-        self.assertIn("warning: These cameras run different firmware tags (Rev024M, 240K2.4). Settings still copy; "
+        self.assertIn("warning: These cameras run different firmware tags (Rev024M, 240K1.0). Settings still copy; "
                       "Koma version matches.", err)
         self.assertNotIn("refusing", err)
         self.assertTrue(Path(out).exists())
@@ -182,7 +182,7 @@ class T(unittest.TestCase):
     def test_info(self):
         self.assertEqual(run("info")[0], 0)
 
-    # ---- real block from the owner's main camera (2026-11-06) ----
+    # ---- real block from a camera ----
     REAL_MAP = str(HERE / "settings-map.json")
     REAL = HERE / "testdata" / "main-2026-11-06.cur"
 

@@ -1,8 +1,8 @@
-"""colourprobe round 3: one-boot hardware probe of the live CC2 colour matrix.
+"""colourprobe: one-boot hardware probe of the live CC2 colour matrix.
 
-Round 1 (O-hw): hook and write path live; IQ 0x28/0x2c/0x30 dead; MatR LIVE. Round 2 (O-hw, decoded): MatR/G/B byte roles (b3 = R, b2/b1 = G-like, b0 = B-like, weak), bit 6
+Findings so far: hook and write path live; IQ 0x28/0x2c/0x30 dead; MatR live. MatR/G/B byte roles (b3 = R, b2/b1 = G-like, b0 = B-like, weak), bit 6
 ignored, linear in magnitude, gamma-domain, chroma only; pUVoffset low field = Cb coring; IQ + control bit 6 dead.
-Round 3 settles sign coding, superposition, the b0 = B role (blue scene), the UV high field and the stage order of
+This probe settles sign coding, superposition, the b0 = B role (blue scene), the UV high field and the stage order of
 chroma gain vs matrix. Shot k of a power-on gets frame k (k = shot counter in the module's RAM, 0 at every boot):
 
   k   write(s) (through the stock setters)                                 settles
@@ -28,8 +28,8 @@ Mechanics (all D from the 2.40 disassembly):
     `bl 0x8ff0e` at 0xafd3e; the same k is applied there (no increment), so the shot's final values are the probe's.
   * Baselines: on k = 0 the module reads IQ 0x28, MatR, MatG, MatB, UV, chroma gain and the control word through the
     stock getters (0x1719f4, 0x1725a4/bc/d4, 0x172310, 0x171918, 0x172588). On every frame k = 1..7 it first writes
-    the six data baselines back, and puts control bit 6 back to its baseline value (kept from round 2 as a guard:
-    read-modify-write, only if it differs; round 3 never writes the control word). Frame 7 runs only the restore.
+    the six data baselines back, and puts control bit 6 back to its baseline value (a guard:
+    read-modify-write, only if it differs; the probe frames never write the control word). Frame 7 runs only the restore.
 
 State (resident, 4-aligned): 'KCPROBE3' magic, count, cur, based, pad, base[6], base_ctrl, last_addr, last_val.
 """
@@ -58,7 +58,7 @@ SET_MATB, GET_MATB = 0x1725E0, 0x1725D4
 SET_UV, GET_UV = 0x17231C, 0x172310
 SET_GAIN, GET_GAIN = 0x171924, 0x171918
 SET_CTRL, GET_CTRL = 0x172594, 0x172588
-CTRL_BITS = 0x40                     # round-2 IQ-enable candidate (dead); its restore guard is kept
+CTRL_BITS = 0x40                     # IQ-enable candidate (dead); only restored
 SETTER = {R_IQ: SET_IQ, R_MATR: SET_MATR, R_MATG: SET_MATG, R_MATB: SET_MATB, R_UV: SET_UV, R_CTRL: SET_CTRL,
           R_GAIN: SET_GAIN}
 GETTER = {R_IQ: GET_IQ, R_MATR: GET_MATR, R_MATG: GET_MATG, R_MATB: GET_MATB, R_UV: GET_UV, R_CTRL: GET_CTRL,
@@ -282,34 +282,35 @@ state:
 """
 
 
-def _bytes(a, hexs):
-    assert fw.ram(a, len(bytes.fromhex(hexs))) == bytes.fromhex(hexs), f"{a:#x}"
-    return bytes.fromhex(hexs)
+def _bytes(a, b):
+    assert fw.ram(a, len(b)) == b, f"{a:#x}"
+    return b
 
 
 # Bytes the hooks and calls depend on (all verified against 2.40 at install).
 CHECKS = [
-    (0x96426, "f7fcf8b72001f7fbff46", "0x96350: bl 0x92598; movs r0,#1; bl 0x922bc before the hooked site"),
+    (0x96426, 10, "0x96350: bl 0x92598; movs r0,#1; bl 0x922bc before the hooked site"),
     (0x96430, "1df830197880", "0x96350: r0 = [cp+0x22] before the hooked bl 0x8ff0e at 0x96436"),
-    (0xAFD2E, "f7e2fc332001f7e2fac2", "0xafd20: pass 2 rewrites MatR/UV (0x92598) and chroma gain (0x922bc)"),
+    (0xAFD2E, 10, "0xafd20: pass 2 rewrites MatR/UV (0x92598) and chroma gain (0x922bc)"),
     (0xAFD38, "1df830197880", "0xafd20: r0 = [cp+0x22] before the hooked bl 0x8ff0e at 0xafd3e"),
-    (SET_IQ, "b5801c0768001600", "IQ matrix setter 0x171a00 prologue (range checks, then str)"),
+    (SET_IQ, 8, "IQ matrix setter 0x171a00 prologue (range checks, then str)"),
     (0x171A7A, "683849396288", "0x171a00: str *r0 -> [0x12018000 + 0x28]"),
     (0x171B64, "12018000", "0x171a00 literal: CC2 base"),
-    (GET_IQ, "49016a896001477012018000", "getter: *r0 = 0x12018028"),
-    (GET_MATR, "490168496001477012018100", "getter: *r0 = 0x12018104 (MatR)"),
-    (SET_MATR, "680049016048477012018100", "setter: 0x12018104 (MatR) = *r0"),
-    (GET_MATG, "490168896001477012018100", "getter: *r0 = 0x12018108 (MatG)"),
-    (SET_MATG, "680049016088477012018100", "setter: 0x12018108 (MatG) = *r0"),
-    (GET_MATB, "490168c96001477012018100", "getter: *r0 = 0x1201810c (MatB)"),
-    (SET_MATB, "6800490160c8477012018100", "setter: 0x1201810c (MatB) = *r0"),
-    (GET_UV, "4901698960014770120180c0", "getter: *r0 = 0x120180d8 (pUVoffset)"),
-    (SET_UV, "6800490161884770120180c0", "setter: 0x120180d8 (pUVoffset) = *r0"),
-    (GET_CTRL, "490168096001477012018100", "getter: *r0 = 0x12018100 (control word)"),
-    (GET_GAIN, "490168496001477012018000", "getter: *r0 = 0x12018004 (chroma gain)"),
-    (SET_GAIN, "680049016048477012018000", "setter: 0x12018004 (chroma gain) = *r0"),
-    (SET_CTRL, "68002380490143986008477012018100", "setter: 0x12018100 = *r0 & ~0x80 (bit 7 force-cleared)"),
+    (GET_IQ, 12, "getter: *r0 = 0x12018028"),
+    (GET_MATR, 12, "getter: *r0 = 0x12018104 (MatR)"),
+    (SET_MATR, 12, "setter: 0x12018104 (MatR) = *r0"),
+    (GET_MATG, 12, "getter: *r0 = 0x12018108 (MatG)"),
+    (SET_MATG, 12, "setter: 0x12018108 (MatG) = *r0"),
+    (GET_MATB, 12, "getter: *r0 = 0x1201810c (MatB)"),
+    (SET_MATB, 12, "setter: 0x1201810c (MatB) = *r0"),
+    (GET_UV, 12, "getter: *r0 = 0x120180d8 (pUVoffset)"),
+    (SET_UV, 12, "setter: 0x120180d8 (pUVoffset) = *r0"),
+    (GET_CTRL, 12, "getter: *r0 = 0x12018100 (control word)"),
+    (GET_GAIN, 12, "getter: *r0 = 0x12018004 (chroma gain)"),
+    (SET_GAIN, 12, "setter: 0x12018004 (chroma gain) = *r0"),
+    (SET_CTRL, 16, "setter: 0x12018100 = *r0 & ~0x80 (bit 7 force-cleared)"),
 ]
+CHECKS_SHA256 = "a2e886e242f66b7d1b127b19eed1cb96d85ed59597701d669ee45893a8038683"
 
 
 def make(opts):
@@ -318,7 +319,7 @@ def make(opts):
         hooks=[Hook(SITE_DEV1, MONO, "hook_dev1", "next_dev1", "still develop pass 1: k = shot count, probe k"),
                Hook(SITE_DEV2, MONO, "hook_dev2", "next_dev2", "still develop pass 2 (0xafd20 rewrites MatR/G/B and "
                     "UV, chroma gain): same probe k", smoke_reachable=False)],
-        checks=[Check(a, _bytes(a, h), w) for a, h, w in CHECKS],
+        checks=[Check(a, _bytes(a, b), w) for a, b, w in fw.pinned(CHECKS, CHECKS_SHA256)],
         smoke=smoke_checks)
 
 

@@ -1,4 +1,4 @@
-# Vendored from the earlier module-loader grmod.py (the GRMOD container SDK). Edits: imports, firmware/data paths, writers removed.
+# Vendored from analysis/module-loader/grmod.py (the GRMOD container SDK). Edits: imports, firmware/data paths, writers removed.
 """GRMOD module SDK for the GR DIGITAL 2.40 card-module loader. Offline: builds bytes, never writes to a card.
 
 File format (all big-endian, like the firmware):

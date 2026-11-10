@@ -6,9 +6,13 @@
   koma selfcheck OUT.grmod
   koma smoke OUT.grmod [--feature recipe-slots]
   koma make-loader STOCK_QRFLECT3|gr-240.exe|ZIP -o OUT.bin
+  koma make-firmware STOCK_QRFLECT3|gr-240.exe|ZIP -o koma-firmware-1.0.bin   (the Koma 1.0 firmware, tag 240K1.0)
+  koma make-package STOCK_QRFLECT3|gr-240.exe|ZIP -o GRMOD.BIN     (the release package, from its .grmod.delta)
+  koma package-delta STOCK_QRFLECT3|gr-240.exe|ZIP OUT.grmod -o OUT.grmod.delta
 
-Every command except make-loader reads your own stock 2.40 firmware: --firmware PATH (before or after the command)
-or KOMA_FIRMWARE=PATH. PATH: qrflect3, gr-240.exe, a zip holding qrflect3, or the bare 2.40 payload (not for smoke).
+Every command except make-loader, make-firmware, make-package and package-delta reads your own stock 2.40 firmware:
+--firmware PATH (before or after the command) or KOMA_FIRMWARE=PATH. PATH: qrflect3, gr-240.exe, a zip holding
+qrflect3, or the bare 2.40 payload (not for smoke).
 """
 from __future__ import annotations
 
@@ -25,7 +29,7 @@ from .linker import LinkError, link
 
 def _features(spec: str, opts: list[str]):
     names = [n.strip() for n in spec.split(",") if n.strip()]
-    for set_name, members in F.SETS.items():   # named sets (drop1..drop3, koma01); tolerate unregistered lanes
+    for set_name, members in F.SETS.items():   # named sets (drop1..drop3, koma01); tolerate unregistered sets
         if set_name not in names:
             continue
         i = names.index(set_name)
@@ -142,13 +146,46 @@ def cmd_smoke(a):
 
 def cmd_make_loader(a):
     from .loader import NEXT, LoaderError, make
+    image = getattr(a, "image", "flash1")
     try:
-        sha = make(Path(a.stock), Path(a.output))
+        sha = make(Path(a.stock), Path(a.output), image=image)
     except (LoaderError, OSError) as e:
-        print(f"koma make-loader: refused\n{e}", file=sys.stderr)
+        print(f"koma {'make-firmware' if image == 'koma10' else 'make-loader'}: refused\n{e}", file=sys.stderr)
         return 2
     print(f"{a.output}  sha256 {sha}")
     print(NEXT)
+    return 0
+
+
+PACKAGE_DELTA = Path(__file__).resolve().parents[2] / "dist-release" / "koma-1.0.0.grmod.delta"
+
+
+def cmd_make_package(a):
+    from .loader import LoaderError, apply_delta, read_stock
+    out = Path(a.output)
+    try:
+        data = apply_delta(read_stock(Path(a.stock)), Path(a.delta).read_bytes())
+        if out.exists() and out.read_bytes() != data:
+            raise LoaderError(f"{out} exists with different bytes; remove it or choose another name")
+        out.write_bytes(data)
+    except (LoaderError, OSError) as e:
+        print(f"koma make-package: refused\n{e}", file=sys.stderr)
+        return 2
+    print(f"{out}  sha256 {hashlib.sha256(data).hexdigest()}")
+    return 0
+
+
+def cmd_package_delta(a):
+    from .loader import LoaderError, delta_stats, encode_delta, read_stock
+    try:
+        delta = encode_delta(read_stock(Path(a.stock)), Path(a.module).read_bytes())
+        Path(a.output).write_bytes(delta)
+    except (LoaderError, OSError) as e:
+        print(f"koma package-delta: refused\n{e}", file=sys.stderr)
+        return 2
+    st = delta_stats(delta)
+    print(f"{a.output}  sha256 {hashlib.sha256(delta).hexdigest()}  {len(delta)} bytes: {st['ops']} ops, "
+          f"{st['literal']} literal, {st['copied']} copied from stock, {st['zero']} zero")
     return 0
 
 
@@ -166,8 +203,8 @@ def _sidecar(path):
 def main(argv=None):
     fwopt = argparse.ArgumentParser(add_help=False)
     fwopt.add_argument("--firmware", default=argparse.SUPPRESS, metavar="PATH",
-                       help=f"your stock 2.40 qrflect3 / gr-240.exe / zip / payload (default: ${fw.ENV}, then "
-                            "firmware/ in this checkout)")
+                       help=f"your stock 2.40 qrflect3 / gr-240.exe / zip / payload (default: ${fw.ENV}, then the "
+                            "research checkout's copy)")
     ap = argparse.ArgumentParser(prog="koma", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--firmware", default=None, metavar="PATH", help="as above; may also follow the command")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -200,7 +237,25 @@ def main(argv=None):
     m = sub.add_parser("make-loader", help="build the flash-1 loader image from your own stock 2.40 update file")
     m.add_argument("stock", help="stock 2.40 qrflect3, Ricoh's gr-240.exe, or a zip containing qrflect3")
     m.add_argument("-o", "--output", required=True)
-    m.set_defaults(fn=cmd_make_loader)
+    m.set_defaults(fn=cmd_make_loader, image="flash1")
+    k = sub.add_parser("make-firmware", help="build the Koma 1.0 firmware (SD/SDHC driver, /IROM fallback, tag 240K1.0) "
+                                             "from your own stock 2.40 update file")
+    k.add_argument("stock", help="stock 2.40 qrflect3, Ricoh's gr-240.exe, or a zip containing qrflect3")
+    k.add_argument("-o", "--output", required=True)
+    k.set_defaults(fn=cmd_make_loader, image="koma10")
+    mp = sub.add_parser("make-package", help="rebuild the release package from its .grmod.delta and your own stock "
+                                             "2.40 update file")
+    mp.add_argument("stock", help="stock 2.40 qrflect3, Ricoh's gr-240.exe, or a zip containing qrflect3")
+    mp.add_argument("--delta", default=str(PACKAGE_DELTA),
+                    help="the package delta (default: %(default)s)")
+    mp.add_argument("-o", "--output", required=True)
+    mp.set_defaults(fn=cmd_make_package)
+    pd = sub.add_parser("package-delta", help="encode a package as a delta against your own stock 2.40 update file "
+                                              "(what the release ships instead of the package)")
+    pd.add_argument("stock", help="stock 2.40 qrflect3, Ricoh's gr-240.exe, or a zip containing qrflect3")
+    pd.add_argument("module", help="the .grmod to encode")
+    pd.add_argument("-o", "--output", required=True)
+    pd.set_defaults(fn=cmd_package_delta)
     a = ap.parse_args(argv)
     fw.use(a.firmware)
     try:

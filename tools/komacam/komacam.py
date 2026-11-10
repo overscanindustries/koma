@@ -37,7 +37,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-VERSION = "0.2.0"
+VERSION = "1.0.0"
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 BRIDGE_PY = REPO / "tools" / "komaset" / "bridge" / "komabridge.py"
@@ -67,6 +67,7 @@ class BridgeClient:
 
     def __init__(self, host: str = "127.0.0.1", port: int = BRIDGE_PORT):
         self.host, self.port = host, port
+        self.extra_headers: dict = {}  # sent with every request (the Koma app's webcam marks its own requests)
 
     @property
     def base(self) -> str:
@@ -76,7 +77,7 @@ class BridgeClient:
         conn = http.client.HTTPConnection(self.host, self.port, timeout=timeout)
         try:
             body = (json.dumps(data).encode() if data is not None else b"{}") if method == "POST" else None
-            headers = {"Host": f"127.0.0.1:{self.port}"}
+            headers = {"Host": f"127.0.0.1:{self.port}", **self.extra_headers}
             if body is not None:
                 headers["Content-Type"] = "application/json"
             conn.request(method, path, body=body, headers=headers)
@@ -102,7 +103,7 @@ class BridgeClient:
         """GET /live?mode=N. Returns (conn, resp); resp.status is 200 for a running stream."""
         conn = http.client.HTTPConnection(self.host, self.port, timeout=timeout)
         try:
-            conn.request("GET", f"/live?mode={mode}", headers={"Host": f"127.0.0.1:{self.port}"})
+            conn.request("GET", f"/live?mode={mode}", headers={"Host": f"127.0.0.1:{self.port}", **self.extra_headers})
             conn.stream_sock = conn.sock  # http.client drops conn.sock for a Connection: close reply; keep it to abort
             return conn, conn.getresponse()
         except (ConnectionError, socket.timeout, OSError) as error:
@@ -389,20 +390,77 @@ def _encode(img, quality: int) -> bytes:
     return buf.getvalue()
 
 
+# The Koma app's typeface for the state card (Archivo, SIL Open Font License): the built app's copy (the bridge serves
+# the app from it), else the one in its npm package. Without either the card falls back to Pillow's own font.
+APP_DIR = REPO / "tools" / "komaapp"
+CARD_FONT_GLOBS = ("dist/assets/archivo-latin-wdth-normal-*.woff2",
+                   "node_modules/@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2")
+CARD_WEIGHTS = (500, 400)     # the first line (GR DIGITAL) as the app's titles, the second as its body
+_card_font_path: list = []    # [path or None], looked up once
+
+
+def card_font_file() -> str | None:
+    """The Archivo file the state card is set in, or None when this checkout has no built app and no npm package."""
+    if not _card_font_path:
+        hits = [p for g in CARD_FONT_GLOBS for p in sorted(APP_DIR.glob(g))]
+        _card_font_path.append(str(hits[0]) if hits else None)
+    return _card_font_path[0]
+
+
+def _card_font(px: int, weight: int):
+    """Archivo at px and weight (its Weight axis; Width stays 100), or Pillow's default font at px. None when neither
+    can be drawn at a size (Pillow before 10.1 without the file)."""
+    from PIL import ImageFont
+    path = card_font_file()
+    if path:
+        try:
+            font = ImageFont.truetype(path, px)
+            try:
+                axes = font.get_variation_axes()
+                font.set_variation_by_axes([weight if a["name"] in (b"Weight", "Weight") else
+                                            100 if a["name"] in (b"Width", "Width") else a["default"] for a in axes])
+            except (OSError, AttributeError, KeyError):
+                pass   # a FreeType without variations draws the file's default instance
+            return font
+        except OSError:    # unreadable here (a FreeType without WOFF2): Pillow's own font below
+            pass
+    try:
+        return ImageFont.load_default(size=px)
+    except TypeError:      # Pillow before 10.1 has no sizes
+        return None
+
+
 def placeholder_jpeg(size, lines) -> bytes | None:
-    """A dark card with the current state, shown by every output while there is no live frame."""
+    """A dark card with the current state, shown by every output while there is no live frame. Set in the app's
+    Archivo when a source checkout has it, else in Pillow's default font (Pillow 10.1+ draws it at any size); 60 and
+    36 px at 720 lines, legible in a call's tile. Older Pillow without the file uses the small bitmap font."""
     if not HAVE_PIL:
         return None
     img = Image.new("RGB", size, (12, 12, 12))
     d = ImageDraw.Draw(img)
-    y = size[1] // 2 - 12 * len(lines)
-    for i, line in enumerate(lines):
-        d.text((size[0] // 2 - 3 * len(line), y + 24 * i), line, fill=(200, 200, 200) if i == 0 else (130, 130, 130))
+    try:
+        fonts = [_card_font(max(12, size[1] // (12 if i == 0 else 20)), CARD_WEIGHTS[min(i, 1)])
+                 for i in range(len(lines))]
+        if any(f is None for f in fonts):
+            fonts = None
+    except (OSError, ImportError, AttributeError):
+        fonts = None
+    if fonts is None:
+        y = size[1] // 2 - 12 * len(lines)
+        for i, line in enumerate(lines):
+            d.text((size[0] // 2 - 3 * len(line), y + 24 * i), line, fill=(200, 200, 200) if i == 0 else (130, 130, 130))
+        return _encode(img, 80)
+    step = [round(f.size * 1.6) for f in fonts]
+    y = (size[1] - sum(step)) // 2
+    for i, (line, font) in enumerate(zip(lines, fonts)):
+        x = (size[0] - d.textlength(line, font=font)) / 2
+        d.text((x, y), line, font=font, fill=(200, 200, 200) if i == 0 else (130, 130, 130))
+        y += step[i]
     return _encode(img, 80)
 
 
 # ------------------------------------------------------------------------------------------------ camera controls
-# Everything here goes through komabridge endpoints that sit on the owner's USB allowlist: POST /keys/tap
+# Everything here goes through komabridge endpoints that sit on the bridge's USB allowlist: POST /keys/tap
 # (-CCTL keyset,3,C), POST /ram (-KSET), POST /tether/focus (keyset,1,26 / keyset,0,26), and the read verbs GET /ram
 # (-KGET), GET /ram/peek (-PEEK) and GET /ram/state (-KSTA).
 
@@ -415,7 +473,7 @@ FOCUS_SNAP = 2                # settings-map focus: commit table 0x1bd40b, SNAP 
 SNAP_DISTANCES = {"1": 0, "1.5": 1, "2": 2, "2.5": 3, "5": 4, "inf": 5}   # tools/koma/features/snapdist.py ROWS
 IMG_SETS = {"hard": 0, "normal": 1, "soft": 2, "bw": 3, "setting1": 4, "setting2": 5, "bwte": 6}  # 0x030 (HW table)
 TE_TONES = {"sepia": 6, "red": 1, "green": 2, "blue": 3, "purple": 4}                           # 0x1a9 (STATIC)
-KSET_SPACING_S = 8.0          # HW: -KSET answered busy 6-8 s after an EV change (stall briefs); one stock write per 8 s
+KSET_SPACING_S = 8.0          # HW: -KSET answered busy 6-8 s after an EV change; one stock write per 8 s
 
 
 def ev_value(ev: float) -> int:
@@ -521,7 +579,7 @@ class Controls:
         ok = self.set_disp(DISP_LCD_OFF, stop)
         self.lcd_state = "off" if ok else "failed"
         if ok:
-            self.event("LCD off (live display mode 4, the stock DISP LCD-off position)")
+            self.event("LCD off (live display mode 4, the stock DISP LCD-off position; UNTESTED on hardware)")
         return ok
 
     def restore_lcd(self) -> bool:
@@ -895,37 +953,22 @@ class Supervisor:
 
 PAGE = r"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Komacam</title>
+<title>GR DIGITAL</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;cursor:none}
-body:hover{cursor:default}
 img,canvas{position:fixed;inset:0;width:100vw;height:100vh;object-fit:contain;display:block;background:#000}
 body.cover img,body.cover canvas{object-fit:cover} body.mirror img,body.mirror canvas{transform:scaleX(-1)}
 #rc{position:fixed;left:50%;top:10px;transform:translateX(-50%);font:12px ui-monospace,Menlo,monospace;color:#ccc;
  background:#000a;padding:3px 9px;border-radius:4px;display:none}
-#hud{position:fixed;left:10px;bottom:10px;font:12px ui-monospace,Menlo,monospace;color:#9e9;background:#000a;
- padding:3px 7px;border-radius:4px;display:none} body.hud #hud{display:block}
-#ctl{position:fixed;right:12px;top:12px;opacity:0;transition:opacity .25s;display:flex;gap:6px}
-body:hover #ctl{opacity:.9}
-button{font:600 12px -apple-system,system-ui,sans-serif;color:#ddd;background:#222;border:1px solid #444;
- border-radius:5px;padding:5px 9px;cursor:pointer} button.on{background:#ddd;color:#111}
 </style></head><body>
 <canvas id="c" width="1280" height="720"></canvas><img id="v" alt="" style="display:none">
 <div id="rc">reconnecting...</div>
-<div id="hud"></div>
-<div id="ctl"><button id="bm" title="Mirror (M)">GR mirror</button><button id="bf" title="Fill (F)">fill</button>
-<button id="bh" title="Status (S)">status</button></div>
 <script>
+// The OBS Browser source: the picture and nothing else. Looking and switching happen in the Koma app (Webcam).
+// URL flags for the source: ?mirror=1, ?fill=1 (crop to fill), ?src=hd (the 1280x720 stream).
 const q=new URLSearchParams(location.search), b=document.body, v=document.getElementById('v');
 const src=(q.get('src')||'stream')+'.mjpg';
-function flag(k,cls,btn){const on=q.get(k)==='1';b.classList.toggle(cls,on);document.getElementById(btn).classList.toggle('on',on)}
-flag('mirror','mirror','bm');flag('fill','cover','bf');flag('hud','hud','bh');
-function tog(cls,btn){const on=b.classList.toggle(cls);document.getElementById(btn).classList.toggle('on',on)}
-document.getElementById('bm').onclick=()=>tog('mirror','bm');
-document.getElementById('bf').onclick=()=>tog('cover','bf');
-document.getElementById('bh').onclick=()=>tog('hud','bh');
-addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(k==='m')tog('mirror','bm');if(k==='f')tog('cover','bf');
- if(k==='s')tog('hud','bh')});
+b.classList.toggle('mirror',q.get('mirror')==='1');b.classList.toggle('cover',q.get('fill')==='1');
 // Self-healing reader. STALL_MS: no complete frame for this long aborts the fetch. RETRY_MS/RETRY_MAX: reconnect backoff.
 // SHOW_MS: "reconnecting" label delay. IMG_RELOAD_MS: reload period of the old <img> fallback (no ReadableStream).
 const STALL_MS=3000, RETRY_MS=1000, RETRY_MAX=3000, SHOW_MS=3000, IMG_RELOAD_MS=5000;
@@ -984,11 +1027,24 @@ setInterval(()=>{const idle=Date.now()-lastFrame;
  if(idle>STALL_MS&&ctl){const c=ctl;ctl=null;gen++;c.abort();tries=0;setTimeout(connect,RETRY_MS)}},500);
 if(window.ReadableStream&&window.fetch&&window.AbortController){swapShown(true);connect()}
 else{swapShown(false);const load=()=>{v.src=src+'?t='+Date.now()};v.onerror=()=>setTimeout(load,1000);load();setInterval(load,IMG_RELOAD_MS)}
-setInterval(async()=>{if(!b.classList.contains('hud'))return;try{const s=await (await fetch('status.json')).json();
- document.getElementById('hud').textContent=`${s.state}  in ${s.fps_in.toFixed(1)} fps  out ${s.clients} clients  `+
- `arms ${s.arms}  re-arms ${s.rearms}  reconnects ${s.reconnects}`}catch(e){document.getElementById('hud').textContent='komacam not answering'}},1000);
 </script></body></html>
 """
+
+
+# The state card's second line, by supervisor state (the first is GR DIGITAL). A call sees it, so it is plain words.
+CARD_WORDS = {"starting": "Starting", "arming": "Waking the camera", "starting stream": "Waking the camera",
+              "streaming": "Waiting for the picture", "no camera": "Camera not connected",
+              "no bridge": "Koma is not running", "stopping": "Stopping", "stopped": "Stopped"}
+NO_LIVE_VIEW = "No live view"
+
+
+def card_word(st: dict) -> str:
+    """The card's second line for a supervisor snapshot. While it re-arms a camera that refuses live view (/live answers
+    409 since the last stream, or no arm has ever given a frame) the card says so, as the Koma app's Webcam page does."""
+    if st["state"] in ("starting", "arming", "starting stream") and (
+            st.get("live_off", 0) > 0 or (st.get("arm_failures", 0) > 0 and not st.get("frames"))):
+        return NO_LIVE_VIEW
+    return CARD_WORDS.get(st["state"], "Waiting for the picture")
 
 
 class Outputs:
@@ -1004,7 +1060,7 @@ class Outputs:
 
     def placeholder(self, size) -> bytes | None:
         st = self.sup.snapshot()
-        lines = ["GR DIGITAL  -  komacam", f"{st['state']}", (st["message"] or "")[:70]]
+        lines = ["GR DIGITAL", card_word(st)]
         key = (tuple(size), tuple(lines))
         if key not in self._ph_cache:
             if len(self._ph_cache) > 16:
@@ -1076,8 +1132,7 @@ def make_handler(out: Outputs, port: int):
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
+            self.end_headers()  # no Access-Control-Allow-Origin: no other website may read the picture or the state
             self.wfile.write(body)
 
         def do_GET(self):
@@ -1126,8 +1181,7 @@ def make_handler(out: Outputs, port: int):
             self.send_header("Content-Type", f"multipart/x-mixed-replace; boundary={BOUNDARY}")
             self.send_header("Cache-Control", "no-store")
             self.send_header("Connection", "close")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
+            self.end_headers()  # same origin only: the OBS Browser source page reads it from this server
             self.close_connection = True
             with out.clients_lock:
                 out.clients += 1
@@ -1389,7 +1443,7 @@ class App:
         if "mjpeg" in a.outputs:
             self.server = start_mjpeg_server(self.out, "127.0.0.1", a.port)
             log(f"MJPEG: {self.url}stream.mjpg (camera size), {self.url}hd.mjpg ({a.size[0]}x{a.size[1]}), "
-                f"page {self.url}")
+                f"OBS Browser source {self.url}")
         if "vcam" in a.outputs:
             self.vcam = VirtualCam(self.out, fps=a.vcam_fps, backend=a.vcam_backend, page_url=self.url)
             self.vcam.start()
@@ -1462,7 +1516,7 @@ def build_parser():
                          "set on the camera, and Koma snapdist + ksettings)")
     ap.add_argument("--af-once", action="store_true", help="one half-press after the first arm (locks AF once)")
     ap.add_argument("--lcd-off", action="store_true",
-                    help="tap DISP to the stock LCD-off position while streaming, restore at exit "
+                    help="UNTESTED on hardware: tap DISP to the stock LCD-off position while streaming, restore at exit "
                          "(reads the display mode with -PEEK; needs ksettings v1.4)")
     ap.add_argument("--ev", type=parse_ev, help="exposure compensation -2.0..+2.0 in 1/3 steps (-KSET 0x053)")
     ap.add_argument("--img-set", choices=sorted(IMG_SETS), help="IMG SET over -KSET 0x030 (bw = camera B&W)")

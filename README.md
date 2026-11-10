@@ -1,38 +1,61 @@
-<img src="docs/assets/koma-logo.png" alt="Koma" width="320">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/koma-logo-dark.svg">
+  <img src="docs/assets/koma-logo-light.svg" alt="Koma" width="320">
+</picture>
 
 # Koma
 
-Koma adds features to the original Ricoh GR DIGITAL (2005) on top of its last firmware, 2.40. Ricoh's code still runs the camera.
+Koma adds features to the original Ricoh GR DIGITAL (2005) and connects it to a local app over USB.
 
-## What you get
+## What it does
 
-- 10 black-and-white looks, 6 colour looks and SELECT (one colour kept, the rest grey), rendered into the JPEG and editable per look.
-- A KOMA menu tab with snap distance, an ISO-auto ceiling, a slowest-shutter limit, 240 s exposures, highlight alert and focus peaking.
-- SDHC and SDXC cards at full size (64 GB tested).
-- Tethered shooting, live view in a browser, settings edits and photo download over USB, and a webcam through OBS.
-- The camera's settings as a file you can back up, edit or copy to another GR DIGITAL.
+- Adds the KOMA menu tab, 21 looks and shooting options.
+- Saves and restores the clock and records a battery log.
+- Supports FAT32 SDHC and SDXC cards, including tested 64 GB cards.
+- Provides settings, photo import, tethered shooting and webcam in the Koma app.
 
-## How it works
+## Supported hardware
 
-The Koma firmware is Ricoh's 2.40 plus a small loader, flashed once with the camera's own update procedure. At each power-on the loader installs the features from a package, `GRMOD.BIN`, on the card or in internal memory. With no package the camera behaves as stock. You build both from your own copy of Ricoh's update. See [writing features](docs/internals/writing-features.md).
+| Camera | Firmware | Status |
+|---|---|---|
+| Ricoh GR DIGITAL (2005) | 2.40 | Earlier builds tested on two cameras; hardware testing of Koma 1.0 is in progress. See [status](docs/user-guide.md#status). |
 
-## Status
+## Install
 
-Koma is an early hobby project. The menu, the main looks, large cards, the USB tools and settings files have run on cameras. Some features have run only in an emulator so far, and the guides mark them. Recovery from a flash that fails to boot has not been tested. Flash only a camera you are prepared to lose.
+macOS:
 
-## Requirements
+```sh
+brew install overscanindustries/koma/koma
+```
 
-A first-model GR DIGITAL on 2.40, Ricoh's 2.40 update, an SD card of 2 GB or less, and a Mac or Linux computer with Python 3.12 and LLVM 20 (plus libusb for the USB tools).
+Linux and Windows, with [pipx](https://pipx.pypa.io):
+
+```sh
+pipx install koma-gr
+```
+
+Linux and Windows need one extra USB step: see [installation](docs/install.md).
+
+## Run
+
+```sh
+koma
+```
+
+Set the camera's USB CONNECTION to ORIGINAL, turn it on, then connect USB. `koma --tray` keeps a tray icon; `koma doctor` checks USB. The app builds Koma on your computer from your own Ricoh 2.40 update file. Setup needs an SD card of 2 GB or less.
+
+> Flashing modified firmware can make a camera unusable. Use it at your own risk. Koma is provided under the MIT licence without warranty.
 
 ## Documentation
 
-- [Install](docs/install.md)
-- [User guide](docs/user-guide.md)
-- [Building](docs/building.md)
-- [Internals](docs/internals/README.md), a reference for the 2.40 firmware
+[Install](docs/install.md) · [User guide and status](docs/user-guide.md) · [Limitations](docs/limitations.md) · [Host tools](docs/host-tools.md) · [How it works](docs/how-it-works.md) · [Building](docs/building.md) · [Versions](docs/versioning.md) · [Internals](docs/internals/README.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
-Bug reports and pull requests are welcome. Never commit Ricoh firmware or images built from it.
+## Credits
+
+See [how it works](docs/how-it-works.md) for the project’s reverse-engineering work.
+
+Koma is not affiliated with Ricoh. Ricoh and GR are trademarks of Ricoh Imaging, used to identify the camera.
 
 ## Licence
 
-[MIT](LICENSE). Ricoh's firmware and software belong to Ricoh and are not included. Koma is not affiliated with or endorsed by Ricoh.
+Koma is maintained by Overscan Industries under the [MIT licence](LICENSE). Ricoh's firmware and software are not covered by it.

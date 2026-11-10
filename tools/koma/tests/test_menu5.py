@@ -1,4 +1,4 @@
-"""menu5 port + KOMA page rows + core settings init + build-time lint (platform lane #14)."""
+"""menu5 port + KOMA page rows + core settings init + build-time lint."""
 from __future__ import annotations
 
 import pytest
@@ -63,11 +63,14 @@ def test_koma_page_load_store_and_version_glyphs():
     e = res(r, "kf_menu5__kr_e_0")                       # SNAP DIST entry (other group -> OTHER page)
     assert u.u8(e + 9) == 2                               # byte 1 -> cursor 2 (1.5M)
     assert u.u8(res(r, "kf_menu5__kv_entry") + 9) == 1
-    ver = r.manifest["version_string"]                    # "KOMA V0.2.2 XXXXXXXX"
-    n = len(ver.split()[1]) - 1
-    want = glyphs.enc(ver[6:6 + n])
+    ver = r.manifest["version_string"]                    # "KOMA V1.0.0 XXXXXXXX G1"
+    from koma.linker import KOMA_VERSION, menu_version
+    assert ver.split()[:2] == ["KOMA", "V" + KOMA_VERSION] and r.manifest["menu_version"] == menu_version()
+    major, minor = KOMA_VERSION.split(".")[:2]
+    assert menu_version() == f"2.40K{major}.{minor}" and len(menu_version()) <= 9
+    want = glyphs.enc(menu_version())
     assert u.read(res(r, "kf_menu5__kv_short_s"), len(want)) == want
-    assert u.read(res(r, "kf_menu5__kv_id_s"), 18) == glyphs.enc(ver[7 + n:15 + n])
+    assert u.read(res(r, "kf_menu5__kv_id_s"), 18) == glyphs.enc(ver.split()[2])
     u.uc.mem_write(e + 9, b"\x06")                        # user picks the 6th option
     u.thumb(res(r, "kf_menu5__ksync_store"), {})
     assert u.u8(0x1B8B5) == 5
@@ -84,23 +87,25 @@ def _row(i, group, n=2, **kw):
 
 def test_layout_one_topic_per_page_titles_and_padding():
     from koma.features.menu5 import layout, skips
-    rows = [_row(0, "focus"), _row(1, "recipe"), _row(2, "display"), _row(3, "weird"), _row(4, "recipe-edit"),
+    rows = [_row(0, "focus"), _row(1, "recipe-title"), _row(2, "display"), _row(3, "weird"), _row(4, "recipe-edit"),
             _row(5, "exposure"), _row(6, None)]
     main, editor, rr = layout(rows)
     kinds = [e[0] if e[0] != "title" else e[1] for e in main]
-    assert kinds == ["KOMA: RECIPE", "row", "edit", "blank", "blank",
-                     "KOMA: FOCUS", "row", "blank", "blank", "blank",
+    assert kinds == ["KOMA: FOCUS", "row", "blank", "blank", "blank",     # Look IA: no RECIPE page, no EDIT row
                      "KOMA: EXPOSURE", "row", "blank", "blank", "blank",
                      "KOMA: DISPLAY", "row", "version", "blank", "blank",
                      "KOMA: OTHER", "row", "row"]                      # unknown and missing groups: OTHER, last
     assert rr["id"] == "r1" and [e[0] for e in editor] == ["etitle", "row"] and editor[1][1]["id"] == "r4"
-    assert skips(main)[:3] == [1, 0, 0] and skips(editor) == [1, 0]
+    assert "r1" not in [e[1]["id"] for e in main if e[0] == "row"]        # the title row is on no page
+    assert skips(main)[:3] == [1, 0, 1] and skips(editor) == [1, 0]
+    main, _, _ = layout([_row(0, "recipe"), _row(1, "focus")])            # a plain "recipe" row still gets a page
+    assert [e[1] for e in main if e[0] == "title"][:1] == ["KOMA: RECIPE"] and ("edit",) not in main
     main, editor, rr = layout([_row(i, "exposure") for i in range(6)])    # 6 rows: continues on a second page
     assert [e[1] for e in main if e[0] == "title"] == ["KOMA: EXPOSURE", "KOMA: EXPOSURE", "KOMA: DISPLAY"]
     assert editor == [] and rr is None and all(len(t) <= 14 for t in (e[1] for e in main if e[0] == "title"))
 
 
-def test_release_layout_matches_the_owner_ia():
+def test_release_layout_matches_the_release_ia():
     from koma.features import menu5 as M5
     from koma.features.menu5 import layout
     from koma.linker import collect_rows
@@ -108,15 +113,15 @@ def test_release_layout_matches_the_owner_ia():
     assert not errors
     main, editor, _ = layout(rows)
     lab = lambda e: e[1] if e[0] == "title" else e[1]["label"] if e[0] == "row" else e[0]   # noqa: E731
-    assert [lab(e) for e in main if e[0] != "blank"] == [
-        "KOMA: RECIPE", "RECIPE", "edit", "KOMA: FOCUS", "SNAP DIST", "FULL SNAP",
+    assert [lab(e) for e in main if e[0] != "blank"] == [            # Look IA: opens on FOCUS
+        "KOMA: FOCUS", "SNAP DIST", "FULL SNAP",
         "KOMA: EXPOSURE", "AUTO-ISO MAX", "SLOW SHUTTER", "LONG EXP LIMIT", "KOMA: DISPLAY", "HIGHLIGHT ALRT",
         "version"]
     # Koma 0.2: rows p5..p7 are declared with their colour labels; menu5 shows the active type's variant (B&W FILTER
     # EFF. / TONING / TONE LEVEL, SELECT COLOUR / RANGE / SATURATION; test_bwrecipes covers the switch)
     assert [lab(e) for e in editor] == ["etitle", "CURVE", "CONTRAST", "KEY", "SHADOW", "HIGHLIGHT", "SATURATION",
-                                       "WARMTH", "TINT", "SHARPNESS", "GRAIN", "VIGNETTE", "SAVE TO CUSTOM",
-                                       "RESET"]
+                                       "WARMTH", "TINT", "SHARPNESS", "GRAIN", "VIGNETTE", "ADJ LEVER",
+                                       "SAVE TO CUSTOM", "RESET"]
     assert [M5.row_variants(e[1])["alts"][0][0] for e in editor if e[0] == "row" and M5.row_variants(e[1])] == [
         "FILTER EFF.", "TONING", "TONE LEVEL"]
     assert all(len(r["label"]) <= 14 and all(len(o) <= 9 for o in r["options"]) for r in rows)
@@ -146,17 +151,19 @@ on_change:                              @ a change of the recipe row moves the n
 
 
 def test_store_applies_changes_found_before_any_on_change():
-    f = sample([_row(0, "recipe", n=3), _row(1, "recipe-edit", n=3)], source=ONCH, exports=["on_change"])
+    f = sample([_row(0, "recipe", n=3), _row(1, "recipe-edit", n=3), _row(2, "recipe-title", n=4)], source=ONCH,
+               exports=["on_change"])
     r = build(f)
-    u = unit(r, b"KOMA\x01\x00\x00")
+    u = unit(r, b"KOMA\x01\x00\x00\x00")
     u.install()
     u.thumb(res(r, "kf_menu5__ksync_load"), {})
     ea, eb = res(r, "kf_menu5__kr_e_0"), res(r, "kf_menu5__kr_e_1")
     assert (u.u8(ea + 9), u.u8(eb + 9), u.u8(res(r, "kf_menu5__ket_entry") + 9)) == (1, 1, 1)
+    u.uc.mem_write(0x1B8B7, b"\x03")                       # the title row's byte (no page: shown by the title only)
     u.uc.mem_write(ea + 9, b"\x03")                       # recipe row -> option 3; edit row cursor still stale (1)
     u.thumb(res(r, "kf_menu5__ksync_store"), {})
     assert (u.u8(0x1B8B5), u.u8(0x1B8B6)) == (2, 1)       # on_change's write survives (old code wrote 0 back)
-    assert (u.u8(eb + 9), u.u8(res(r, "kf_menu5__ket_entry") + 9)) == (2, 3)   # cursors reloaded; title mirrors
+    assert (u.u8(eb + 9), u.u8(res(r, "kf_menu5__ket_entry") + 9)) == (2, 4)   # cursors reloaded; title mirrors
 
 
 def _nav(r, recipe=0):
@@ -181,29 +188,31 @@ def _nav(r, recipe=0):
     return u, key
 
 
-def test_navigation_skips_titles_and_blanks_and_opens_the_editor():
-    f = sample([_row(0, "recipe", n=3), _row(1, "recipe-edit", n=3), _row(2, "focus")], source=ONCH,
-               exports=["on_change"])
+def test_navigation_skips_titles_and_blanks_and_left_leaves_the_editor():
+    """KOMA tab: UP / DOWN / RIGHT skip titles and blanks. Look IA: no EDIT RECIPE row (the editor opens from an IMG SET
+    entry, kright); LEFT in the editor takes the stock exit to the mode page (classifier case 9, slot 0) and marks the
+    return (kmv +2) for kright."""
+    f = sample([_row(0, "focus", n=3), _row(1, "recipe-edit", n=3), _row(2, "exposure"), _row(3, "recipe-title")],
+               source=ONCH, exports=["on_change"])
     r = build(f)
     t1, te = res(r, "kf_menu5__tbl1"), res(r, "kf_menu5__tblE")
     DOWN, UP, LEFT, RIGHT, OK = 0x40, 0x30, 0x10, 0x20, 0x50
     u, key = _nav(r)
-    assert key(DOWN, state=0, row=1, page=1, tbl=t1, cnt=12)[:4] == (0xFF, 2, 2, 1)   # header -> RECIPE (row 2)
-    assert key(DOWN)[:4] == (0xFF, 2, 3, 1)                                           # EDIT RECIPE
-    assert key(DOWN)[:4] == (0xFF, 2, 7, 2)                                           # skips blanks + FOCUS title
-    assert key(UP)[:4] == (0xFF, 2, 3, 1)
+    assert key(DOWN, state=0, row=1, page=1, tbl=t1, cnt=12)[:4] == (0xFF, 2, 2, 1)   # header -> FOCUS row (row 2)
+    assert key(DOWN)[:4] == (0xFF, 2, 7, 2)                                           # skips blanks + EXPOSURE title
+    assert key(UP)[:4] == (0xFF, 2, 2, 1)
     assert key(DOWN, row=12)[:4] == (0xFF, 0, 1, 1)                                   # past the end -> header
     assert key(UP, state=0)[:4] == (0xFF, 2, 12, 3)                                   # header UP -> last row
     assert key(RIGHT, state=1, page=2)[:4] == (0xFF, 2, 7, 2)                         # page column -> 1st row
     assert [c[0] for c in u.calls] == ["redraw"]
-    assert key(RIGHT, state=2, row=3)[4] == t1                                        # recipe OFF: no editor
-    u.uc.mem_write(0x1B8B5, b"\x02")
-    ret, st, row, page, tbl = key(OK, state=2, row=3)
-    assert (ret, st, row, tbl) == (0xFF, 2, 2, te) and u.u8(0x1C23EC) == 2           # editor, on its 1st row
-    assert u.u8(res(r, "kf_menu5__ket_entry") + 9) == 3                               # title shows the recipe
-    assert key(LEFT)[:5] == (0xFF, 2, 3, 1, t1) and u.u8(0x1C23EC) == 12              # back on EDIT RECIPE
-    ret, *_ = key(RIGHT, state=2, row=7)                                              # other keys: stock path
+    ret, *_ = key(RIGHT, state=2, row=2)                                              # rows: no editor from here
     assert ret == 8 and ("stock_classify", RIGHT) in u.calls
+    ret, *_ = key(OK, state=2, row=2)
+    assert ret == 8 and ("stock_classify", OK) in u.calls
+    kmv, v = res(r, "kf_menu5__kmv"), res(r, "kf_menu5__vars")
+    ret, st, *_ = key(LEFT, state=2, row=2, tbl=te, cnt=2)                            # LEFT in the editor
+    assert u.calls == [("stock_classify", 0x10)] and st == 0 and u.u8(kmv + 2) == 1 and u.u8(v) == 0
+    assert "kf_menu5__kright" not in r.symbols                                        # no look feature: no kright
 
 
 def test_strip_labels_and_setup_has_stock_rows_only():

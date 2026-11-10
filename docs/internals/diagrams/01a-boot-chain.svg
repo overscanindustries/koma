@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1200 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="boot-chain-title boot-chain-desc">
+<title id="boot-chain-title">Boot chain: reset to the update gate</title>
+<desc id="boot-chain-desc">Flow from power-on reset through the Monitor, the main-info header check and the application to the update gate, with the card, updater and console alternatives.</desc>
+<defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M160 126 L200 126" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M360 126 L400 126" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M560 126 L600 126" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M984 126 L1024 126" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M760 126 L840 126" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M440 156 L440 204 A8 8 0 0 1 432 212 L288 212 A8 8 0 0 0 280 220 L280 244" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M520 156 L520 244" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M720 156 L720 244" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M840 274 L1052 274 A8 8 0 0 0 1060 266 L1060 156" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M1132 156 L1132 372" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<rect x="768" y="106" width="60" height="12" rx="2" fill="#f5f5f5"/>
+<text x="798.0" y="115" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPIO60 LOW</text>
+<rect x="328" y="192" width="60" height="12" rx="2" fill="#f5f5f5"/>
+<text x="358.0" y="201" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">GPIO50 LOW</text>
+<rect x="528" y="194" width="72" height="12" rx="2" fill="#f5f5f5"/>
+<text x="564.0" y="203" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MG1MODE VERUP</text>
+<rect x="728" y="194" width="44" height="12" rx="2" fill="#f5f5f5"/>
+<text x="750.0" y="203" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">INVALID</text>
+<rect x="916" y="254" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="950.0" y="263" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">JUMP 0x1c000</text>
+<rect x="1076" y="234" width="48" height="12" rx="2" fill="#f5f5f5"/>
+<text x="1100.0" y="243" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MAINCTRL</text>
+<rect x="32" y="96" width="128" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="96" width="128" height="60" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="96.0" y="116" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Power-on reset</text>
+<text x="96.0" y="130" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">chip copies block 0</text>
+<text x="96.0" y="142" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">sectors 0-1 to BootRAM</text>
+<rect x="200" y="96" width="160" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="200" y="96" width="160" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="280.0" y="116" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Monitor 1.00</text>
+<text x="280.0" y="130" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">block 0, reset 0x154</text>
+<text x="280.0" y="142" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">stacks, UART, INTC, OneNAND</text>
+<rect x="400" y="96" width="160" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="400" y="96" width="160" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="480.0" y="116" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Boot control 0xb7c</text>
+<text x="480.0" y="130" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">reads main info (block 0x3c)</text>
+<text x="480.0" y="142" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">GPIO60, GPIO50, MG1MODE</text>
+<rect x="600" y="96" width="160" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="600" y="96" width="160" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="680.0" y="116" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Main-info valid?</text>
+<text x="680.0" y="130" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0xb58 -&gt; 0x1920: magic,</text>
+<text x="680.0" y="142" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">+0x1f0 marker, type 2 or 3</text>
+<rect x="840" y="96" width="144" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="840" y="96" width="144" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="912.0" y="116" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Flash load 0x156c</text>
+<text x="912.0" y="130" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no payload checksum</text>
+<text x="912.0" y="142" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">entry 0x1c000</text>
+<rect x="1024" y="96" width="144" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="1024" y="96" width="144" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1096.0" y="116" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Application</text>
+<text x="1096.0" y="130" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">reset handler 0x1c054</text>
+<text x="1096.0" y="142" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">RTOS, then MainCtrl</text>
+<rect x="200" y="244" width="160" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="200" y="244" width="160" height="72" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="280.0" y="264" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Console 0x9d0</text>
+<text x="280.0" y="278" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">GPIO50 low + GPIO60 high,</text>
+<text x="280.0" y="290" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">origin word mismatch, or no</text>
+<text x="280.0" y="302" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">card after ~5000-tick wait</text>
+<rect x="480" y="244" width="160" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="480" y="244" width="160" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="560.0" y="264" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Monitor updater</text>
+<text x="560.0" y="278" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0x50ec: scans QRFLECT0..9</text>
+<text x="560.0" y="290" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">erase, program, verify main</text>
+<rect x="680" y="244" width="160" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="680" y="244" width="160" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="760.0" y="264" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Card RAM loader</text>
+<text x="760.0" y="278" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0xa2c -&gt; 0x2394 -&gt; 0x19ac</text>
+<text x="760.0" y="290" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">QRFLECT0..9, weighted sum</text>
+<rect x="1008" y="372" width="160" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="1008" y="372" width="160" height="72" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="1088.0" y="392" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Update gate 0x1eb22</text>
+<text x="1088.0" y="406" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">MainCtrl, startup 0x1e7ac</text>
+<text x="1088.0" y="418" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">keys UP+TELE, or info bad</text>
+<text x="1088.0" y="430" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">continues in diagram 01b</text>
+<text x="32" y="404" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">GPIO60 high with a valid header also reads MG1MODE: with no VERUP marker the card RAM loader runs first,</text>
+<text x="32" y="424" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">and a failed scan falls back to the valid-header flash load. A damaged payload under a valid header is not caught.</text>
+<text x="32" y="452" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">Every edge is derived from code or emulated; none has been seen on a camera.</text>
+<line x1="32" y1="480" x2="1168" y2="480" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="32" y="500" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="100" y="490" width="20" height="12" rx="3" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="128" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">entry / end</text>
+<rect x="209" y="490" width="20" height="12" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="237" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">code path</text>
+<rect x="308" y="490" width="20" height="12" rx="3" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="336" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">last resort</text>
+<rect x="417" y="490" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="445" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">update gate</text>
+<line x1="526" y1="496" x2="550" y2="496" stroke="#4f5d75" stroke-width="1.2"/>
+<polygon points="550,493 556,496 550,499" fill="#4f5d75"/>
+<text x="564" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">transition</text>
+</svg>

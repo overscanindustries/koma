@@ -6,7 +6,7 @@ emulator imports (unicorn). One boot, one reboot; the steps run in order (test_1
   KOMA_FIRMWARE=firmware/original/gr-240.exe .venv/bin/python tools/komaset/bridge/test_emu_integration.py
 
 EMU_SHOTS=<dir> saves the menu frame (osd-menu.png, plus osd-menu-on-grey.png when Pillow is there) and the other
-frames there. EMU_MODULE=<grmod> picks another module (default: koma04 built in memory by emulink.default_module()).
+frames there. EMU_MODULE=<grmod> picks another module (default: emulink.DEFAULT_MODULE).
 """
 import base64
 import json

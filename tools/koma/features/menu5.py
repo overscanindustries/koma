@@ -1,6 +1,6 @@
 """menu5: the five-tab menu with the v2 header band; the second tab is the KOMA tab.
 
-Port of the earlier five-tab menu builders (menu5 + menu5v2) (`modules/menu5tab-v2.grmod`, the build on the owner's camera).
+Port of the standalone five-tab menu module (menu5 + menu5v2).
 Reused at build time, read only: the Thumb CODE, the TABS layout of the stock tabs, the 23 patch records with their
 before-bytes (`patches()`), the v2 band source (`menu5v2.BAND_SRC`) and the glyph encoder. Changes for Koma:
   * `&label` -> `label`: Koma's assembler emits the relocations;
@@ -53,11 +53,12 @@ NAME = "menu5"
 SUMMARY = "five-tab menu v2 (opaque header band) + KOMA tab: one topic per page, recipe editor sub-page"
 OPTIONS = {}
 
-ROWS_PER_PAGE = 5                  # rows per screen page (O-emu)
+ROWS_PER_PAGE = 5                  # rows per screen page
 VERSION_LABEL = "KOMA VERSION"
 GROUPS = [("recipe", "RECIPE"), ("focus", "FOCUS"), ("exposure", "EXPOSURE"), ("display", "DISPLAY")]
 OTHER = "OTHER"
 EDIT_GROUP = "recipe-edit"
+TITLE_GROUP = "recipe-title"       # Look IA: the look-id row, on no page; the editor title EDITING <name> shows it
 EDIT_LABEL = "EDIT RECIPE"
 EDITING_LABEL = "EDITING"
 STRIP = ["STILL", "KOMA", "PLAY", "CUSTOM", "SETUP"]      # slot 1 reads MOVIE in movie mode (kstripfix)
@@ -87,17 +88,18 @@ def title(topic):
 
 def layout(rows):
     """KOMA tab entries from the collected rows. Returns (main, editor, recipe_row):
-    main/editor = lists of ("title", label) | ("blank",) | ("row", row) | ("edit",) | ("version",) | ("etitle",).
-    Pages: RECIPE (its rows + EDIT RECIPE), FOCUS, EXPOSURE, DISPLAY (+ KOMA VERSION, always), then OTHER (unknown or
-    missing groups). Each page: a title row + up to 4 rows; a longer topic continues on a new page with the same title.
-    Every page but the last is padded to 5 rows with blank rows."""
-    known = {g for g, _ in GROUPS} | {EDIT_GROUP}
+    main/editor = lists of ("title", label) | ("blank",) | ("row", row) | ("version",) | ("etitle",).
+    Pages: RECIPE (rows of group "recipe", if any), FOCUS, EXPOSURE, DISPLAY (+ KOMA VERSION, always), then OTHER
+    (unknown or missing groups). Each page: a title row + up to 4 rows; a longer topic continues on a new page with the
+    same title. Every page but the last is padded to 5 rows with blank rows.
+    There is no EDIT RECIPE row and no RECIPE page (IMG SET is the one look picker; RIGHT on an
+    IMG SET entry opens the editor, kright). The look-id row (group "recipe-title") is on no page; it is recipe_row,
+    the editor title's value."""
+    known = {g for g, _ in GROUPS} | {EDIT_GROUP, TITLE_GROUP}
     by = {g: [r for r in rows if r.get("group") == g] for g, _ in GROUPS}
     by[OTHER] = [r for r in rows if r.get("group") not in known]
     edit_rows = [r for r in rows if r.get("group") == EDIT_GROUP]
     items = {g: [("row", r) for r in by[g]] for g in by}
-    if edit_rows:
-        items["recipe"].append(("edit",))
     items["display"].append(("version",))
     pages = []
     for g, topic in GROUPS + [(OTHER, OTHER)]:
@@ -107,7 +109,8 @@ def layout(rows):
     main = []
     for i, p in enumerate(pages):
         main += p + ([("blank",)] * (ROWS_PER_PAGE - len(p)) if i < len(pages) - 1 else [])
-    recipe_row = by["recipe"][0] if by["recipe"] else None
+    titles = [r for r in rows if r.get("group") == TITLE_GROUP]
+    recipe_row = titles[0] if titles else None
     editor = ([("etitle",)] + [("row", r) for r in edit_rows]) if edit_rows else []
     assert len(main) <= MAX_ROWS and len(editor) <= MAX_ROWS, "KOMA tab: more than 30 rows in one table"
     return main, editor, recipe_row
@@ -247,11 +250,11 @@ ks_done:
     pop {r3}
     bx r3
 
-kver:                                   @ $koma.version "KOMA Vx.y IIIIIIII" -> glyph strings "x.y" and "IIIIIIII"
+kver:                                   @ kv_ver_a "2.40Kx.y" and $koma.version "KOMA Vx.y.z IIIIIIII Gn" -> glyphs
     push {r4, lr}
-    ldr r0, =$koma.version + VSKIP
+    ldr r0, =kv_ver_a                   @ ASCII in kv_short_s's tail: read ahead of the glyph writes, never overtaken
     ldr r1, =kv_short_s
-    movs r2, #VSHORT
+    movs r2, #VMENU
     bl kconv
     ldr r0, =$koma.version + VSKIP + VSHORT + 1
     ldr r1, =kv_id_s
@@ -502,45 +505,46 @@ klt:                                    @ label tables [r0, r1): slot 0 holds th
     bx r3
 EDIT_SRC
 .ltorg
+@ menu state (kmv +0 GR II: table kmbuf shows, +1 editor pending for kedpend, +2 back from the editor). Resident,
+@ outside the layout overlays: kedpend runs in every layout, and an overlay alias would read 5-TAB's label tables.
+.p2align 2
+kmv:
+    .byte 0, 0, 0, 0
 G2_ROWMAP
 G2_MODE
 .ltorg
 """
 
-# RIGHT / OK on EDIT RECIPE opens the editor (not while the recipe row says OFF); LEFT in the editor goes back.
+# Editor keys: LEFT in the editor goes back to the still page it was opened from (kright): the stock exit to
+# slot 0 (the mode page) through classifier case 9, as c_leave does (header state, caller's key register = LEFT);
+# kright then puts the cursor back on the IMG SET row (kmv +2). Same in every MENU LAYOUT.
 EDIT_KEYS_SRC = """    ldr r1, =ED_TBL
     cmp r5, r1
-    bne 5f
+    bne k_plain
     cmp r4, #0x10
     beq k_back
     cmp r4, #0x12
-    beq k_back
-    b k_plain
-5:  ldr r1, =D_ROW
-    ldrb r1, [r1]
-    cmp r1, #EDITROW
     bne k_plain
-    cmp r4, #0x20
-    beq k_edit
-    cmp r4, #0x22
-    beq k_edit
-    cmp r4, #0x50
-    bne k_plain
-k_edit:
-RECIPE_OFF_CHECK
-    bl ksync_load                       @ fresh cursors: the active recipe may have changed in this menu session
-    ldr r0, =tblE
-    movs r1, #ECOUNT
-    movs r2, #0
-    bl kshow
-    b k_done
 k_back:
-G2_BACK
-    ldr r0, =tbl1
-    movs r1, #KCOUNT
-    movs r2, #EDITROW - 1
-    bl kshow
-    b k_done
+    ldr r1, =vars
+    movs r0, #0
+    strb r0, [r1, #0]                   @ slot 0: the mode page
+    ldr r1, =kmv
+    movs r0, #1
+    strb r0, [r1, #2]
+    movs r0, #0
+    ldr r1, =D_STATE
+    strb r0, [r1]
+    movs r0, #1
+    ldr r1, =D_ROW
+    strb r0, [r1]
+    ldr r1, =D_PAGE
+    strb r0, [r1]
+    movs r6, #0x10                      @ caller's key register: case 9 sends LEFT to the UI (tab -> 1)
+    movs r0, #0x10
+    ldr r3, =0xe3699
+    bl call_r3
+    b k_out
 """
 # ---------------------------------------------------------------- MENU LAYOUT = 2 (GR II)
 # vars +14 = 1: the GR II directory is installed (kdir2). kinit then puts SHOOTING into the still pages' tab label and
@@ -582,32 +586,6 @@ G2_KV_SRC = """    ldr r1, =vars
     ldr r1, =kv_entry_g2
     strb r0, [r1, #9]
 1:
-"""
-# LEFT in the recipe editor (GR II): back to the SHOOTING page through the stock exit (classifier case 9, as c_leave:
-# header state, caller's key register = LEFT); kright then puts the cursor back on EDIT RECIPE (kmv +2)
-G2_BACK_SRC = """    ldr r1, =vars
-    ldrb r0, [r1, #14]
-    cmp r0, #0
-    beq 6f
-    movs r0, #0
-    strb r0, [r1, #0]                   @ slot 0: the mode page
-    ldr r1, =kmv
-    movs r0, #1
-    strb r0, [r1, #2]
-    movs r0, #0
-    ldr r1, =D_STATE
-    strb r0, [r1]
-    movs r0, #1
-    ldr r1, =D_ROW
-    strb r0, [r1]
-    ldr r1, =D_PAGE
-    strb r0, [r1]
-    movs r6, #0x10                      @ caller's key register: case 9 sends LEFT to the UI (tab -> 1)
-    movs r0, #0x10
-    ldr r3, =0xe3699
-    bl call_r3
-    b k_out
-6:
 """
 # krowmap: the init-list word 0x1a90f4 (was 0x29e14|1, called once at boot by 0x28a8c right after the loader hook)
 # points here. It runs the stock row-map init, then, with the GR II directory installed: checks every still-page map
@@ -930,64 +908,68 @@ mo_none:
     pop {r3}
     bx r3
 .ltorg
-@ GR II state (kmv +0 table kmbuf shows, +1 editor pending for kedpend, +2 back from the editor). Resident, outside the
-@ layout overlays: kedpend runs in every layout, and an overlay alias (ovl + offset) would read 5-TAB's label tables.
-.p2align 2
-kmv:
-    .byte 0, 0, 0, 0
 """
-# RIGHT on EDIT RECIPE on the SHOOTING page (mode-app RIGHT handler words 0x1a3374 / 0x1a338c, stock 0x79118): the
-# page's rows are written first (a RECIPE chosen here is the one edited), then the stock header RIGHT runs the SETUP app
-# (as lefth does) with the editor pending (kedpend in setup_enter). After it returns, a LEFT from the editor (kmv +2)
-# puts the cursor back on EDIT RECIPE. Not while the recipe row says OFF. Everything else: stock.
-G2_RIGHT_SRC = """
+# RIGHT in the IMG SET option list (Look IA): the mode-app
+# RIGHT handler words 0x1a3374 / 0x1a338c (stock 0x79118) point here. Stock RIGHT with the list open (descriptor state
+# 0x1c23f0 = 3, highlighted entry 0x1c23ef) goes 0x79118 -> 0x792e0 and opens the stock detail screen 0x5b7e4 when the
+# row is IMG SET (row-map slot 0x1a91bd) and the entry is 4..7. Here,
+# on a still page (descriptor page 0 / 6 / 7) the displayed row (the page's table at 0x1c23c0 + 4 * page, row
+# 0x1c23ee) and the entry go to the look feature's imgright: a look entry becomes the row's value and the active look,
+# then the stock header RIGHT runs the SETUP app (as lefth does) with the editor pending (kedpend in setup_enter) on
+# tab slot 0 (the strip keeps STILL / SHOOTING lit). After it returns: the look feature's imgdone (editor session over), and after a LEFT from the editor (kmv +2)
+# the cursor goes back to the IMG SET row. Anything else, and under ESSENTIALS: stock.
+KRIGHT_SRC = """
 kright:
     push {r4, r5, r6, r7, lr}
     movs r4, r0
     movs r5, r1
     movs r6, r2
-    ldr r1, =vars
-    ldrb r0, [r1, #15]
-    cmp r0, #0
+    ldr r1, =$koma.ess
+    ldrb r1, [r1]
+    cmp r1, #1
     beq kq_stock
     ldr r1, =D_STATE
     ldrb r0, [r1]
-    cmp r0, #2
+    cmp r0, #3
     bne kq_stock
     ldr r1, =D_TAB
     ldrb r0, [r1]
     cmp r0, #1
     bne kq_stock
-    ldr r0, =0x1c23b8                   @ page 0 / 6 / 7 -> table id 0 / 1 / 2
+    ldr r0, =0x1c23b8                   @ page 0 AUTO, 6 P/A, 7 M
     ldrb r0, [r0]
     cmp r0, #0
     beq 1f
-    subs r0, #5
-    cmp r0, #1
+    cmp r0, #6
     beq 1f
-    cmp r0, #2
+    cmp r0, #7
     bne kq_stock
-1:  movs r7, r0
-    bl kmerow
+1:  lsls r0, r0, #2
+    ldr r1, =0x1c23c0
+    ldr r1, [r1, r0]
+    ldr r2, =D_ROW
+    ldrb r7, [r2]
+    subs r2, r7, #1
+    bmi kq_stock
+    movs r0, #12
+    muls r2, r0, r2
+    adds r1, r1, r2                     @ r1 = the displayed row
+    ldr r0, =D_ROW + 1
+    ldrb r0, [r0]                       @ r0 = the highlighted entry
+    bl IMGRIGHT
     cmp r0, #0
     beq kq_stock
-    ldr r1, =D_ROW
-    ldrb r1, [r1]
-    cmp r0, r1
-    bne kq_stock
-    movs r0, r7
-    bl kmsync_out                       @ this page's rows reach their bytes (the RECIPE chosen here is the one edited)
-    ldr r1, =RECIPE_BYTE
-    ldrb r1, [r1]
+    ldr r1, =D_ROW + 1
     movs r0, #0
-    cmp r1, #0
-    beq kq_out
+    strb r0, [r1]                       @ option list closed: highlight 0 and the list-open flag 0x1befe2 cleared
+    ldr r3, =0x6f3a9                    @ through its setter (0x6f3a8: strb r0, [0x1befe0 + 2]; 0x79118 reads it via
+    bl call_r3                          @ 0x6f3b4 and would take the list path 0x792e0 instead of the header RIGHT)
     ldr r1, =kmv
     movs r0, #1
     strb r0, [r1, #1]                   @ setup_enter: open the editor
     ldr r1, =vars
-    movs r0, #2
-    strb r0, [r1, #1]                   @ pending tab: KEY CUST. (under the editor)
+    movs r0, #1
+    strb r0, [r1, #1]                   @ pending tab: slot 0, so the strip keeps STILL / SHOOTING lit under the editor
     ldr r1, =D_STATE
     movs r0, #0
     strb r0, [r1]                       @ header: the stock RIGHT enters the SETUP app
@@ -1000,15 +982,14 @@ kright:
     ldr r1, =kmv
     movs r0, #0
     strb r0, [r1, #1]
-    ldrb r2, [r1, #2]
+    ldrb r5, [r1, #2]
     strb r0, [r1, #2]
-    cmp r2, #0
+    bl IMGDONE
+    cmp r5, #0
     beq 3f
-    movs r0, r7                         @ back from the editor with LEFT: cursor on EDIT RECIPE, row state
-    bl kmerow
-    ldr r1, =D_ROW
-    strb r0, [r1]
-    subs r0, #1
+    ldr r1, =D_ROW                      @ back with LEFT: cursor on the IMG SET row, row state
+    strb r7, [r1]
+    subs r0, r7, #1
     movs r1, #1
 2:  cmp r0, #5
     blo 4f
@@ -1034,14 +1015,6 @@ kq_out:
     pop {r3}
     bx r3
 .ltorg
-
-kmerow:                                 @ r0 = table id -> r0 = its EDIT RECIPE row (0: none)
-    ldr r1, =kmtabs
-    lsls r0, r0, #3
-    adds r1, r1, r0
-    ldr r1, [r1, #4]
-    ldrb r0, [r1, #1]
-    bx lr
 
 kedpend:                                @ setup_enter, before its redraw: kright asked for the editor
     push {r4, lr}
@@ -1082,7 +1055,7 @@ LAYOUT_BYTE = 0x1B8BB             # settingsio_menu.LAYOUT_BYTE: MENU LAYOUT 0 5
 STOCK_SETUP_ROWS = 30
 SK_STRIP = ["STILL", "KOMA", "SETUP"]   # STOCK+KOMA: slot 0 is the mode page (label from the stock page table)
 
-# GR II: three tabs SHOOTING | KEY CUST. | SETUP. Slot 0 is the
+# GR II layout: three tabs SHOOTING | KEY CUST. | SETUP. Slot 0 is the
 # stock mode page (its tab label reads SHOOTING on the still pages, MOVIE / PLAY in those modes); on the still pages
 # its display table is kmbuf (krowmap + the load / commit hooks), in G2_SHOOT order. Slots 1 and 2 are SETUP-app
 # tables. In these lists: ints = stock SETUP rows (1..30), upper-case strings = stock still rows, other strings = Koma
@@ -1090,7 +1063,7 @@ SK_STRIP = ["STILL", "KOMA", "SETUP"]   # STOCK+KOMA: slot 0 is the mode page (l
 # slot of their own. Koma rows a build lacks are skipped; a still table without a stock row skips it (P/A: no RESTORE
 # DEFAULTS, M: also no EXPOSURE COMP.).
 G2_STRIP = ["SHOOTING", "KEY CUST.", "SETUP"]   # 9-char tab-label cap: KEY CUSTOM (10) -> KEY CUST.
-G2_SHOOT = ["FOCUS", "snapdist", "fullsnap", "PHOTOMETRY", "PIC QUALITY/SIZE", 28, 19, "rcp_active", "edit", "IMG SET",
+G2_SHOOT = ["FOCUS", "snapdist", "fullsnap", "PHOTOMETRY", "PIC QUALITY/SIZE", 28, 19, "IMG SET",
             "DATE IMPRINT", "CONT. MODE", "AUTO BRACKET", 29, "INTERVAL", "IMAGE WITH SOUND", "WHITE BALANCE",
             "ISO SETTING", "EXPOSURE COMP.", "longexp", "extra", "FLASH EXPO. COMP.", "RESTORE DEFAULTS"]
 # SETUP-app rows on SHOOTING: (settings byte, SETUP commit value table (byte = table[cursor]), default byte). Their
@@ -1099,7 +1072,7 @@ G2_SHOOT_SETUP = {19: (0x1B0A4, 0x1BEEEF, 0), 28: (0x1B193, 0x1BEF02, 0), 29: (0
 G2_KEY = [26, 27, 21, 22, 23, 24, 25, 20, 4]
 G2_SETUP = [15, 1, 2, 10, 3, 5, 7, 8, 6, "isomax", "slowshut", 18, 9, 30, 14, "hilite", 16, 11, 12, 17, 13,
             "menulayout", "komafeat", "savecard", "version"]
-G2_SHOWN_TAIL = {"menulayout", "komafeat", "savecard"}   # decision 4: other settings / OTHER rows are hidden in GR II
+G2_SHOWN_TAIL = {"menulayout", "komafeat", "savecard"}   # other settings / OTHER rows are hidden in GR II
 # Still pages: AUTO 14 rows, P/A 13 (no RESTORE DEFAULTS),
 # M 12 (also no EXPOSURE COMP.), same row order; each addressed through its row-index map region, which 0x29e14 fills
 # with immediates (offset from 0x1a91ac: stock row number; disasm 0x29e5c..0x29f3c).
@@ -1160,13 +1133,6 @@ def ltab_src(name, s, G):
     """A label table filled by kinit: slot 0 holds the record length, slots 1..8 zero; the glyph string follows."""
     return (f".p2align 2\n{name}:\n    .word {name}_z - {name}\n    .space 32\n" + G.str_src(name + "_s", s)
             + f".p2align 2\n{name}_z:\n")
-
-
-RECIPE_OFF_SRC = """    ldr r1, =RECIPE_BYTE
-    ldrb r1, [r1]
-    cmp r1, #0
-    beq k_done
-"""
 
 
 def _entry_rows(entries, prefix, rows_index, labels, extra, recipe_row, ktab, kt_rows):
@@ -1231,6 +1197,28 @@ def row_variants(r):
     return v
 
 
+def _menu_right(rr):
+    """The title row's feature's MENU_RIGHT (open, done) export names, if it has them (bwrecipes: imgright, imgdone)."""
+    from . import REGISTRY, module
+    f = rr.get("feature")
+    return getattr(module(f), "MENU_RIGHT", None) if f in REGISTRY else None
+
+
+def row_optsym(r):
+    """A row's `optsym` (from its feature's ROWS): the name of an exported label-pointer list in that feature, used as
+    the row's option list instead of menu5's own copies (the look-id row: bwrecipes `rnames`). None if absent."""
+    if not r.get("feature"):
+        return None
+    from . import REGISTRY, module
+    if r["feature"] not in REGISTRY:
+        return None
+    sym = next((x.get("optsym") for x in getattr(module(r["feature"]), "ROWS", []) if x.get("id") == r["id"]), None)
+    if not sym:
+        return None
+    from ..linker import ns
+    return ns(r["feature"]) + sym
+
+
 def _variant_src(rows, editor_ids, labels, extra):
     """kvtab: one entry per editor row with variants (see kvar)."""
     out = [".p2align 2", "kvtab:"]
@@ -1266,7 +1254,7 @@ def g2_layout(rows, main, editor):
     shown = {e[1]["id"]: e[1] for e in main if e[0] == "row"}
     placed = {x for x in G2_SHOOT + G2_KEY + G2_SETUP if isinstance(x, str)}
     extra_x, extra_disp, hidden = [], [], []
-    for rid, r in shown.items():               # rows with no GR II slot: by group (decision 4 hides the tail)
+    for rid, r in shown.items():               # rows with no GR II slot: by group (the tail rows stay hidden)
         if rid in placed:
             continue
         g = r.get("group")
@@ -1411,6 +1399,10 @@ def _tables(rows, M, G):
     optlists = {}                                   # identical option lists share one pointer list (Koma 0.3)
     for i, r in enumerate(rows):                    # every row's option list (editor title reuses the recipe list)
         key = tuple(r["options"])
+        sym = row_optsym(r)
+        if sym:                                     # the row's feature carries the list (same strings): no copies
+            extra.append(f".set kr_opts_{i}, {sym}")
+            continue
         if key in optlists:
             extra.append(f".set kr_opts_{i}, kr_opts_{optlists[key]}")
             continue
@@ -1504,10 +1496,14 @@ def _tables(rows, M, G):
         seen[lab] = name
         ov0.append(ltab_src(name, lab, G))
     ov0.append(".p2align 2\nlt0_e:")
-    # version row: options "x.y" and the build id, filled from $koma.version at SETUP entry (kver)
-    nbuf = 2 * 16 + 2
+    # version row: options "2.40Kx.y" (linker.menu_version, VERSIONING.md) and the build id, converted to glyphs at
+    # SETUP entry (kver); the ASCII menu version sits in the tail of its own glyph buffer (glyphs end at 2 * 8 + 2)
+    from ..linker import menu_version
+    nbuf, mv = 2 * 16 + 2, menu_version()
+    assert len(mv) <= 9 and 20 + len(mv) + 1 <= nbuf, mv
     out.append(f".p2align 2\nkv_opts:\n    .word kv_short, kv_id\nkv_short:\n    .word {', '.join(['kv_short_s'] * 9)}\n"
-               f"kv_id:\n    .word {', '.join(['kv_id_s'] * 9)}\nkv_short_s:\n    .space {nbuf}\nkv_id_s:\n    .space {nbuf}")
+               f"kv_id:\n    .word {', '.join(['kv_id_s'] * 9)}\nkv_short_s:\n    .space 20\nkv_ver_a:\n"
+               f"    .asciz \"{mv}\"\n    .space {nbuf - 20 - len(mv) - 1}\nkv_id_s:\n    .space {nbuf}")
     out.append("\n".join(ktab + ["ktab_end:"]))
     gated = [k for k, r in enumerate(kt_rows) if r is not None and r.get("gated")]
     if gated:
@@ -1550,7 +1546,7 @@ def build_source(rows):
 
 def _build(rows):
     M, V2, G = legacy()
-    from ..linker import KOMA_VERSION
+    from ..linker import KOMA_VERSION, menu_version
     code = M.CODE
     assert code.count(V2.ANCHOR) == 1
     code = code.replace(V2.ANCHOR, V2.BAND_SRC)                       # v2: opaque header band
@@ -1573,32 +1569,38 @@ def _build(rows):
     code = code.replace("    ldr r5, =&stripdata\n", "    ldr r5, =&vars\n    ldr r5, [r5, #8]\n")
     data, info = _tables(rows, M, G)
     g2 = info["g2"]
-    g2e = bool(g2 and any(g2["editrows"]) and info["ecount"] and info["recipe_row"])
-    if g2e:                         # GR II: the editor opened from SHOOTING replaces the tab before the first redraw
+    rr = info["recipe_row"]
+    # kright: RIGHT in the IMG SET option list opens the editor (every layout); needs the editor and the look feature
+    # behind the title row (its exported imgright / imgdone)
+    right = _menu_right(rr) if info["ecount"] and rr else None
+    kr = bool(right)
+    if kr:                          # the editor opened from a still page replaces the tab before the first redraw
         a = "2:  bl select\n    bl redraw\n    movs r0, r4\n"
         assert code.count(a) == 1
         code = code.replace(a, "2:  bl select\n    bl kedpend\n    bl redraw\n    movs r0, r4\n")
     src = KOMA_SRC
     if info["ecount"]:
-        rr = info["recipe_row"]
-        src = src.replace("EDIT_KEYS\n", EDIT_KEYS_SRC).replace(
-            "RECIPE_OFF_CHECK\n", RECIPE_OFF_SRC.replace("RECIPE_BYTE", f"0x{rr['byte']:x}") if rr else "")
+        src = src.replace("EDIT_KEYS\n", EDIT_KEYS_SRC)
         src = src.replace("ED_TBL", "tblE").replace("ED_SKIP", "skipE")
     else:
         src = src.replace("EDIT_KEYS\n", "").replace("ED_TBL", "0").replace("ED_SKIP", "skip1")
+    if kr:
+        from ..linker import ns
+        src = src.replace("EDIT_SRC\n", KRIGHT_SRC.replace("IMGRIGHT", ns(rr["feature"]) + right[0])
+                          .replace("IMGDONE", ns(rr["feature"]) + right[1]))
     src = src.replace("EDIT_SRC\n", "")
     src = src.replace("ESS_GATE\n", ESS_GATE_SRC if info["gated"] else "")
-    mode = G2_MODE_SRC + (G2_RIGHT_SRC.replace("RECIPE_BYTE", f"0x{info['recipe_row']['byte']:x}") if g2e else "")
     for ph, body, on in (("G2_INIT", G2_INIT_SRC, g2), ("G2_STRIPFIX", G2_STRIPFIX_SRC, g2), ("G2_KV", G2_KV_SRC, g2),
-                         ("G2_ROWMAP", G2_ROWMAP_SRC, g2), ("G2_MODE", mode, g2), ("G2_BACK", G2_BACK_SRC, g2e)):
-        assert src.count(ph + "\n") == (1 if on or ph != "G2_BACK" else src.count(ph + "\n")), ph  # BACK: editor only
+                         ("G2_ROWMAP", G2_ROWMAP_SRC, g2), ("G2_MODE", G2_MODE_SRC, g2)):
+        assert src.count(ph + "\n") == 1, ph
         src = src.replace(ph + "\n", body if on else "")
     equ = "".join(f".equ {k}, {v}\n" for k, v in dict(
-        VSKIP=len("KOMA V"), VSHORT=len(KOMA_VERSION), KCOUNT=info["kcount"], ECOUNT=info["ecount"],
-        EDITROW=info["editrow"], KOMA_W=M.ADV * len("KOMA"), MOVIE_W=M.ADV * len("MOVIE"),
+        VSKIP=len("KOMA V"), VSHORT=len(KOMA_VERSION), VMENU=len(menu_version()),
+        KCOUNT=info["kcount"], ECOUNT=info["ecount"],
+        KOMA_W=M.ADV * len("KOMA"), MOVIE_W=M.ADV * len("MOVIE"),
         D_TAB=hex(D_TAB), D_TBL=hex(D_TBL), D_CNT=hex(D_CNT), D_PAGE=hex(D_PAGE), D_ROW=hex(D_ROW),
         D_STATE=hex(D_STATE), **{f"KMN{j}": (g2["kmn"][j] if g2 else 0) for j in range(3)}).items())
-    info["g2e"] = g2e
+    info["kright"] = kr
     info["overlays"] = [_deamp(o) for o in info["overlays"]]
     return _deamp(equ + code + src + "\n" + data + "\n"), info
 
@@ -1652,10 +1654,10 @@ def make(opts):
         if info["g2"]:
             f.pointers.append(rowmap_pointer())
             f.hooks.extend(mode_hooks())
-            if info["g2e"]:
-                f.pointers.extend(Pointer(a, fw.ram(a, 4), "kright", thumb=True,
-                                          why="GR II: RIGHT on EDIT RECIPE (SHOOTING) opens the recipe editor")
-                                  for a in MODE_RIGHT)
+        if info["kright"]:
+            f.pointers.extend(Pointer(a, fw.ram(a, 4), "kright", thumb=True,
+                                      why="Look IA: RIGHT on an IMG SET entry (option list open) opens its editor")
+                              for a in MODE_RIGHT)
         return src
     f.late_source = late
     return f

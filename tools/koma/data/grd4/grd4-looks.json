@@ -1,5 +1,5 @@
 {
- "_note": "Derived numeric values measured from GR DIGITAL IV 2.30 firmware tables (static analysis); not raw table rows. curves33: tone-curve values (8-bit output at x = 0, 8, .., 248, 255). sectors: per look group, for each light 0..3 and look sector 0..23, the sector-centre hue (deg, atan2(Cr, Cb)) and Standard's (c0) and the look's (ct) chroma response to a unit input there, c0 normalised to length 1. mean_gain: mean |ct|. wb: Bleach Bypass hue-option WB factors (R, G, B).",
+ "_note": "Derived numeric values measured from GR DIGITAL IV 2.30 firmware tables (static analysis, analysis/grd4-firmware README pass 2); not raw table rows. curves33: tone-curve values (8-bit output at x = 0, 8, .., 248, 255). sectors: per look group, for each light 0..3 and look sector 0..23, the sector-centre hue (deg, atan2(Cr, Cb)) and Standard's (c0) and the look's (ct) chroma response to a unit input there, c0 normalised to length 1. mean_gain: mean |ct|. wb: Bleach Bypass hue-option WB factors (R, G, B).",
  "x": [
   0,
   8,

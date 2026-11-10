@@ -1,5 +1,5 @@
 {
- "source": "the emulator of the unmodified 2.40 firmware: ready = after boot, menu = after a MENU/OK tap (code 23), down = then a DOWN tap (code 12). Raw OSD page bytes (4 bpp, high nibble left, stride 180, 360x240) and the raw VEN palette registers 0..15 (index 0 has no register: transparent). Emulator output, not a camera capture.",
+ "source": "tools/grdui Playground (emulator of the unmodified 2.40 firmware), dumped by testdata/dump_osd.py on 2026-11-07: ready = after boot, menu = after a MENU/OK tap (code 23), down = then a DOWN tap (code 12). Raw OSD page bytes (4 bpp, high nibble left, stride 180, 360x240) and the raw VEN palette registers 0..15 (index 0 has no register: transparent). Emulator output, not a camera capture.",
  "width": 360,
  "height": 240,
  "stride": 180,

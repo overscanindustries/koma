@@ -214,8 +214,9 @@ def _stock_maps(u):
 # ------------------------------------------------------------------ GR II SHOOTING page: Koma + SETUP-app rows
 from unicorn.arm_const import UC_ARM_REG_R0 as _R0  # noqa: E402
 
-SHOOT_AUTO = ["FOCUS", "SNAP DIST", "FULL SNAP", "PHOTOMETRY", "PIC QUALITY/SIZE", 28, 19, "RECIPE", "EDIT RECIPE",
-              "IMG SET", "DATE IMPRINT", "CONT. MODE", "AUTO BRACKET", 29, "INTERVAL", "IMAGE WITH SOUND",
+# No RECIPE / EDIT RECIPE rows; IMG SET at its single GR II place
+SHOOT_AUTO = ["FOCUS", "SNAP DIST", "FULL SNAP", "PHOTOMETRY", "PIC QUALITY/SIZE", 28, 19, "IMG SET", "DATE IMPRINT",
+              "CONT. MODE", "AUTO BRACKET", 29, "INTERVAL", "IMAGE WITH SOUND",
               "WHITE BALANCE", "ISO SETTING", "EXPOSURE COMP.", "LONG EXP LIMIT", "FLASH EXPO. COMP.",
               "RESTORE DEFAULTS"]
 SHOOT = {0: SHOOT_AUTO, 1: [x for x in SHOOT_AUTO if x != "RESTORE DEFAULTS"],
@@ -266,8 +267,8 @@ def test_gr2_shooting_rows_in_place_for_auto_pa_and_m():
         _load(u, tid)
         assert [c[0] for c in u.calls] == ["load_auto" if tid == 0 else "load_pam"]
         assert _names(u, buf, len(SHOOT[tid])) == SHOOT[tid], tid
-    # pages of five: SHOOTING 1 FOCUS..PIC QUALITY, 2 RAW/JPEG..IMG SET, 3 DATE..INTERVAL
-    assert SHOOT_AUTO[5:10] == [28, 19, "RECIPE", "EDIT RECIPE", "IMG SET"]
+    # pages of five: SHOOTING 1 FOCUS..PIC QUALITY, 2 RAW/JPEG..CONT. MODE (IMG SET 8: its GR II place), 3 AUTO BRACKET..
+    assert SHOOT_AUTO[5:10] == [28, 19, "IMG SET", "DATE IMPRINT", "CONT. MODE"]
     # the row-index map holds the SHOOTING positions (the mode app's row checks compare it with the cursor row)
     for (t, n, rmap), tid in zip(M5.STILL_TABLES, (0, 1, 2)):
         names = M5.still_names(t, n)
@@ -281,13 +282,13 @@ def test_gr2_shooting_load_shows_the_bytes():
     r, u = _shoot()
     buf = res(r, "kf_menu5__kmbuf")
     u.uc.mem_write(0x1C1EE8 + 12 * 1 + 9, b"\x04")                        # FOCUS cursor as the stock load left it
-    for a, v in ((SNAP, 2), (FULL, 1), (LONGEXP, 9), (DZ, 1), (RAWJ, 2), (CLBKT, 1), (ACT, 3)):
+    for a, v in ((SNAP, 2), (FULL, 1), (LONGEXP, 9), (DZ, 1), (RAWJ, 2), (CLBKT, 1), (ACT, 0)):
         u.uc.mem_write(a, bytes([v]))
     _load(u, 0)
     row = {n: buf + 12 * k for k, n in enumerate(SHOOT_AUTO)}
     cur = {n: u.u8(a + 9) for n, a in row.items()}
     assert cur["FOCUS"] == 4                                               # stock row copied from the stock table
-    assert (cur["SNAP DIST"], cur["FULL SNAP"], cur["RECIPE"]) == (3, 2, 4)
+    assert (cur["SNAP DIST"], cur["FULL SNAP"]) == (3, 2)
     assert cur["LONG EXP LIMIT"] == 1                                      # out of range -> default (180S)
     assert (cur[28], cur[29]) == (3, 2)                                    # FINE NORMAL N640 / ON OFF: byte order
     assert cur[19] == 2                                                    # DIGITAL ZOOM byte 1 = ON, listed OFF, ON
@@ -295,7 +296,8 @@ def test_gr2_shooting_load_shows_the_bytes():
     stock = fw.ram(0x1FFF64, 8)
     assert u.read(opts, 8) == stock[4:] + stock[:4] and u.u8(row[19] + 8) == 2
     assert u.read(row[28] + 4, 4) == fw.ram(SETUP_T + 12 * 27 + 4, 4)     # stock options pointer (already byte order)
-    assert text(u, word(u, word(u, row["EDIT RECIPE"]))) == "EDIT RECIPE" and u.u8(row["EDIT RECIPE"] + 10) == 1
+    assert word(u, row["IMG SET"] + 4) == res(r, "kf_bwrecipes__imgopts")             # the look list, as loaded
+    assert u.u8(row["IMG SET"] + 8) in (21, 22)
 
 
 def test_gr2_shooting_commit_writes_the_bytes():
@@ -305,12 +307,13 @@ def test_gr2_shooting_commit_writes_the_bytes():
         u.uc.mem_write(a, b"\x00")
     _load(u, 0)
     row = {n: buf + 12 * k for k, n in enumerate(SHOOT_AUTO)}
-    for n, c in (("SNAP DIST", 5), ("FULL SNAP", 2), (19, 2), (28, 9), ("FOCUS", 3), ("RECIPE", 2)):
+    for n, c in (("SNAP DIST", 5), ("FULL SNAP", 2), (19, 2), (28, 9), ("FOCUS", 3), ("IMG SET", 2)):
         u.uc.mem_write(row[n] + 9, bytes([c]))
     u.calls.clear()
     u.thumb(0x58882, {_R0: 0}, stop=0x58886)                              # AUTO commit from the cursors
     assert ("commit_auto", 0) in u.calls
     assert (u.u8(SNAP), u.u8(FULL), u.u8(DZ), u.u8(RAWJ), u.u8(ACT)) == (4, 1, 1, 0, 1)   # RAW/JPEG 9: out of range
+    assert u.u8(0x1B030) == 3                                              # IMG SET entry 2 = MONO: base B&W, id 1
     assert u.u8(0x1C1EE8 + 12 * 1 + 9) == 3                                # FOCUS cursor back in the stock table
     assert u.u8(row["SNAP DIST"] + 9) == 5                                 # kmbuf refilled from the bytes
     # a commit from a saved record (r0 > 1) and a commit of a page kmbuf does not show write no row byte
@@ -349,55 +352,94 @@ def test_gr2_shooting_hooks_are_stock_in_the_other_layouts_and_under_essentials(
     u.watch.add(nxt)
     _load(u, 0)
     assert [c[0] for c in u.calls] == ["load_auto"] and not u.watch_hits
-    assert _names(u, res(r, "kf_menu5__kmbuf"), 22) == SHOOT_AUTO
+    assert _names(u, res(r, "kf_menu5__kmbuf"), len(SHOOT_AUTO)) == SHOOT_AUTO
     u.uc.mem_write(res(r, "koma_ess"), b"\x00")
     _load(u, 0)
     assert u.watch_hits                                                    # FULL: the chain runs bwrecipes' hook
 
 
-def test_gr2_edit_recipe_from_shooting():
-    r, u = _shoot()
-    kmv, v = res(r, "kf_menu5__kmv"), res(r, "kf_menu5__vars")
-    erow = SHOOT_AUTO.index("EDIT RECIPE") + 1
-    _load(u, 0)
-    u.uc.mem_write(0x1C23B8, b"\x00")                                    # page 0 (AUTO), mode app tab, row state
-    u.uc.mem_write(0x1C23B9, b"\x01")
+def test_imgset_right_opens_the_editor_in_every_layout():
+    """Look IA: RIGHT with the IMG SET option list open (state 3) on a still page (AUTO: page 0) -> kright: the
+    highlighted look (0x1c23ef) becomes the row value and the active look, the stock header RIGHT runs with the editor
+    pending under slot 1; after it returns, imgdone. The ghost entry, another row, the row state and ESSENTIALS: stock.
+    GR II: the row is in kmbuf; 5-TAB / STOCK+KOMA: the stock AUTO table (row 5)."""
+    for layout in (2, 0, 1):
+        r, u = _shoot(layout)
+        kmv, v = res(r, "kf_menu5__kmv"), res(r, "kf_menu5__vars")
+        _load(u, 0)
+        tbl = word(u, 0x1C23C0)
+        n = SHOOT_AUTO.index("IMG SET") + 1 if layout == 2 else 5
+        row = tbl + 12 * (n - 1)
+        assert word(u, row + 4) == res(r, "kf_bwrecipes__imgopts"), layout
+        u.uc.mem_write(0x1C23B8, b"\x00")
+        u.uc.mem_write(0x1C23B9, b"\x01")
 
-    rrow = res(r, "kf_menu5__kmbuf") + 12 * SHOOT_AUTO.index("RECIPE")
-
-    def right(row, recipe=1):
-        u.uc.mem_write(rrow + 9, bytes([recipe + 1]))                      # RECIPE as chosen on this page
-        u.uc.mem_write(0x1C23EE, bytes([row]))
-        u.uc.mem_write(0x1C23F0, b"\x02")
+        def right(entry, state=3, at=n):
+            u.uc.mem_write(0x1C23EE, bytes([at]))
+            u.uc.mem_write(0x1C23EF, bytes([entry]))
+            u.uc.mem_write(0x1C23F0, bytes([state]))
+            u.uc.mem_write(0x1BEFE2, b"\x01" if state == 3 else b"\x00")    # the stock list-open flag (0x6f3a8)
+            u.calls.clear()
+            return u.thumb(res(r, "kf_menu5__kright"), {_R0: 0x17})
+        right(2, at=n - 1)                                                  # another row: stock RIGHT, untouched
+        assert u.calls == [("stock_right", 0x17)] and u.u8(0x1C23F0) == 3 and u.u8(kmv + 1) == 0
+        right(2, state=2)                                                   # row state (opens the list): stock
+        assert u.calls == [("stock_right", 0x17)] and u.u8(ACT) == 0
+        right(22)                                                           # the ghost slot: stock (no detail)
+        assert u.calls == [("stock_right", 0x17)] and u.u8(ACT) == 0
+        right(4)                                                            # HARD MONO: header RIGHT -> SETUP app
+        assert u.calls[-1] == ("stock_right", 0x17) and u.u8(0x1C23F0) == 0 and u.u8(v + 1) == 1, layout
+        assert (u.u8(ACT), u.u8(row + 9), u.u8(0x1B030), u.u8(0x1C23EF), u.u8(0x1BEFE2)) == (4, 4, 6, 0, 0), layout
+        u.uc.mem_write(kmv + 1, b"\x01")                                    # (what the SETUP app saw)
+        u.uc.mem_write(0x1C23B9, b"\x02")
+        ked = res(r, "kf_menu5__kedpend")
+        u.watch.add(ked)
+        u.watch_hits.clear()
+        u.thumb(res(r, "kf_menu5__setup_enter"), {_R0: 2})                  # setup_enter: the editor is shown
+        assert word(u, 0x1C23E0) == res(r, "kf_menu5__tblE") and u.u8(kmv + 1) == 0
+        assert [a for a, _ in u.watch_hits][:1] == [ked]                     # swapped in before the first redraw
         u.calls.clear()
-        return u.thumb(res(r, "kf_menu5__kright"), {_R0: 0x17})
-    right(erow - 1)                                                         # another row: stock RIGHT, untouched
-    assert u.calls == [("stock_right", 0x17)] and u.u8(0x1C23F0) == 2 and u.u8(kmv + 1) == 0
-    assert right(erow, recipe=0) == 0 and u.calls == []                    # recipe OFF: nothing to edit
-    right(erow)                                                             # EDIT RECIPE: header RIGHT -> SETUP app
-    assert u.calls[-1] == ("stock_right", 0x17) and u.u8(0x1C23F0) == 0 and u.u8(v + 1) == 2
-    u.uc.mem_write(kmv + 1, b"\x01")                                       # (what the SETUP app saw, cleared on return)
-    u.uc.mem_write(0x1C23B9, b"\x02")
-    ked, rdw = res(r, "kf_menu5__kedpend"), res(r, "kf_menu5__redraw")
-    u.watch |= {ked, rdw}
-    u.watch_hits.clear()
-    u.thumb(res(r, "kf_menu5__setup_enter"), {_R0: 2})                     # setup_enter: the editor is shown
-    assert word(u, 0x1C23E0) == res(r, "kf_menu5__tblE") and u.u8(kmv + 1) == 0
-    assert [a for a, _ in u.watch_hits][:1] == [ked]                       # swapped in before the first redraw
-    u.calls.clear()
-    assert u.thumb(res(r, "kf_menu5__classify"), {_R0: 0x10}) == 9         # LEFT in the editor: stock exit (case 9)
-    assert u.calls == [("stock_classify", 0x10)] and u.u8(0x1C23F0) == 0 and u.u8(kmv + 2) == 1 and u.u8(v) == 0
-    u.uc.mem_write(0x1C23B9, b"\x01")
-    u.uc.mem_write(0x1C23B8, b"\x00")
-    u.uc.mem_write(0x1C23EE, bytes([erow]))
-    u.uc.mem_write(0x1C23F0, b"\x02")
-    u.calls.clear()
-    u.thumb(res(r, "kf_menu5__kright"), {_R0: 0x17})                       # the SETUP app returns after that LEFT
-    assert (u.u8(0x1C23EE), u.u8(0x1C23ED), u.u8(0x1C23F0)) == (erow, 2, 2)          # cursor back on EDIT RECIPE
-    assert "redraw" in [c[0] for c in u.calls]
-    assert u.u8(kmv + 2) == 0
+        assert u.thumb(res(r, "kf_menu5__classify"), {_R0: 0x10}) == 9      # LEFT in the editor: stock exit (case 9)
+        assert u.calls == [("stock_classify", 0x10)] and u.u8(kmv + 2) == 1 and u.u8(v) == 0
+        u.uc.mem_write(0x1C23B9, b"\x01")
+        right(1)                                                            # STANDARD; the SETUP app returns (LEFT)
+        assert (u.u8(0x1C23EE), u.u8(0x1C23ED), u.u8(0x1C23F0)) == (n, (n - 1) // 5 + 1, 2), layout
+        assert "redraw" in [c[0] for c in u.calls] and u.u8(kmv + 2) == 0
+        assert (u.u8(ACT), u.u8(0x1B030), u.u8(row + 9)) == (0, 1, 1)      # imgdone: STANDARD at defaults -> NORMAL
+    u.uc.mem_write(res(r, "koma_ess"), b"\x01")                              # ESSENTIALS: stock
+    right(4)
+    assert u.calls == [("stock_right", 0x17)] and u.u8(ACT) == 0
     r0 = link([F.make("menu5")])                                            # no MENU LAYOUT row: no GR II code at all
     assert not {"kf_menu5__krowmap", "kf_menu5__kdir2", "kf_menu5__kmbuf", "kf_menu5__kright"} & set(r0.symbols)
+
+
+def test_ghost_normal_after_editing_standard_in_every_layout():
+    """Ghost NORMAL, in 5-TAB, STOCK+KOMA and GR II through the real hook chains: STANDARD edited,
+    then 0x1b030 = 1 with no look id (reset / recall) -> the displayed IMG SET row (stock table or kmbuf) shows the
+    ghost NORMAL (count 22, cursor 22); a commit from the cursors keeps plain NORMAL, id 0; the ADJ lever lists it."""
+    from koma.features import bwrecipes as BW
+    normal = int.from_bytes(fw.ram(BW.IMG_OPTS + 4, 4), "big")
+    for layout in (0, 1, 2):
+        r, u = _shoot(layout)
+        u.stub(BW.SITE_ADJ_OPEN[1], "adj_open")
+        rec = bytes([1, 6, 4, 4, 4, 3, 3, 3, 2, BW.STANDARD["type"]])
+        x = 0x5A
+        for b in rec:
+            x ^= b
+        u.uc.mem_write(BW.STDREC, rec + bytes([BW.VALID, x]))     # STANDARD edited (CONTRAST +2)
+        u.uc.mem_write(ACT, b"\x00")
+        u.uc.mem_write(0x1B030, b"\x01")
+        _load(u, 0)
+        tbl = word(u, 0x1C23C0)
+        n = SHOOT_AUTO.index("IMG SET") + 1 if layout == 2 else 5
+        row = tbl + 12 * (n - 1)
+        assert (u.u8(row + 8), u.u8(row + 9)) == (22, 22), layout
+        assert word(u, word(u, row + 4) + 4 * 21) == normal, layout
+        u.thumb(0x58882, {_R0: 0}, stop=0x58886)                   # AUTO commit from the cursors
+        assert (u.u8(0x1B030), u.u8(ACT)) == (1, 0), layout
+        u.thumb(BW.SITE_ADJ_OPEN[0], {}, stop=BW.SITE_ADJ_OPEN[0] + 4)
+        cnt = u.u8(BW.ADJ_ITEM + 4)
+        assert word(u, word(u, BW.ADJ_ITEM) + 4 * (cnt - 1)) == normal and u.u8(BW.ADJD + 9) == cnt, layout
 
 
 def test_gr2_state_is_resident_outside_the_layout_overlays():

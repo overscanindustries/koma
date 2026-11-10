@@ -5,13 +5,15 @@
 // the cache answers when the network fails or refuses (a launch from the home screen carries no ?token=).
 // Registered by the page only over http(s), with the page's ?token= on the script URL (phone mode needs it).
 'use strict';
-const CACHE = 'koma-setup-v1';
+// v2: under komabridge this page lives at /legacy and / is the Koma app (whose hashed assets this worker does not
+// cache), so the shell caches /legacy, never /; activating v2 drops v1's cache, which could hold / (a blank page offline).
+const CACHE = 'koma-setup-v2';
 const TOKEN = new URL(self.location.href).searchParams.get('token') || '';
-const FROM_BRIDGE = new URL('./', self.location.href).pathname === '/';  // komabridge.py serves the page at /
-const SHELL = FROM_BRIDGE ? ['./', './settings-map.json', './manifest.webmanifest']
+const FROM_BRIDGE = new URL('./', self.location.href).pathname === '/';  // komabridge.py serves the page at /legacy
+const SHELL = FROM_BRIDGE ? ['./legacy', './settings-map.json', './manifest.webmanifest']
   : ['./koma-setup.html', '../settings-map.json', './manifest.webmanifest'];
-const LATER = ['../../build/koma04.grmod', '../../build/koma04w.grmod', '../../build/SHA256SUMS',
-  '../../../build/koma04.grmod', '../../../build/koma04w.grmod', '../../../build/SHA256SUMS'];
+const LATER = ['../../analysis/koma-0.4-candidate/koma04.grmod', '../../analysis/koma-0.4-candidate/SHA256SUMS',
+  '../../../analysis/koma-0.4-candidate/koma04.grmod', '../../../analysis/koma-0.4-candidate/SHA256SUMS'];
 
 function key(u) { const x = new URL(u, self.location.href); x.search = ''; x.hash = ''; return x.href; }
 function withToken(u) {

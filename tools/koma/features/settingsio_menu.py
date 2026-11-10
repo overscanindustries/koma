@@ -4,7 +4,6 @@ Companion of settingsio (which is transient and so cannot carry rows or resident
 
   MENU LAYOUT    0x1b8bb  5-TAB / STK+KOMA / GR II   mode byte, honoured at the next boot by menu5's init: STK+KOMA =
                                                      mode page | KOMA | stock SETUP; GR II falls back to 5-TAB
-                                                     (content project)
   KOMA FEATURES  0x1b8bc  FULL / ESSENTIAL           mode byte, honoured at the next boot by the installer: ESSENTIAL
                                                      skips the inits and records of features outside
                                                      features.ESSENTIAL (linker.essential_split)

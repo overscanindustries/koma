@@ -1,6 +1,6 @@
 """telemetry: once per boot, at install, write /ATA1/KOMALOG.TXT (overwrite) with what the ADJ probe measured.
 
-Port of the ADJ telemetry probe to an invisible Koma feature.
+Port of the ADJ telemetry probe (tools/adj_probe.py) to an invisible Koma feature.
 It has no hooks, patches or menu rows: only an init, and it is transient (code + log text stay in the body, which the
 loader frees after install: 0 resident bytes). The init runs after the installer has allocated and relocated the
 resident block (installer step 6), so the pool search sees Koma resident. The whole transient body (installer, records,
@@ -33,7 +33,8 @@ from ..feature import Check, Feature
 
 NAME = "telemetry"
 SUMMARY = "boot telemetry log /ATA1/KOMALOG.TXT (CPSR, CP15, ticks, pool headroom, SMC check)"
-OPTIONS = {"cp15": "on (default) | off: skip the CP15 reads. A core without CP15 would hang at stage 3"}
+OPTIONS = {"cp15": "on (default) | off: skip the CP15 reads. A core without CP15 would hang at stage 3",
+           "clock": "off (default) | on: add a CLOCK line = word 0x1b8e0, clockkeep's boot result (clockkeep.describe)"}
 
 LOG_PATH = "/ATA1/KOMALOG.TXT"
 HEADER = b"KOMA TLM V1\n"
@@ -54,9 +55,16 @@ CREATE, WRITE, CLOSE = 0x55CF4, 0x560EC, 0x55F0C
 TICK, TMA, TMB = 0x2358DC, 0x12010004, 0x1201000C
 
 
-def template() -> bytes:
+CLOCK_FIELD, CLOCK_WORD = "CLOCK", 0x1B8E0     # telemetry.clock=on: one extra line before END (clockkeep's result)
+
+
+def fields_for(clock: bool = False) -> list:
+    return FIELDS + [CLOCK_FIELD] if clock else FIELDS
+
+
+def template(clock: bool = False) -> bytes:
     t = bytearray(HEADER)
-    for n in FIELDS:
+    for n in fields_for(clock):
         t += n.ljust(5).encode() + b"=--------\n"
     t += TRAILER
     return bytes(t)
@@ -66,13 +74,17 @@ def field_index(name: str) -> int:
     return FIELDS.index(name)
 
 
-def source(cp15: bool) -> str:
-    f = {n: i for i, n in enumerate(FIELDS)}
-    text = template()
+def source(cp15: bool, clock: bool = False) -> str:
+    f = {n: i for i, n in enumerate(fields_for(clock))}
+    text = template(clock)
 
     def rec(name):
         return f"movs r1, #{f[name]}\n    bl rec"
 
+    clock_src = f"""
+    ldr r0, =0x{CLOCK_WORD:x}         @ clockkeep result word (its init ran before this one)
+    ldr r0, [r0]
+    {rec(CLOCK_FIELD)}""" if clock else ""
     if cp15:
         stage3 = f"""
     ldr r0, [sp, #24]           @ CPSR
@@ -200,7 +212,7 @@ pool_done:
     movs r0, r5
     {rec('POOL')}
     movs r0, r6
-    {rec('PTRY')}
+    {rec('PTRY')}{clock_src}
     movs r0, #1
     {rec('STAGE')}
     bl emit
@@ -412,7 +424,7 @@ text:
 
 
 def _cp15(opts) -> bool:
-    # NOTE: MRC p15 hangs the real GR DIGITAL core (O-hw 2026-11-06). Camera builds MUST pass telemetry.cp15=off.
+    # NOTE: MRC p15 hangs the real GR DIGITAL core (verified on a camera). Camera builds MUST pass telemetry.cp15=off.
     v = str(opts.get("cp15", "on")).lower()
     if v in ("on", "1", "yes", "true"):
         return True
@@ -421,11 +433,23 @@ def _cp15(opts) -> bool:
     raise ValueError(f"telemetry: cp15 must be on or off, not {v!r}")
 
 
+def _clock(opts) -> bool:
+    v = str(opts.get("clock", "off")).lower()
+    if v in ("on", "1", "yes", "true"):
+        return True
+    if v in ("off", "0", "no", "false"):
+        return False
+    raise ValueError(f"telemetry: clock must be on or off, not {v!r}")
+
+
 def make(opts):
-    cp15 = _cp15(opts)
+    cp15, clock = _cp15(opts), _clock(opts)
+    o = dict(cp15="on" if cp15 else "off")
+    if clock:                       # only recorded when on: default builds keep their bytes and build id
+        o["clock"] = "on"
     return Feature(
-        name=NAME, version="1.0", summary=SUMMARY, options=dict(cp15="on" if cp15 else "off"),
-        source=source(cp15), init="tlm_init", transient=True,
+        name=NAME, version="1.0", summary=SUMMARY, options=o,
+        source=source(cp15, clock), init="tlm_init", transient=True,
         checks=[Check(CREATE, fw.ram(CREATE, 4), "file create 0x55cf4 prologue (log)"),
                 Check(WRITE, fw.ram(WRITE, 4), "file write 0x560ec prologue (log)"),
                 Check(CLOSE, fw.ram(CLOSE, 4), "file close 0x55f0c prologue (log)")],
@@ -438,11 +462,11 @@ def parse(data: bytes) -> dict:
     """Parse a log (complete or truncated). Unknown or damaged lines are skipped, never fatal."""
     data = bytes(data)
     out = dict(bytes=len(data), header_ok=data.startswith(HEADER), trailer_ok=data.endswith(TRAILER),
-               fixed_length=len(data) == len(template()), fields={})
+               fixed_length=len(data) in (len(template()), len(template(True))), fields={})
     for line in data.split(b"\n"):
         if len(line) == LINE - 1 and line[5:6] == b"=":
             name, val = line[:5].decode("ascii", "replace").strip(), line[6:14].decode("ascii", "replace")
-            if name in FIELDS:
+            if name in FIELDS or name == CLOCK_FIELD:
                 try:
                     out["fields"][name] = None if val == "--------" else int(val, 16)
                 except ValueError:
@@ -458,7 +482,8 @@ def describe(fields: dict) -> dict:
                   1: "stage 1 only: the generated-code stage did not finish (crash/hang there, or log rewrite failed)",
                   2: "stage 2: the CP15 stage did not finish (a CP15 trap would stop here)",
                   3: "all stages complete"}.get(g("STAGE"), f"unexpected {g('STAGE')}")
-    d["BUILD"] = None if g("BUILD") is None else f"{g('BUILD'):08X} (KOMA V0.1 {g('BUILD'):08X})"
+    from ..linker import KOMA_VERSION       # the log holds only the id; the version is this tree's (module header)
+    d["BUILD"] = None if g("BUILD") is None else f"{g('BUILD'):08X} (KOMA {KOMA_VERSION} {g('BUILD'):08X})"
     d["RES"] = hx(g("RES"))
     cn = g("CANRY")
     if cn is not None and g("RES") is not None:

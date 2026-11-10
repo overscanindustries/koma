@@ -1,4 +1,4 @@
-# Vendored from the earlier menu-5tab menu5v2.py (five-tab menu v2 header band). Edits: imports, firmware/data paths, writers removed.
+# Vendored from analysis/menu-5tab/menu5v2.py (five-tab menu v2 header band). Edits: imports, firmware/data paths, writers removed.
 """5-tab menu module v2: v1 (menu5.py) plus an opaque header band that hides the stock tab artwork.
 
 Hardware bug in v1 (hw-photos/IMG_3374..3378): the menu background is a JPEG on the VIDEO plane, chosen by the

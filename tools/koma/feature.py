@@ -59,6 +59,9 @@ class Hook:
     why: str = ""
     smoke_reachable: bool = True     # False: `koma smoke` never visits this path (menu, playback, ...): SKIP, not FAIL
     rewrites_r0: bool = False        # True: the handler deliberately passes a different r0 to `next` (selfcheck allows)
+    # Non-empty: waive the linker's phase-A (pre-0x281ee line) rule for this one site, with the reason. Only for a
+    # single 4-byte bl rewrite whose caller cannot be mid-way through the patched instruction; recorded in the manifest.
+    early_ok: str = ""
 
     @property
     def end(self):
@@ -158,7 +161,7 @@ class Feature:
     # instead of the resident block. Needs `init`; no hooks, redirects, pointers, exports or rows. `ldr rX, =label`
     # works for its own labels and for resident ones ($koma.manifest, ...) through transient relocations.
     transient: bool = False
-    # Layout overlays (menu5's MENU LAYOUT tables): data-only
+    # Layout overlays (menu5's MENU LAYOUT tables; resident diet): data-only
     # sources, one per value of the settings byte `overlay_select`. Overlay 0 is assembled in place at the feature's
     # resident label `ovl` (the default; it must be the largest or the linker pads the area); overlays 1.. stay in the
     # transient body with every label aliased into that area (`name` = ovl + its offset in the overlay), and a
@@ -167,3 +170,7 @@ class Feature:
     # only while that overlay is the selected one.
     overlays: list = field(default_factory=list)
     overlay_select: int | None = None
+    # Image RAM the feature's init writes itself, with IRQs on: (start, end, why). For bytes whose stock value differs
+    # between Koma firmware images (fwtag's MakerNote tag slot), so a DATA record's fixed before-bytes cannot cover
+    # them. The linker keeps them inside the payload and clear of every record; selfcheck allows exactly these.
+    ram_writes: list = field(default_factory=list)

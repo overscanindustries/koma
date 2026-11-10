@@ -1,4 +1,4 @@
-"""fastkeys: records match the speed lane's modules; init posts period 20 only from the stock state."""
+"""fastkeys: records match the reference modules; init posts period 20 only from the stock state."""
 from __future__ import annotations
 
 import struct
@@ -18,7 +18,7 @@ def _unit(period=50, qope=1):
     return u
 
 
-def test_before_bytes_match():
+def test_before_bytes_match():          # reference byte equality: test_provenance (research checkout only)
     for p in fastkeys.make({}).patches:
         assert fw.ram(p.addr, len(p.before)) == p.before
 

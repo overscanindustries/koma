@@ -1,4 +1,4 @@
-# Vendored from the earlier menu-5tab menu5.py (five-tab menu v1). Edits: imports, firmware/data paths, writers removed.
+# Vendored from analysis/menu-5tab/menu5.py (five-tab menu v1). Edits: imports, firmware/data paths, writers removed.
 """5-tab menu module for GR DIGITAL 2.40 (resident card module; offline build only).
 
 Tabs (strip drawn by our own Thumb code in the menu renderer): STILL MOVIE PLAY CUSTOM SETUP.

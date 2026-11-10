@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA-1 VBUS pulse decoder</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',system-ui,sans-serif;background:#f5f5f5;color:#2d3142;padding:3rem 2rem}
+.frame{max-width:1280px;margin:0 auto}
+.eyebrow{font-family:'Geist Mono',ui-monospace,monospace;font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:#4f5d75;margin-bottom:.5rem}
+h1{font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}
+.sub{font-size:.9rem;color:#4f5d75;max-width:70ch;margin-bottom:1.5rem;line-height:1.5}
+svg{width:100%;min-width:960px;display:block}
+.foot{font-family:'Geist Mono',ui-monospace,monospace;font-size:.66rem;color:#4f5d75;border-top:1px solid rgba(45,49,66,.12);margin-top:1.5rem;padding-top:.75rem;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">CA-1 decoder · internals 07</p>
+<h1>CA-1 VBUS pulse decoder</h1>
+<p class="sub">Stock firmware reads one GPIO pin (VBUS sense, pin 0x38) and decodes pulse widths into shutter key events. A 500 ms high level is treated as a PC cable and kills the decoder until power-off.</p>
+<svg viewBox="0 0 1200 604" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ca1-vbus-decoder-title ca1-vbus-decoder-desc">
+<title id="ca1-vbus-decoder-title">CA-1 VBUS pulse decoder</title>
+<desc id="ca1-vbus-decoder-desc">Pulse-width windows measured on VBUS and the decoder state machine that turns them into RL1 and RL2 key events, with the 500 ms PC-mode lock-out.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<rect x="24" y="36" width="1152" height="104" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="36" y="52" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">PULSE WIDTH CLASSIFIER 0X131A78 (TICKS = MS, I STRONG; NOT TO SCALE)</text>
+<rect x="24" y="160" width="1152" height="324" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.18)" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="36" y="176" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">STATE MACHINE 0X131B3A, STATE S AT 0X2023F4</text>
+<path d="M248 252 L400 252" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M400 276 L248 276" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M600 252 L752 252" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M852 232 L852 212 A8 8 0 0 0 844 204 L156 204 A8 8 0 0 0 148 212 L148 232" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M500 292 L500 408" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M148 292 L148 428 A8 8 0 0 0 156 436 L400 436" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M600 438 L752 438" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<rect x="292" y="232" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="324.0" y="241" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SHORT 10-60</text>
+<rect x="288" y="284" width="72" height="12" rx="2" fill="#f5f5f5"/>
+<text x="324.0" y="293" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">SHORT: RL1 UP</text>
+<rect x="640" y="232" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="674.0" y="241" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">LONG &gt;120 MS</text>
+<rect x="472" y="184" width="52" height="12" rx="2" fill="#f5f5f5"/>
+<text x="498.0" y="193" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ANY PULSE</text>
+<rect x="508" y="344" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="542.0" y="353" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HIGH &gt;500 MS</text>
+<rect x="240" y="416" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="274.0" y="425" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">HIGH &gt;500 MS</text>
+<rect x="644" y="418" width="60" height="12" rx="2" fill="#f5f5f5"/>
+<text x="674.0" y="427" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">VBUS DROPS</text>
+<rect x="32" y="64" width="208" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="64" width="208" height="60" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="136.0" y="84" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">under 10 ms</text>
+<text x="136.0" y="98" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">result 5: invalid</text>
+<text x="136.0" y="110" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no key event</text>
+<rect x="264" y="64" width="208" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="264" y="64" width="208" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="368.0" y="84" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">10 - 60 ms</text>
+<text x="368.0" y="98" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">short pulse: 3 (one), 4 (two)</text>
+<text x="368.0" y="110" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">half press or release</text>
+<rect x="496" y="64" width="208" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="496" y="64" width="208" height="60" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="600.0" y="84" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">60 - 120 ms</text>
+<text x="600.0" y="98" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">result 5: invalid</text>
+<text x="600.0" y="110" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ignored</text>
+<rect x="728" y="64" width="208" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="728" y="64" width="208" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="832.0" y="84" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">over 120, up to 500 ms</text>
+<text x="832.0" y="98" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">result 2: FULL</text>
+<text x="832.0" y="110" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">RL2 press, only from S1</text>
+<rect x="960" y="64" width="208" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="960" y="64" width="208" height="60" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="1064.0" y="84" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">over 500 ms</text>
+<text x="1064.0" y="98" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">result 0: ATTACH</text>
+<text x="1064.0" y="110" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">PC cable: app state 9</text>
+<rect x="48" y="232" width="200" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="48" y="232" width="200" height="60" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="148.0" y="252" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S0 idle</text>
+<text x="148.0" y="266" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">pin armed for assert</text>
+<text x="148.0" y="278" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no key held</text>
+<rect x="400" y="232" width="200" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="400" y="232" width="200" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="500.0" y="252" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S1 half press</text>
+<text x="500.0" y="266" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">emits (0x1a,1) (0x1a,2)</text>
+<text x="500.0" y="278" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">= RL1 press</text>
+<rect x="752" y="232" width="200" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="752" y="232" width="200" height="60" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="852.0" y="252" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S2 full press</text>
+<text x="852.0" y="266" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">emits (0x1b,1) (0x1b,2)</text>
+<text x="852.0" y="278" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">= RL2 press</text>
+<rect x="400" y="408" width="200" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="400" y="408" width="200" height="60" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="500.0" y="428" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S3 PC attach</text>
+<text x="500.0" y="442" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">emits (8,1) USB press</text>
+<text x="500.0" y="454" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">app state 9, USB mode</text>
+<rect x="752" y="408" width="200" height="60" rx="6" fill="#f5f5f5"/>
+<rect x="752" y="408" width="200" height="60" rx="6" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.50)" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="852.0" y="428" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">S4 dead</text>
+<text x="852.0" y="442" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">emits (8,0) on VBUS drop</text>
+<text x="852.0" y="454" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">pin masked, no way back</text>
+<text x="640" y="336" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">From S2 any pulse releases both keys, (0x1b,0) (0x1a,0).</text>
+<text x="640" y="356" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">A lone FULL in S0 emits only (0x1a,0): no shot from idle.</text>
+<text x="32" y="516" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">Never hold VBUS high for 500 ms or longer: S4 is cleared only by power-off. The Arduino pulser sketch clamps every pulse to 450 ms.</text>
+<text x="32" y="536" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">Key codes: 0x1a RL1, 0x1b RL2, 8 USB. Actions: 1 press, 2 repeat, 0 release. Derived from code and emulated; never tried on a camera.</text>
+<line x1="32" y1="564" x2="1168" y2="564" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="32" y="584" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="100" y="574" width="20" height="12" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="128" y="583" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">window / state</text>
+<rect x="223" y="574" width="20" height="12" rx="3" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="251" y="583" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">ignored width</text>
+<rect x="342" y="574" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="370" y="583" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">PC-mode lock-out</text>
+<rect x="475" y="574" width="20" height="12" rx="3" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.50)" stroke-width="1" stroke-dasharray="4,4"/>
+<text x="503" y="583" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">dead end</text>
+<line x1="569" y1="580" x2="593" y2="580" stroke="#4f5d75" stroke-width="1.2"/>
+<polygon points="593,577 599,580 593,583" fill="#4f5d75"/>
+<text x="607" y="583" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">pulse</text>
+<line x1="659" y1="580" x2="683" y2="580" stroke="#eb6c36" stroke-width="1.2"/>
+<polygon points="683,577 689,580 683,583" fill="#eb6c36"/>
+<text x="697" y="583" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">over 500 ms</text>
+</svg>
+<p class="foot">Sources: analysis/vbus-shutter/README.md section 1 (classifier and state tables), section 2 (emulated arms), section 3 (CA-1 pulses 30 / 150 ms). Evidence class: STATIC and EMU; pulse timings from third-party descriptions. Never tried on a camera.</p>
+</div>
+</body>
+</html>

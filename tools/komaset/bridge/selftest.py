@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""selftest: the USB checks of a Koma camera session as one command.
+"""selftest: the hardware USB steps (connect, settings, photos, tether shot, live view, -KSET/-KGET) as one command.
 
   python3 tools/komaset/bridge/komabridge.py --real --selftest --out ~/koma-session/
   python3 tools/komaset/bridge/komabridge.py --mock --mock-tether --selftest --out /tmp/koma-mock/   (simulated)
@@ -61,8 +61,8 @@ EV_OFF = 0x053
 EV_VALUES = sorted(KB.KSET_STOCK[EV_OFF])
 EV_SETTLE_S = 0.5           # between the EV set and its restore (the camera is briefly busy after an EV change)
 EV_RESTORE_WAIT_S = 15.0    # the restore retries a `451 -KSET busy` this long (the set uses the bridge's 5 s;
-                            # 8.1 s of busy seen once on hardware, 2026-11-07)
-EXPECTED_TAG = ("Rev024M", "240K2")  # MakerNote tag 2 prefix: main = flash-1 loader, spare = Koma 2 firmware
+                            # 8.1 s of busy seen once on hardware)
+EXPECTED_TAG = ("Rev024M", "240K")   # MakerNote tag 2 prefix: the loader Koma firmware, or 240K (the SDHC firmware's 240K2, a release's 240K1.0)
 STEPS = ((1, "connect", "Connect, -VER, USB speed"), (2, "settings", "Settings pull (PARAM.CUR)"),
          (3, "komalog", "KOMALOG.TXT pull and decode"), (4, "photos", "Photos list"),
          (5, "throughput", "Throughput (RETR)"), (6, "tether", "Tether shot"), (7, "live", "Live view modes 0/1/2"),
@@ -168,7 +168,7 @@ class SelfTest:
         return name
 
     def _read_optional(self, path: str) -> bytes | None:
-        """RETR of a card-root file, or None on `450` (absent). The card root is never listed (HW 2026-11-08)."""
+        """RETR of a card-root file, or None on `450` (absent). The card root is never listed."""
         return self.link.run(lambda s: KB.read_root_file(s, path))
 
     def _koma_by_ksta(self):
@@ -264,8 +264,7 @@ class SelfTest:
         if not st["connected"]:
             raise Abort(st["message"])
         step["firmware"] = st["camera"]["firmware"]
-        step["details"].append("card root files fetched by RETR (root listing skipped; -NLST /EXT0 hangs on big cards, "
-                               "HW 2026-11-08)")
+        step["details"].append("card root files fetched by RETR (root listing skipped; -NLST /EXT0 hangs on big cards)")
         step["details"].append(f"-VER: {st['camera']['firmware']}; USB mode {st['usb_mode']}; "
                                f"backend {st['backend']}{' (SIMULATED)' if st['simulated'] else ''}")
         step["status"] = PASS
@@ -276,7 +275,7 @@ class SelfTest:
             r = KB.get_settings(self.link)
         except KB.BridgeError as error:
             if error.extra.get("code") == "no_param_cur":
-                step["summary"] = "no PARAM.CUR on the card (needs the Koma settingsio feature)"
+                step["summary"] = "no PARAM.CUR on the card (needs Koma settingsio)"
                 return
             raise
         data = base64.b64decode(r["data"])
@@ -349,7 +348,7 @@ class SelfTest:
                              "bytes_per_s": int(n / s) if s > 0 else None}
             parts.append(f"JPEG {_rate(n, s)}")
             step["details"].append(f"RETR {big['path']}: {n:,} B in {s:.3f} s = {_rate(n, s)} "
-                                   "(stock RETR ran about 4.09 MB/s on the main, 2026-11-06)")
+                                   "(stock RETR ran about 4.09 MB/s on a camera)")
         if self.cur1 is not None:
             n, s = self._timed_retr(KB.PARAM_CUR)
             rates["param_cur"] = {"bytes": n, "seconds": round(s, 4), "bytes_per_s": int(n / s) if s > 0 else None}
@@ -383,7 +382,7 @@ class SelfTest:
         return True
 
     def _relive(self, step):
-        """After a RETR or -INFO inside the remote session the camera drops live view (hardware, 2026-11-07): re-send
+        """After a RETR or -INFO inside the remote session the camera drops live view (seen on hardware): re-send
         diaset,4 and wait for -LVFR 0 to answer 150 (KB.wait_lvfr, link.lvfr_wait_s) before step 7 or 8 goes on."""
         if not (self.live_dropped and self.link.remote_on):
             return
@@ -438,7 +437,7 @@ class SelfTest:
     def _makernote(self, path: Path) -> tuple[str | None, str]:
         meta = VS._metadata()
         if meta is None:
-            return None, "MakerNote: reader tools/komaset/makernote.py not loadable"
+            return None, "MakerNote: reader tools/spare_test/metadata.py not loadable"
         try:
             rev = meta.read(path).get("rev")
         except Exception as error:  # noqa: BLE001

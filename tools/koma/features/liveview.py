@@ -43,14 +43,13 @@ Payload header (16 bytes, big-endian; frame bytes follow at +16):
 
 Scratch memory (no pool allocation): the gap between the monitor ring end (CMEM_MONI_START 0x8470000 + 0xfff00 =
 0x856ff00) and CMEM_STILL_TOP_NEW 0x85c5e00, which only movie mode (audio 0x856ff00, display copies
-0x858f400/0x85a7a00) and non-live display paths (0xf144c's 0x8571d00, playback 0x112bdc's 0x8570000) use. The frames
-lane's first proposal (Y 0x85c0000, C 0x860ec00, OUT 0x865d800) was dropped: 84,480 B from 0x85c0000 runs over
-CMEM_STILL_THUMB_Y 0x85c5e00, and 0x860ec00 / 0x865d800 lie inside CMEM_STILL_MASTER_Y (0x8605f00..), which every shot
-writes and the card writer may still read after live view resumes.
+0x858f400/0x85a7a00) and non-live display paths (0xf144c's 0x8571d00, playback 0x112bdc's 0x8570000) use. Placing the
+buffers after CMEM_STILL_TOP_NEW would not work: 84,480 B from 0x85c0000 runs over CMEM_STILL_THUMB_Y 0x85c5e00, and
+0x860ec00 / 0x865d800 lie inside CMEM_STILL_MASTER_Y (0x8605f00..), which every shot writes and the card writer may
+still read after live view resumes.
 
-v1.2 (2026-11-07): after the gate passes (modes 0/1), the handler calls 0x290de(2), the Auto Power Off hold tether
-issues (tether.py v1.3/v1.4), so a host that only pulls live frames keeps the camera on (hardware: APO 1 min fired
-while the probe sent only -NLST/-LVFR). State 2 under USB exists only after tether
+v1.2: after the gate passes (modes 0/1), the handler calls 0x290de(2), the Auto Power Off hold tether
+issues (tether.py v1.3/v1.4), so a host that only pulls live frames keeps the camera on. State 2 under USB exists only after tether
 diverged, and tether's exits restore the setting.
 
 Not touched: no flash or store-write routine, no settings byte, no menu row, no hook on stock code. Without tether
@@ -96,7 +95,7 @@ MODES = {0: (160, 120, 192), 1: (320, 240, 352)}          # dst w, h, stride (0x
 HDR = 16
 MAX_PAYLOAD = 0x10000 - HDR
 FLAG_TRUNC, FLAG_NOSYNC = 1, 2
-# mode 2 (OSD page pull): the OSD page table (table 0x1fba14: pages, width 0x168, height 0x120 allocated, stride 0xb4)
+# mode 2 (OSD page pull): tools/grdui/display.py (table 0x1fba14: pages, width 0x168, height 0x120 allocated, stride 0xb4)
 OSD_BASE_REG = 0x1200C080        # OSD DMA base, written only by 0x16f3b0; read by the stock getter 0x16f3a4
 OSD_PAGE_A, OSD_PAGE_B = 0x08422800, 0x0842F280
 OSD_W, OSD_H, OSD_STRIDE = 360, 240, 0xB4                  # 4 bpp, high nibble = left pixel
@@ -632,4 +631,4 @@ def make(opts):
         checks=[Check(a, fw.ram(a, n), w) for a, n, w in CHECKS])
 
 
-# `koma smoke` never attaches USB, so the handler is not on its path.
+# `koma smoke` never attaches USB, so the handler is not on its path; the emulator scenario drives it.

@@ -341,7 +341,7 @@ class Cli(unittest.TestCase):
         result, dest = self.get("RIMG0001.JPG")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("can write a filesystem repair", result.stdout)
-        self.assertIn("docs/internals/07-usb-protocol.md", result.stdout)
+        self.assertIn("research/usb-protocol.md note 3", result.stdout)
 
     # ---- anomalies during a transfer ----
     def test_anomaly_mid_transfer_says_power_cycle_and_does_not_retry(self):
@@ -876,8 +876,6 @@ class StageUpdate(unittest.TestCase):
     def setUpClass(cls):
         from tools.grdusb import stage
         cls.stage = stage
-        if not all((s.directory / p.source).exists() for s in stage.PAYLOAD_SETS.values() for p in s.payloads):
-            raise unittest.SkipTest("Ricoh's update files are not in firmware/ (see firmware/README.md)")
         cls.loaded = stage.load_payloads()
         cls.wire = stage.planned_wire(cls.loaded)
 

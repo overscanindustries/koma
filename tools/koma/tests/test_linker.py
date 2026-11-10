@@ -10,7 +10,7 @@ from _util import Feature, hook_feature, patch_feature
 
 from koma import features as F
 from koma.inspector import build_id_ok, describe, parse
-from koma.linker import KOMA_VERSION, CORE_EXPORTS, LinkError, link, mangle_source, ns
+from koma.linker import KOMA_VERSION, MIN_FIRMWARE_GEN, CORE_EXPORTS, LinkError, link, mangle_source, ns
 
 
 def default():
@@ -22,7 +22,10 @@ def test_default_build_layout_and_manifest():
     m = r.manifest
     assert len(r.module) == m["module"]["bytes"] <= 0x10000 + 0x14
     assert [f["name"] for f in m["features"]] == ["tone-r3", "snap15", "recipe-slots"]
-    assert m["version_string"] == f"KOMA V{KOMA_VERSION} {m['build_id']}"
+    assert m["version_string"] == f"KOMA V{KOMA_VERSION} {m['build_id']} G{MIN_FIRMWARE_GEN}"
+    assert m["menu_version"] == "2.40K" + ".".join(KOMA_VERSION.split(".")[:2]) and len(m["menu_version"]) <= 9
+    assert m["photo_tag"] == "240K" + ".".join(KOMA_VERSION.split(".")[:2]) and len(m["photo_tag"]) <= 7
+    assert m["min_firmware_gen"] == MIN_FIRMWARE_GEN
     p = parse(r.module)
     assert p["manifest"]["version"] == m["version_string"] and p["manifest"]["status"] == 0
     assert build_id_ok(p)

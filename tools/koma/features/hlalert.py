@@ -1,7 +1,6 @@
 """hlalert: Highlight Alert (blinkies) for the GR DIGITAL 2.40, three display paths, settings byte 0x1b8b9.
 
-Port of the earlier highlight-warning patch (histogram-mode blinkies at 0x2a0d8), extended to the normal live view and playback
-review, as the GR II has it.
+Histogram-mode blinkies at 0x2a0d8, extended to the normal live view and playback review, as the GR II has it.
 
 Paths (all draw only into transparent OSD pixels and undo only their own marks):
   hist  0x2a0d8 `bl 0x82e98` (OSD task 0x6a770, element 4, DISP 5 histogram): stock bars, then blink. Plane 1.
@@ -549,25 +548,27 @@ ctx_play:
     .byte 2, 3
 """
 
+# (addr, stock byte count or short hex, why), resolved by fw.pinned
 CHECKS = [
-    (0x2A0B8, "2805d10ff045f9862800d00b1c381c21f058f9522800d0031c011c38",
+    (0x2A0B8, 28,
      "0x2a090: DISP==5 && 0x1befe3 gate and histogram normalise before the hooked bl at 0x2a0d8"),
     (0x2A0E4, "0023a864", "0x2a090 literal: app-state struct (state at +0x10 = 0x23a874)"),
-    (0x2A0E8, "b580270221181c38f058f93e2800d0031c011c38f058ff28", "0x2a0e8: element-14 refresh before bl 0x837f0"),
-    (0x174C04, "47780000eafbdbfb", "Thumb stub -> 0x6bbfc (OSD flush)"),
-    (0xD4018, "e0600200e0800080e51f12e0e0600200e0810300e59f100ce2800d5de5d11000e2400903e12fff1e",
+    (0x2A0E8, 24, "0x2a0e8: element-14 refresh before bl 0x837f0"),
+    (0x174C04, 8, "Thumb stub -> 0x6bbfc (OSD flush)"),
+    (0xD4018, 40,
      "0xd4018: plane p shadow = 0x302d58 + (p-1)*0xa8c0"),
     (0xD3D48, "00302d58", "literal of 0xd4018"),
-    (0x6A78C, "e596007ce3a04000e2800001e586007c", "0x6a770: tick [0x1bed60+0x7c] += 1 per OSD-task wake"),
+    (0x6A78C, 16, "0x6a770: tick [0x1bed60+0x7c] += 1 per OSD-task wake"),
     (0x6A508, "001bed60", "literal of 0x6a770"),
     (0x82868, "002cf640", "0x825c8 literal: live Y plane pointer"),
-    (0x92D1C, "480047700023b068", "0x92d1c: zoom struct (step = byte +5 >> 1)"),
-    (0x95AFC, "4e728b702800d109", "monitor loop: every-4th-frame gate before the hooked bl 0x6e91c at 0x95b04"),
+    (0x92D1C, 8, "0x92d1c: zoom struct (step = byte +5 >> 1)"),
+    (0x95AFC, 8, "monitor loop: every-4th-frame gate before the hooked bl 0x6e91c at 0x95b04"),
     (0x95B08, "2805d003", "monitor loop: DISP==5 test of the hooked call's result"),
-    (0xF1D34, "4803688107c90fc90089584047700000002017fc", "0xf1d34: playback display buffer getter + literal"),
-    (0x8289A, "210b0189222892009021", "0x82892: playback histogram reads 0x2c0 (704) B per line ..."),
+    (0xF1D34, 20, "0xf1d34: playback display buffer getter + literal"),
+    (0x8289A, 10, "0x82892: playback histogram reads 0x2c0 (704) B per line ..."),
     (0x828A4, "20ff", "... and 0xff + 0xe1 = 480 lines"),
 ]
+CHECKS_SHA256 = "f8818a3a25e0d55c6674d1ba5bbf2b9954a0438609319504fad82aebf0e58fd6"
 
 
 def make(opts):
@@ -582,7 +583,7 @@ def make(opts):
                      mapbytes=MAP_BYTES, heapbytes=HEAP_BYTES, xtbytes=XT_BYTES,
                      stmask=sum(1 << s for s in LIVE_STATES), plane1=PLANE1, plane2=PLANE2, lstride=LIVE_STRIDE,
                      lstep=lstep, pstride=PLAY_STRIDE, plstep=PLAY_LSTEP)
-    checks = [Check(a, bytes.fromhex(h), w) for a, h, w in CHECKS]
+    checks = [Check(a, b, w) for a, b, w in fw.pinned(CHECKS, CHECKS_SHA256)]
     for c in checks:
         assert fw.ram(c.addr, len(c.before)) == c.before, f"hlalert check {c.addr:#x} does not match 2.40"
     return Feature(

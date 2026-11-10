@@ -4,7 +4,7 @@
   python3 tools/komaset/komaset.py dump PARAM.CUR [-o settings.txt]
   python3 tools/komaset/komaset.py apply settings.txt -o PARAM.DAT [--base PARAM.CUR] [--force]
   python3 tools/komaset/komaset.py diff A.bin B.bin
-  python3 tools/komaset/komaset.py merge --target spare.cur --source main.cur -o PARAM.DAT
+  python3 tools/komaset/komaset.py merge --target target.cur --source source.cur -o PARAM.DAT
   python3 tools/komaset/komaset.py check PARAM.bin
   python3 tools/komaset/komaset.py info
 
@@ -231,8 +231,8 @@ def ksio_tag(blk):
 
 
 def tag_problem(tgt, src):
-    """(is_refusal, text) for the firmware tag rule, or None. Never a refusal since 2026-11-07: the two bodies run the
-    same Koma module on different firmware tags (main Rev024M, spare 240K2), and the block layout is governed by the
+    """(is_refusal, text) for the firmware tag rule, or None. Never a refusal: cameras can run the
+    same Koma module on different firmware tags (Rev024M, 240K2), and the block layout is governed by the
     Koma settings version (0x8b4, checked separately) and the KSIO version, not the tag. Both KSIO and differing: a
     warning naming both tags (source first); the camera imports such a file with KSIO status 3. One KSIO: warn."""
     tt, ts = ksio_tag(tgt), ksio_tag(src)

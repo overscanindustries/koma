@@ -6,7 +6,7 @@ bwrecipes publishes the values of the recipe that applies to the next shot in it
 
 Hook: 0x117382 `bl 0x1173e8` (r0 = cp), the site selcolour uses (the two chain in build order; selcolour works on UV,
 fx on Y). The master resize 0x5e8f0 has fixed the geometry and the date imprint is written; the JPEG encode 0x10f984
-runs after 0x11703c returns. Plane (D, CHECKS): cp+0x54 = master Y
+runs after 0x11703c returns. Plane (derived from code, CHECKS): cp+0x54 = master Y
 (0x8605f00 at 8 MP), 8-bit planar; cp+0x5c u16 stride, cp+0x5e u16 width, cp+0x60 u16 lines.
 
 GRAIN (no table, no clamp): per word of 4 pixels, mask m = 7 in each byte whose value is in 16..239 (top nibble not
@@ -436,21 +436,22 @@ def source(grain=True, vig=True):
 
 # Bytes the pass depends on (2.40, D; the same as selcolour's, verified against the payload in make()).
 CHECKS = [
-    (0x11706C, "1de51de636593539", "0x11703c: r5 = cp+0x40, r6 = cp+0x60 (geometry fields below are [r5+0x1c/0x1e], [r6])"),
-    (0x1171F6, "6d60900a6da0900b8ba8", "0x11703c: resize job args: Y = [cp+0x54], UV = [cp+0x58], stride = h[cp+0x5c]"),
-    (0x117206, "8be8901188309012", "... width = h[cp+0x5e], lines = h[cp+0x60]"),
-    (0x117270, "a805f747fb3d2800d00d", "0x11703c: master resize 0x5e8f0; non-zero = error return (skips the hook)"),
-    (0x117358, "6d6191016da191028ba98199", "date imprint 0x13f0b4 args: Y [cp+0x54], UV [cp+0x58], stride h[cp+0x5c]"),
+    (0x11706C, 8, "0x11703c: r5 = cp+0x40, r6 = cp+0x60 (geometry fields below are [r5+0x1c/0x1e], [r6])"),
+    (0x1171F6, 10, "0x11703c: resize job args: Y = [cp+0x54], UV = [cp+0x58], stride = h[cp+0x5c]"),
+    (0x117206, 8, "... width = h[cp+0x5e], lines = h[cp+0x60]"),
+    (0x117270, 10, "0x11703c: master resize 0x5e8f0; non-zero = error return (skips the hook)"),
+    (0x117358, 12, "date imprint 0x13f0b4 args: Y [cp+0x54], UV [cp+0x58], stride h[cp+0x5c]"),
     (0x117380, "1c20", "0x117380: r0 = cp, then the hooked bl 0x1173e8 at 0x117382"),
 ]
+CHECKS_SHA256 = "9a8eb41a998608a8576331997f9a737d1e6d76c58882e3b9c0db1706847701dc"
 
 
 def _checks():
     out = []
-    for a, h, w in CHECKS:
-        b = fw.ram(a, len(h) // 2)
-        if b.hex() != h:
-            raise AssertionError(f"fx check {a:#x}: payload {b.hex()} != {h}")
+    for a, h, w in fw.pinned(CHECKS, CHECKS_SHA256):
+        b = fw.ram(a, len(h))
+        if b != h:
+            raise AssertionError(f"fx check {a:#x}: payload {b.hex()} != {h.hex()}")
         out.append(Check(a, b, w))
     return out
 

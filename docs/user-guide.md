@@ -1,89 +1,148 @@
 # User guide
 
-This covers package `koma04w` and `koma04`. Anything marked "not yet tested on a camera" has run only in the emulator.
+See [installation](install.md) to set up Koma.
 
-## The KOMA tab
+## The menu
 
-Press MENU. The tabs read STILL, KOMA, PLAY, CUSTOM and SETUP. LEFT goes to the page list and RIGHT comes back. KOMA cannot be reached in movie mode.
+Press MENU. The tab strip reads **STILL | KOMA | PLAY | CUSTOM | SETUP**. KOMA takes the slot that stock fills with MOVIE MODE ONLY. In movie mode that slot reads MOVIE and opens the stock movie page; SETUP holds the stock rows.
 
-The KOMA tab has five pages. RECIPE holds the looks, described below. The rows on FOCUS, EXPOSURE, DISPLAY and OTHER are not yet tested on a camera.
+The KOMA tab opens on FOCUS.
 
-- SNAP DIST sets the snap distance to 1M, 1.5M, 2M, 2.5M (stock), 5M or ∞.
-- FULL SNAP ON makes a quick full press focus at the snap distance.
-- AUTO-ISO MAX caps ISO AUTO at 200, 400, 800 or 1600 when the flash is off.
-- SLOW SHUTTER sets the slowest shutter speed, from 1/250 to 1/2, before ISO rises.
-- LONG EXP LIMIT allows 240 s exposures instead of 180 s.
-- HIGHLIGHT ALRT blinks clipped areas in live view and playback.
-- PEAKING marks in-focus edges in red or yellow.
-- KOMA VERSION shows the package version.
-- MENU LAYOUT picks 5-TAB, STK+KOMA or a GR II style layout. It applies at the next boot.
-- KOMA FEATURES set to ESSENTIAL loads only the core features at the next boot.
-- SAVE TO CARD writes the settings to `PARAM.SAV`.
+| Page | Rows |
+|---|---|
+| FOCUS | SNAP DIST, FULL SNAP |
+| EXPOSURE | AUTO-ISO MAX, SLOW SHUTTER, LONG EXP LIMIT |
+| DISPLAY | HIGHLIGHT ALRT, PEAKING, KOMA VERSION |
+| OTHER | MENU LAYOUT, KOMA FEATURES, SAVE TO CARD |
+
+Use UP/DOWN to move between rows, LEFT to move to the page column and RIGHT to return to the first row.
+
+Choose and edit looks in IMG SET.
 
 ## Looks
 
-A look (RECIPE in the menu) is a tone curve plus settings, rendered into the JPEG. The looks follow the stock IMG SET entries. Pick one in KOMA > RECIPE, in IMG SET, or with the ADJ lever when IMG SET is assigned to it. Choosing a stock entry turns the look off.
+Choose and edit JPEG looks in the camera's IMG SET row (Image settings).
 
-The black-and-white looks are MONO, SHINJUKU, HICON B&W, NOIR, HARD MONO, SOFT MONO, FILM 400, FINE 100, DENSE and MATTE. The last six are not yet tested on a camera.
+IMG SET has 21 entries:
 
-The colour looks are POSITIVE, NEGATIVE, BLEACH, RETRO, WARM NEG and SLIDE 50. WARM NEG and SLIDE 50 are not yet tested on a camera, and nor are the current tables for POSITIVE and BLEACH.
+STANDARD, MONO, SOFT MONO, HARD MONO, HICON B&W, SHINJUKU, FILM 400, FINE 100, DENSE, NOIR, MATTE, SELECT, POSITIVE, NEGATIVE, SLIDE 50, WARM NEG, BLEACH, RETRO, CUSTOM 1, CUSTOM 2, CUSTOM 3.
 
-SELECT keeps one band of colour and turns the rest grey. Set the band with COLOUR, its width with RANGE and its strength with SATURATION. It adds about 1.7 s per shot.
+- **STANDARD** is stock NORMAL under a new name. It is editable; while all its values are at their defaults it writes plain stock NORMAL, and RESET returns it there.
+- The other stock entries (HARD, SOFT, B&W, B&W(TE), SETTING1, SETTING2) are not in the list. CUSTOM 1-3 take the place of SETTING1/2, as on the GR III.
+- If a hidden stock value becomes active (a MY SETTINGS recall or a reset), the IMG SET row shows it under its stock name as a temporary extra entry until you move off it. The camera never swaps it for a look silently.
+- **RIGHT** on the highlighted entry opens that look's editor (`EDITING <look>`); LEFT returns. On a temporary stock entry RIGHT shows NO ADJUST.
+- **The ADJ lever,** with IMG SET assigned to it, steps through the looks whose ADJ LEVER row is ON, and wraps. By default these are STANDARD, MONO, HARD MONO, HICON B&W, SHINJUKU, POSITIVE and CUSTOM 1.
 
-EDIT RECIPE edits the active look, and each look keeps its own edits through power-off. Every look has CURVE, CONTRAST, KEY (overall brightness), SHADOW, HIGHLIGHT, SHARPNESS, GRAIN and VIGNETTE. B&W looks add FILTER EFF., TONING and TONE LEVEL. Colour looks add SATURATION, WARMTH and TINT. SAVE TO CUSTOM copies the look into CUSTOM 1, 2 or 3, and RESET restores its defaults. GRAIN and VIGNETTE add about 1.5 s per shot and are not yet tested on a camera.
+### B&W looks
 
-The LCD shows a look's colour and toning but not its tone curve. The JPEG always gets the full look.
-
-## Settings files
-
-The package reads and writes these files at the card root.
-
-| File | Purpose |
+| Look | Description |
 |---|---|
-| `KOMALOG.TXT` | Written at every boot. If it is missing, the package did not load. |
-| `PARAM.CUR` | The camera's settings, written at every boot. |
-| `PARAM.DAT` | Settings to load at the next boot. The camera answers with `PARAM.OK` or `PARAM.BAD`. |
-| `PARAM.SAV` | Written by SAVE TO CARD. |
+| MONO | Deeper mids, earlier highlight roll-off, no filter |
+| SHINJUKU | Hard contrast, crushed blacks, bright clipped whites, red filter, sharpness +2 |
+| HICON B&W | GR Hi-Contrast B&W: near-black shadows, bright whites |
+| HARD MONO | GR III Hard Monotone: very high contrast, faint blue toning |
+| SOFT MONO | GR III Soft Monotone: low contrast, lifted |
+| FILM 400 | 400-speed film curve, yellow filter |
+| FINE 100 | Fine-grain 100-speed film curve |
+| DENSE | Long, dense scale, darker and firmer than SOFT MONO |
+| NOIR | Low key, red filter, deep blacks |
+| MATTE | Flat, lifted shadows, soft whites |
 
-Loading settings never touches calibration or counters. Make `PARAM.DAT` with `komaset` or the Koma Setup page. A raw copy of `PARAM.CUR` can be refused.
+### SELECT
 
-## Host tools
+The frame turns mono except one hue band. COLOUR picks the band (RED, ORANGE, YELLOW, GREEN, BLUE, MAGENTA). RANGE is NARROW or WIDE. SATURATION (-3 to +3) scales the colour that stays. 
 
-Set SETUP > USB CONNECTION to ORIGINAL. Turn the camera on before you plug in the cable. If the cable goes in first, the camera starts in a state that remote control cannot use. Live view drains the battery fast.
+<img src="img/select-real.jpg" alt="Stock frame beside the same scene shot with SELECT, COLOUR=RED" width="640">
 
-### Koma Setup page
+Left: stock. Right: SELECT with COLOUR set to RED.
 
-```
-.venv/bin/python tools/komaset/bridge/komabridge.py --real
-```
+### Colour looks
 
-Then open `http://localhost:8765/` for photos, shooting, remote control, looks and settings. `--mock --mock-tether` runs it without a camera. `--lan` lets a phone connect with a one-time token, and anyone with the token can read the card and press buttons. Editing looks and `--lan` are not yet tested on a camera.
+| Look | Description |
+|---|---|
+| POSITIVE | Key up, deep shadows, warm hues kept, cool hues muted |
+| NEGATIVE | Soft, faded, lifted shadows, muted |
+| BLEACH | Bright crushed mids, low saturation, teal lean, own curve |
+| RETRO | Warm, faded, low contrast, sepia lean |
+| WARM NEG | Warm portrait negative: soft contrast, faint magenta |
+| SLIDE 50 | Slide film: deep contrast, very saturated, slightly warm |
 
-### Webcam
+### Editing a look
 
-```
-.venv/bin/python tools/komacam/komacam.py --spawn real
-```
+RIGHT on a look in IMG SET opens `EDITING <look>`. Each look keeps its own edits.
 
-This starts the bridge and serves live view at `http://127.0.0.1:8770/`. In OBS, add a Browser source with that URL at width 1280 and height 720, untick "Shutdown source when not visible", and use Transform > Fit to screen. Click Start Virtual Camera (macOS asks once to allow the camera extension), then pick OBS Virtual Camera in your video app. If the app shows only an idle frame, Start Virtual Camera was not clicked. `--mode 3` gives larger frames at about 13 fps. Don't open live view in Koma Setup at the same time. Press Ctrl-C once to stop, because a second press can leave the camera in remote mode until you power-cycle it.
+Rows 6 to 8 change with the look type.
 
-### Settings CLI
+| Row | B&W looks | Colour looks | SELECT |
+|---|---|---|---|
+| CURVE | R3, STANDARD, HARD, HI-CONT, SOFT MONO, FILM 400, FINE 100, BLEACH | same | same |
+| CONTRAST, KEY, SHADOW, HIGHLIGHT | -4 to +4 | -4 to +4 | -4 to +4 |
+| 6 | FILTER EFF.: OFF, YELLOW, ORANGE, RED, GREEN | SATURATION: -3 to +3 | COLOUR |
+| 7 | TONING: OFF, SEPIA, SELENIUM, BLUE, GREEN | WARMTH: COOL 3 to WARM 3 | RANGE |
+| 8 | TONE LEVEL: 1 to 5 | TINT: MAG 3 to GREEN 3 | SATURATION: -3 to +3 |
+| SHARPNESS | -2 to +2 | -2 to +2 | -2 to +2 |
+| SAVE TO CUSTOM | OFF, CUSTOM 1-3 | same | same |
+| RESET | NO, YES | same | same |
+| GRAIN, VIGNETTE | OFF, 1, 2, 3 | same | same |
+| ADJ LEVER | ON, OFF: whether the ADJ lever stops on this look | same | same |
 
-```
-.venv/bin/python tools/komaset/komaset.py dump PARAM.CUR -o settings.txt
-.venv/bin/python tools/komaset/komaset.py apply settings.txt -o PARAM.DAT --base PARAM.CUR
-.venv/bin/python tools/komaset/komaset.py merge --target other.cur --source mine.cur -o PARAM.DAT
-```
+CONTRAST steepens the curve, KEY moves the whole range lighter or darker, SHADOW and HIGHLIGHT move the toe and the shoulder. WARMTH leans the white balance; TINT shifts green-magenta.
 
-`merge` copies one camera's settings onto another's. Put the output on the target camera's card as `PARAM.DAT` and boot. See [tools/komaset/README.md](../tools/komaset/README.md) for the other commands.
+SAVE TO CUSTOM copies the active look's values into a slot, then returns to OFF (the look itself stays active); a slot can hold a colour look. RESET restores the look's defaults; a CUSTOM slot resets to MONO.
 
-## Known issues
+Edits, CUSTOM slots, ADJ LEVER choices and every KOMA row persist through the camera's normal power-off save.
 
-- Pressing ADJ can freeze the camera until power-off. This also happens on stock 2.40 with no card and is a contact fault of these bodies.
-- Listing the card root over USB never finishes on a FAT32 card. The bridge avoids it.
-- A tethered shot taken with a quick press can produce no file.
-- Settings edits over USB can answer busy for about 9 s after an EV change.
-- The IMG SET icon shows only the stock base of a look.
-- MY SETTINGS can keep a stale look.
-- The stock ADJ detail page edits values that a look ignores.
-- Only 64 GB cards have been tested above 2 GB. Cards must be FAT32 with clusters of 32 KB or less.
+### Live-view preview
+
+The LCD shows part of the active look: saturation, the colour matrix, TINT, the B&W filter and toning. The shot itself is always processed in full.
+
+## FOCUS, EXPOSURE and DISPLAY rows
+
+- **SNAP DIST:** 1M, 1.5M, 2M, 2.5M (stock), 5M, ∞.
+- **FULL SNAP:** OFF / ON. With ON in AF mode, a quick full press focuses at the SNAP distance without scanning; a slow half press still autofocuses. It does not exclude the self-timer.
+- **AUTO-ISO MAX:** STOCK, 200, 400, 800, 1600. Applies with ISO AUTO and flash off.
+- **SLOW SHUTTER:** STOCK, 1/250 down to 1/2: the slowest shutter before ISO rises.
+- **LONG EXP LIMIT:** 180S (stock) or 240S. Count, EXIF and display follow.
+- **HIGHLIGHT ALRT:** OFF / ON. Blinking marks on clipped areas in live view, the histogram display and playback.
+- **PEAKING:** OFF, RED, YELLOW. Edge marks on the LCD in live view.
+- **KOMA VERSION:** read only; shows `2.40K1.0`. Photos carry the MakerNote firmware tag `240K1.0`. The hidden service version screen, USB `-VER` and the firmware header still show Ricoh's `02.40`.
+
+## Clock keeper
+
+Koma saves the time in `KOMATIME.TXT` on the card and restores it at power-on if the clock has been lost.
+
+- With the clock set and running, Koma saves the time at power-off, except while USB is connected or the battery is too low for a safe card write.
+- If the clock is lost, Koma restores the saved time plus 60 minutes. A running clock is left alone.
+- To set a lost clock from a computer, write one line `YYYY-MM-DD HH:MM:SS` to `KOMATIME.TXT` on the card. That time is used as written. Years 2006 to 2035 are accepted.
+
+The restored time is only as good as the last save plus the fixed offset, so check DATE SETTINGS after a restore if exact times matter.
+
+## Battery log
+
+Koma writes battery readings to `KOMABATT.TXT` on the card at power-off.
+
+## OTHER page
+
+- **MENU LAYOUT:** 5-TAB (default), STK+KOMA (mode page | KOMA | stock SETUP), GR II (SHOOTING | KEY CUST. | SETUP, with Koma rows on SHOOTING). Takes effect at the next boot.
+- **KOMA FEATURES:** FULL or ESSENTIAL. ESSENTIAL installs only the menu, settings import/export, the boot log, tether, live view and the stall fix at the next boot; other rows still show and store but do nothing.
+- **SAVE TO CARD:** YES writes `PARAM.SAV` to the card and the row then reads SAVED or FAILED.
+
+## Files on the card
+
+`PARAM.CUR` contains settings saved at boot. The app can use it to copy settings to another camera. `PARAM.DAT` imports settings at boot; the camera writes `PARAM.OK` or `PARAM.BAD` to show the result. SAVE TO CARD writes `PARAM.SAV`. `KOMATIME.TXT` holds the saved clock time.
+
+## The app
+
+Connect the powered-on camera in ORIGINAL USB mode and run `koma`. Use Overview to start setup or check the camera. Looks selects and edits looks; Camera menu changes settings. Photos imports or downloads images. Shoot provides live view, tethered shooting and camera controls. Webcam offers setup and a live stream. Settings includes backup, restore and copying settings to another camera.
+
+## Status
+
+Hardware testing of the Koma 1.0 firmware and package is in progress. The app and its setup have not yet been tested as a whole on a camera. Earlier builds were tested on two cameras.
+
+| Area | Camera-tested on earlier builds | Not yet camera-tested |
+|---|---|---|
+| Camera | KOMA tab; look path; MONO, SHINJUKU, HICON B&W, NOIR, SELECT, POSITIVE, NEGATIVE, BLEACH and RETRO; battery log; settings import and export | Current look picker and other looks; current POSITIVE and BLEACH; focus, exposure and display options; grain, vignette and live-view preview; clock restore and power-off save; alternative layouts and SAVE TO CARD |
+| Cards and firmware | 64 GB FAT32 cards and internal installation with an earlier package | Koma 1.0 firmware and package; internal installation of the 1.0 package; removal from internal memory; restoring stock over the current firmware |
+| USB and app | Tether, live view, photo review, settings writes and webcam through OBS | App as a whole; setup; current shot-write wait; phone mode and live look editing |
+
+See the [evidence ledger](internals/evidence-ledger.md) for details.

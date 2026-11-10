@@ -1,4 +1,4 @@
-"""colourprobe round 3: unit-emulated checks (Unicorn on the 2.40 payload; the real stock setters run and write the
+"""colourprobe: unit-emulated checks (Unicorn on the 2.40 payload; the real stock setters run and write the
 MMIO log; MMIO reads are faked at the stock getters).
 
 Covered: install; the frame table is the documented round-3 design (<= 8 frames incl. stock and restore, sign-magnitude
@@ -23,7 +23,7 @@ CP = 0x700000
 # fake power-on/stock register values seen through the getters (bit 7 of the control word set to prove the setter
 # clears it; bit 6 clear)
 BASE = {P.GET_IQ: 0x11223344, P.GET_MATR: 0x01020304, P.GET_MATG: 0x05060708, P.GET_MATB: 0x090A0B0C,
-        P.GET_UV: 0x00000D0E, P.GET_GAIN: 0x8470697C, P.GET_CTRL: 0x00000385}   # gain = stock NORMAL (O-emu)
+        P.GET_UV: 0x00000D0E, P.GET_GAIN: 0x8470697C, P.GET_CTRL: 0x00000385}   # gain = stock NORMAL
 DATA = [(P.R_IQ, BASE[P.GET_IQ]), (P.R_MATR, BASE[P.GET_MATR]), (P.R_MATG, BASE[P.GET_MATG]),
         (P.R_MATB, BASE[P.GET_MATB]), (P.R_UV, BASE[P.GET_UV]), (P.R_GAIN, BASE[P.GET_GAIN])]
 GETS = [P.GET_IQ, P.GET_MATR, P.GET_MATG, P.GET_MATB, P.GET_UV, P.GET_GAIN, P.GET_CTRL]

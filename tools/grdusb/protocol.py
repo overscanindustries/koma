@@ -1,4 +1,4 @@
-"""Frame format and the closed list of commands this tool can send. Spec: docs/internals/07-usb-protocol.md."""
+"""Frame format and the closed list of commands this tool can send. Spec: research/usb-protocol.md."""
 from __future__ import annotations
 
 import re
@@ -32,7 +32,7 @@ class VersionRefused(CommandRefused):
     """The camera's -VER or -GCID reply did not match what the operator required. Nothing further is sent."""
 
 
-# Every command this tool can emit. A verb is here only if docs/internals/07-usb-protocol.md classes it as free of
+# Every command this tool can emit. A verb is here only if research/usb-protocol.md classes it as free of
 # persistent effects. Anything that changes state is absent on purpose, with no flag to enable it.
 _FIXED = {"version": "-VER", "camera_id": "-GCID", "card_id": "-GSID", "clock": "-TIME"}
 _WITH_PATH = {"capacity": "-DCAP", "list": "-NLST", "retrieve": "RETR"}
@@ -61,7 +61,7 @@ def fixed_command(name: str) -> bytes:
 
 IROM_RETR_REFUSAL = ("get refuses /IROM paths: closing a file whose metadata is inconsistent can make the camera's "
                      "filesystem write a repair, and internal memory is not expendable (derivation, "
-                     "docs/internals/07-usb-protocol.md). To read /IROM anyway, both --allow-internal and at least one "
+                     "research/usb-protocol.md note 3 on RETR). To read /IROM anyway, both --allow-internal and at least one "
                      "--require-version VV.VV are needed. Nothing was sent")
 
 

@@ -7,10 +7,10 @@ from .protocol import CommandRefused, fixed_command, path_command
 from .transport import LINE_STATE_REQUEST, SETTLE_S
 
 GET_NOTE = ("note: RETR is not guaranteed physically read-only. If the file's metadata is inconsistent, the camera's "
-            "close path can write a filesystem repair to the card (derivation, docs/internals/07-usb-protocol.md). "
+            "close path can write a filesystem repair to the card (derivation, research/usb-protocol.md note 3). "
             "Only read files on an expendable card, after copying the card in a reader.")
 VER_NOTE = ("OBSERVE NOW: -VER arms a 3 s timer inside the camera, and its expiry can post a UI message (derivation, "
-            "docs/internals/07-usb-protocol.md). Watch the LCD and lamps beyond the 3 s timer and write down anything "
+            "research/usb-protocol.md note 1). Watch the LCD and lamps beyond the 3 s timer and write down anything "
             "that changes. Do not run another grdusb command until you have finished observing.")
 STRING_AND_CONFIG_STEPS = ("read string descriptors (control reads)", "GET_CONFIGURATION (control read)",
                            "SET_CONFIGURATION(1)", f"wait {SETTLE_S:g} s", "claim interface 0")

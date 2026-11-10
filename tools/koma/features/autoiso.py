@@ -1,15 +1,15 @@
 """autoiso: GR II-style ISO AUTO high limit (byte 0x1b8b7) and slowest shutter before ISO rises (byte 0x1b8b8).
 
-Setting-driven port of the earlier auto-ISO patch (12 B code-immediate patch, O-emu at function level).
+Setting-driven version of a 12 B code-immediate patch of the stock AE.
 
-How the stock AE uses the limits (D, emu-frontier-3 README §1; units 1/16 EV, gain 0 = ISO 100, ISO = 100*2^(gain/16)):
+How the stock AE uses the limits (units 1/16 EV, gain 0 = ISO 100, ISO = 100*2^(gain/16)):
   RL1 -> 0x3f7f0 -> `bl 0x42ad4` at 0x3f920 (the whole still AE; no arguments, no stack arguments).
   Inside it every limit is read from the adjustment store in SDRAM, base = *(0x175378) = 0x08010000:
     store+0x080 (u8)  Tv floor = slowest shutter before ISO rises (0x4389c -> 0x1f9ebb); 82 in the default image (~1/35)
     store+0x47e (s16) flash-off AUTO gain ceiling (0x42f14 -> 0x4356c, and 0x432d4's b0c8 branch); 10 (~ISO 154)
     store+0x49a (s16) <1 s clamp in 0x432d4 and the 'Tv < 0x18 -> back to 0x49a' fallback in 0x4356c; 10
 Readers of these three values outside 0x42ad4: 0x42460 (via 0x421b8), 0x44a3c (flash decision), 0x44b04/0x44b24,
-0xa457c. The frontier-3 patch replaced the reads with immediates (P1, P2, P4) and removed the fallback (P3).
+0xa457c. The original patch replaced the reads with immediates (P1, P2, P4) and removed the fallback (P3).
 
 Koma version (no .text change): hook `bl 0x42ad4` at 0x3f920. At use the handler reads the two Koma bytes; when ISO is
 AUTO (cp+9 == 0) and flash is off (cp+0x10 & 0xf == 0) it saves the store values, writes the selected ones, calls the
@@ -143,7 +143,7 @@ def make(opts):
 
 
 def smoke_setup():
-    # ISO max 400, slowest shutter 1/60, flash off, plus the KOMA magic (no core lane writes it in a test build)
+    # ISO max 400, slowest shutter 1/60, flash off, plus the KOMA magic (nothing else writes it in a test build)
     return {0x1B8B0: 0x4B, 0x1B8B1: 0x4F, 0x1B8B2: 0x4D, 0x1B8B3: 0x41, SET_ISO: 2, SET_SS: 3, 0x1B06F: 0}
 
 

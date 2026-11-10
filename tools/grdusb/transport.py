@@ -10,7 +10,7 @@ from .descriptors import (BULK_IN, BULK_OUT, Configuration, Device, Endpoint, In
 
 READ_SIZE = 0x10400
 TIMEOUT_MS = 6000
-SETTLE_S = 2.0  # Ricoh's XP client waits ~2 s before opening; the Mac client does not (D)
+SETTLE_S = 2.0  # Ricoh's XP client waits ~2 s before opening; the Mac client does not (D, research/pc-software-review.md)
 LINE_STATE_REQUEST = (0x41, 0x22, 3, 0)  # vendor "set DTR+RTS" as sent by Ricoh's Mac client. Opt-in only; unverified.
 
 

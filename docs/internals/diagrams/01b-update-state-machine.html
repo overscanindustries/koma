@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Update gate and flash state machine</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',system-ui,sans-serif;background:#f5f5f5;color:#2d3142;padding:3rem 2rem}
+.frame{max-width:1280px;margin:0 auto}
+.eyebrow{font-family:'Geist Mono',ui-monospace,monospace;font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:#4f5d75;margin-bottom:.5rem}
+h1{font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}
+.sub{font-size:.9rem;color:#4f5d75;max-width:70ch;margin-bottom:1.5rem;line-height:1.5}
+svg{width:100%;min-width:960px;display:block}
+.foot{font-family:'Geist Mono',ui-monospace,monospace;font-size:.66rem;color:#4f5d75;border-top:1px solid rgba(45,49,66,.12);margin-top:1.5rem;padding-top:.75rem;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">State machine · internals 03</p>
+<h1>Update gate and flash state machine</h1>
+<p class="sub">After the prompt is answered Yes there is no cancel: screens 0x1c and 0x19 read no keys, and the first destructive write erases main info block 0x3c.</p>
+<svg viewBox="0 0 1200 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="update-state-machine-title update-state-machine-desc">
+<title id="update-state-machine-title">Update gate and flash state machine</title>
+<desc id="update-state-machine-desc">State machine of the SD update path: gate 0x1eb22, prompt 0x18, checking 0x1c, updating 0x19, the type-2 and type-5 drivers, error screens and the exits.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<path d="M208 124 L288 124" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M464 124 L544 124" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M720 124 L800 124" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M888 160 L888 240" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M888 312 L888 392" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M800 428 L720 428" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M632 404 L632 312" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M800 276 L720 276" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<path d="M72 160 L72 252" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M328 160 L328 192 A8 8 0 0 1 320 200 L176 200 A8 8 0 0 0 168 208 L168 252" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M432 160 L432 240" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M584 160 L584 208 A8 8 0 0 1 576 216 L464 216 A8 8 0 0 0 456 224 L456 240" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M288 276 L208 276" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M464 276 L544 276" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+<rect x="220" y="104" width="52" height="12" rx="2" fill="#f5f5f5"/>
+<text x="246.0" y="113" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">KEYS HELD</text>
+<rect x="472" y="104" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="504.0" y="113" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RIGHT = YES</text>
+<rect x="724" y="104" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="758.0" y="113" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ALL ACCEPTED</text>
+<rect x="896" y="194" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="928.0" y="203" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TYPE 2 FILE</text>
+<rect x="896" y="346" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="928.0" y="355" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">TYPE 5 FILE</text>
+<rect x="640" y="352" width="44" height="12" rx="2" fill="#f5f5f5"/>
+<text x="662.0" y="361" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">0x32b74</text>
+<rect x="728" y="256" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="760.0" y="265" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">FLASH ERROR</text>
+<rect x="80" y="200" width="48" height="12" rx="2" fill="#f5f5f5"/>
+<text x="104.0" y="209" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO COMBO</text>
+<rect x="212" y="180" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="246.0" y="189" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NO / TIMEOUT</text>
+<rect x="360" y="194" width="64" height="12" rx="2" fill="#f5f5f5"/>
+<text x="392.0" y="203" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BATTERY LOW</text>
+<rect x="484" y="196" width="72" height="12" rx="2" fill="#f5f5f5"/>
+<text x="520.0" y="205" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BAD / NO FILE</text>
+<rect x="216" y="256" width="60" height="12" rx="2" fill="#f5f5f5"/>
+<text x="246.0" y="265" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">INFO VALID</text>
+<rect x="468" y="256" width="68" height="12" rx="2" fill="#f5f5f5"/>
+<text x="502.0" y="265" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">INFO INVALID</text>
+<rect x="32" y="88" width="176" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="88" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="120.0" y="108" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Gate 0x1eb22</text>
+<text x="120.0" y="122" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">UP+TELE+dial 1|10|9, or</text>
+<text x="120.0" y="134" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">main info invalid (0x273e4)</text>
+<text x="120.0" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">QUICKVER.UP: separate flasher</text>
+<rect x="288" y="88" width="176" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="288" y="88" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="376.0" y="108" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Prompt 0x18 "execute?"</text>
+<text x="376.0" y="122" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">default No; RIGHT = Yes</text>
+<text x="376.0" y="134" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">release ENTER/RL2 answers</text>
+<text x="376.0" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">timeout 30000 units = No</text>
+<rect x="544" y="88" width="176" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="544" y="88" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="632.0" y="108" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Checking 0x1c</text>
+<text x="632.0" y="122" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">scan QRFLECT0..9, 0x278d4</text>
+<text x="632.0" y="134" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no keys read, no cancel</text>
+<text x="632.0" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">one bad file rejects all</text>
+<rect x="800" y="88" width="176" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="800" y="88" width="176" height="72" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="888.0" y="108" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Updating 0x19</text>
+<text x="888.0" y="122" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0xd6dec flashes the files</text>
+<text x="888.0" y="134" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no cancel from here</text>
+<text x="888.0" y="146" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">key and battery polling off</text>
+<rect x="32" y="252" width="176" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="252" width="176" height="48" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="120.0" y="272" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Normal boot</text>
+<text x="120.0" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">no flash, boot continues</text>
+<rect x="288" y="240" width="176" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="288" y="240" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="376.0" y="260" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Error screen</text>
+<text x="376.0" y="274" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0x1d battery · 0x1e no file</text>
+<text x="376.0" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0x1a bad file</text>
+<text x="376.0" y="298" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">10000 units, ENTER/RL2 ends</text>
+<rect x="544" y="240" width="176" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="544" y="240" width="176" height="72" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="632.0" y="260" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Power-off path 0x32b74</text>
+<text x="632.0" y="274" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">CPU1 requests 0xf6, 0xfd</text>
+<text x="632.0" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">then 0x4fcaa(2)</text>
+<text x="632.0" y="298" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">flash error: screen 0x1a</text>
+<rect x="800" y="240" width="176" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="800" y="240" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="888.0" y="260" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Type-2 driver</text>
+<text x="888.0" y="274" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">erase main info 0x3c first</text>
+<text x="888.0" y="286" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">blocks 0xd..0x3b next</text>
+<text x="888.0" y="298" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">info sector 0x7e last</text>
+<rect x="800" y="392" width="176" height="72" rx="6" fill="#f5f5f5"/>
+<rect x="800" y="392" width="176" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="888.0" y="412" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Type-5 driver 0xd6a62</text>
+<text x="888.0" y="426" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">qrflect7 script, engine</text>
+<text x="888.0" y="438" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0x54164, commit 0x63d9e</text>
+<text x="888.0" y="450" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">to adjust store 0x3d</text>
+<rect x="544" y="404" width="176" height="48" rx="6" fill="#f5f5f5"/>
+<rect x="544" y="404" width="176" height="48" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="632.0" y="424" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Success: no screen</text>
+<text x="632.0" y="438" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">0xd6dec returns 0</text>
+<text x="32" y="404" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">Default is No: ENTER without RIGHT cancels. Invalid main info</text>
+<text x="32" y="424" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">skips the prompt and needs no keys.</text>
+<text x="32" y="452" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">Emulated only: the type-5 step never returned in the model, so</text>
+<text x="32" y="472" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">the success exit has not been observed (EMU).</text>
+<line x1="32" y1="480" x2="1168" y2="480" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="32" y="500" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="100" y="490" width="20" height="12" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="128" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">state</text>
+<rect x="180" y="490" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="208" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">point of no return</text>
+<rect x="323" y="490" width="20" height="12" rx="3" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="351" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">exit</text>
+<line x1="398" y1="496" x2="422" y2="496" stroke="#4f5d75" stroke-width="1.2"/>
+<polygon points="422,493 428,496 422,499" fill="#4f5d75"/>
+<text x="436" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">transition</text>
+<line x1="512" y1="496" x2="536" y2="496" stroke="#eb6c36" stroke-width="1.2"/>
+<polygon points="536,493 542,496 536,499" fill="#eb6c36"/>
+<text x="550" y="499" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">failure</text>
+</svg>
+<p class="foot">Sources: internals chapter 03 (update decision, checks and drivers); analysis/emu-update-replay/README.md section 1 (type-5 stall). Evidence class: STATIC and EMU.</p>
+</div>
+</body>
+</html>

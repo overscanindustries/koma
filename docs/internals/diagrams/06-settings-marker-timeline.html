@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings block and the U marker migration</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',system-ui,sans-serif;background:#f5f5f5;color:#2d3142;padding:3rem 2rem}
+.frame{max-width:1280px;margin:0 auto}
+.eyebrow{font-family:'Geist Mono',ui-monospace,monospace;font-size:.66rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:#4f5d75;margin-bottom:.5rem}
+h1{font-family:'Instrument Serif',serif;font-size:clamp(1.5rem,2.4vw + .75rem,2rem);font-weight:400;letter-spacing:-.02em;line-height:1.15;margin-bottom:.5rem}
+.sub{font-size:.9rem;color:#4f5d75;max-width:70ch;margin-bottom:1.5rem;line-height:1.5}
+svg{width:100%;min-width:960px;display:block}
+.foot{font-family:'Geist Mono',ui-monospace,monospace;font-size:.66rem;color:#4f5d75;border-top:1px solid rgba(45,49,66,.12);margin-top:1.5rem;padding-top:.75rem;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="frame">
+<p class="eyebrow">Settings migration · internals 05, 12</p>
+<h1>Settings block and the U marker migration</h1>
+<p class="sub">Each marker group is initialised once: if its marker byte is not U (0x55), 2.40 writes the group defaults. The dating comes from each held version writing its own default block and 2.40 booting on it.</p>
+<svg viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="settings-marker-timeline-title settings-marker-timeline-desc">
+<title id="settings-marker-timeline-title">Settings block and the U marker migration</title>
+<desc id="settings-marker-timeline-desc">Which release first initialised each marker group in the 4 KB settings block, and which groups 2.40 initialises on its first boot over a block written by an older version.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker><marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker><marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker></defs>
+<rect width="100%" height="100%" fill="#f5f5f5"/>
+<text x="32" y="36" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">MARKER GROUP, FIRST SET BY (BLOCK 0x1b000..0x1bfff, MARKER BYTE 0x55 = U)</text>
+<text x="32" y="376" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">WHAT 2.40 INITIALISES ON FIRST BOOT, BY THE VERSION THAT WROTE THE BLOCK</text>
+<rect x="276" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="276" y="52" width="76" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="314.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">1.08</text>
+<rect x="364" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="364" y="52" width="76" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="402.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">1.09</text>
+<rect x="452" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="452" y="52" width="76" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="490.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.01</text>
+<rect x="540" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="540" y="52" width="76" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="578.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.02</text>
+<rect x="628" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="628" y="52" width="76" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="666.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.10</text>
+<rect x="716" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="716" y="52" width="76" height="36" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="754.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.20</text>
+<rect x="804" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="804" y="52" width="76" height="36" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="842.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.21</text>
+<rect x="892" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="892" y="52" width="76" height="36" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="930.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.30</text>
+<rect x="980" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="980" y="52" width="76" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1018.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.31</text>
+<rect x="1068" y="52" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="1068" y="52" width="76" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1106.0" y="74" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.40</text>
+<rect x="32" y="104" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="104" width="228" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="146.0" y="126" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b038, 0x1b0da</text>
+<rect x="32" y="152" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="152" width="228" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="146.0" y="174" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b18f group</text>
+<rect x="32" y="200" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="200" width="228" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="146.0" y="222" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b193</text>
+<rect x="32" y="248" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="248" width="228" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="146.0" y="270" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b1a1, 0x1b1a2</text>
+<rect x="32" y="296" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="296" width="228" height="36" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="146.0" y="318" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b1a3 (TE, INFO DISP)</text>
+<rect x="276" y="104" width="868" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="276" y="104" width="868" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="710.0" y="126" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">present at 1.08 or earlier, in every held version</text>
+<rect x="452" y="152" width="692" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="452" y="152" width="692" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="798.0" y="174" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">dial direction, ADJ shutter confirm, synchro monitor</text>
+<rect x="716" y="200" width="252" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="716" y="200" width="252" height="36" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="842.0" y="222" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">added 2.20 or 2.30 (I)</text>
+<rect x="980" y="200" width="164" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="980" y="200" width="164" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="1062.0" y="222" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">RAW+JPEG quality</text>
+<rect x="716" y="248" width="252" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="716" y="248" width="252" height="36" rx="6" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="842.0" y="270" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">after 2.10, by 2.31</text>
+<rect x="980" y="248" width="164" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="980" y="248" width="164" height="36" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+<text x="1062.0" y="270" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">B&amp;W/SEPIA detail</text>
+<rect x="1068" y="296" width="76" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="1068" y="296" width="76" height="36" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="1106.0" y="318" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">2.40</text>
+<rect x="300" y="388" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="300" y="388" width="200" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="400.0" y="410" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b18f</text>
+<rect x="520" y="388" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="520" y="388" width="200" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="620.0" y="410" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b1a1</text>
+<rect x="740" y="388" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="740" y="388" width="200" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="840.0" y="410" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b1a2</text>
+<rect x="960" y="388" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="960" y="388" width="200" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="1060.0" y="410" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">0x1b1a3</text>
+<rect x="32" y="436" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="436" width="228" height="36" rx="6" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="146.0" y="458" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">block from 1.08 or 1.09</text>
+<rect x="300" y="436" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="300" y="436" width="200" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="400.0" y="458" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">fires</text>
+<rect x="520" y="436" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="520" y="436" width="200" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="620.0" y="458" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">fires</text>
+<rect x="740" y="436" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="740" y="436" width="200" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="840.0" y="458" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">fires</text>
+<rect x="960" y="436" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="960" y="436" width="200" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1060.0" y="458" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">fires</text>
+<rect x="32" y="484" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="484" width="228" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="146.0" y="506" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">block from 2.01, 2.02 or 2.10</text>
+<rect x="300" y="484" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="300" y="484" width="200" height="36" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="400.0" y="506" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">already U</text>
+<rect x="520" y="484" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="520" y="484" width="200" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="620.0" y="506" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">fires</text>
+<rect x="740" y="484" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="740" y="484" width="200" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="840.0" y="506" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">fires</text>
+<rect x="960" y="484" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="960" y="484" width="200" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1060.0" y="506" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">fires</text>
+<rect x="32" y="532" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="532" width="228" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="146.0" y="554" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">block from 2.31</text>
+<rect x="300" y="532" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="300" y="532" width="200" height="36" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="400.0" y="554" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">already U</text>
+<rect x="520" y="532" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="520" y="532" width="200" height="36" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="620.0" y="554" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">already U</text>
+<rect x="740" y="532" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="740" y="532" width="200" height="36" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="840.0" y="554" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">already U</text>
+<rect x="960" y="532" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="960" y="532" width="200" height="36" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="1060.0" y="554" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">fires</text>
+<rect x="32" y="580" width="228" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="32" y="580" width="228" height="36" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+<text x="146.0" y="602" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">block from 2.40 (second boot)</text>
+<rect x="300" y="580" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="300" y="580" width="200" height="36" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="400.0" y="602" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">already U</text>
+<rect x="520" y="580" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="520" y="580" width="200" height="36" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="620.0" y="602" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">already U</text>
+<rect x="740" y="580" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="740" y="580" width="200" height="36" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="840.0" y="602" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">already U</text>
+<rect x="960" y="580" width="200" height="36" rx="6" fill="#f5f5f5"/>
+<rect x="960" y="580" width="200" height="36" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="1060.0" y="602" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">already U</text>
+<text x="32" y="652" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">1.08 to 2.40 changes 36 bytes in 0x1b18c..0x1b1b2 plus the checksum, then saves the block. A second boot changes nothing.</text>
+<text x="32" y="672" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">ADJ slots 3 and 4 (0x1b191, 0x1b192) stay 0xff: no migration writes them, matching Ricoh's note that they read OFF after the update.</text>
+<text x="32" y="692" fill="#4f5d75" font-size="14" font-style="italic" font-family="'Instrument Serif', serif" text-anchor="start">A block written by 2.10 reaches 2.40 with 0x1b193 = 0xff, because its group marker is already U.</text>
+<line x1="32" y1="720" x2="1168" y2="720" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+<text x="32" y="740" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+<rect x="100" y="730" width="20" height="12" rx="3" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+<text x="128" y="739" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">set / fires</text>
+<rect x="209" y="730" width="20" height="12" rx="3" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+<text x="237" y="739" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">release missing, or date unknown</text>
+<rect x="420" y="730" width="20" height="12" rx="3" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+<text x="448" y="739" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">already initialised</text>
+<rect x="568" y="730" width="20" height="12" rx="3" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="1"/>
+<text x="596" y="739" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace">2.40 group, and the 1.08 route (the spare)</text>
+</svg>
+<p class="foot">Sources: internals chapter 05 (marker groups); analysis/emu-update-replay/README.md section 2 (marker dating, written bytes). Evidence class: EMU on default blocks; real user settings were not read. 2.20, 2.21 and 2.30 images are not held.</p>
+</div>
+</body>
+</html>

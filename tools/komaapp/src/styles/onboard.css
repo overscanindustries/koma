@@ -1,0 +1,22 @@
+/* Setup, Install and Update Koma. Area classes only, prefixed onb-; the shared type, danger and boxed-rule
+   classes (.micro, .cam, .small, .h1, .btn.danger, .rule-box) come from app.css. Sizes, colours and durations are the
+   the design tokens. */
+
+.onb-lead { font-size: var(--fs-lead, 16px); line-height: 24px; font-weight: 500; color: var(--ink); max-width: 36ch; text-wrap: balance; }
+/* the step name takes focus on each screen (a screen reader announces it); no ring on a heading nobody clicks */
+.spread .h1:focus { outline: none; }
+/* helper lines are one or two lines long: a two-line helper breaks evenly, never leaving a word or two on its own */
+.spread .small, .upd .small { color: var(--sub); text-wrap: balance; }
+
+/* a disabled control always carries its reason; the reason sits in the body, the control points at it */
+.onb-reason { font-size: var(--fs-small, 12.5px); line-height: 16px; color: var(--sub); max-width: 60ch; }
+
+/* a primary action that cannot act yet keeps its place in the action row but is not shown: nothing to press while
+   the camera is looked for, read or written; the status line above says what is happening (no dead
+   buttons) */
+.btn.onb-wait { visibility: hidden; }
+
+/* the empty start of an action row with no Back (Welcome): on desktop the row keeps the height Back gives it; on a
+   phone the primary takes the bar's width from the gutter */
+.onb-ph { display: block; min-height: 40px; }
+@media (max-width: 720px) { .onb-ph { display: none; } }

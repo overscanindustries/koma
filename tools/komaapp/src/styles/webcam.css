@@ -1,0 +1,100 @@
+/* Webcam area and Use on your phone. The parts are the shared components (PageTitle, Segmented,
+   StatusLine, SectionHead, SpecSheet, Details, CopyButton) and app.css's tokens and type classes; what is left here is
+   this area's own layout: the switch row with its sentence, the numbered steps, the preview, the QR code, the phone's
+   gate. Every class is prefixed wc-. */
+
+.wc { max-width: var(--content-max); }
+.wc p { max-width: 60ch; text-wrap: pretty; }
+.wc p.small { max-width: 72ch; }
+
+/* the calm page grid: content in columns 1 to 7, the one figure (here the preview) in 8 to 12 */
+.wc-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--col-gap); align-items: start; }
+.wc-main { grid-column: 1 / span 7; min-width: 0; }
+.wc-side { grid-column: 8 / span 5; min-width: 0; }
+
+/* Row: label left, control right, hairlines */
+.wc-row {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s4);
+  min-height: var(--row-h); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.wc-row-label { font-size: var(--fs-body); line-height: var(--lh-body); }
+.wc-row-sub { margin-top: var(--s3); }
+/* the Webcam switch's row: its sentence is the label, the switch beside it */
+.wc-row-text { flex: 1; min-width: 0; padding: var(--s3) 0; font-size: var(--fs-body); line-height: var(--lh-body); }
+.wc p.wc-row-text { max-width: none; }
+.wc-switch-ctl { flex: none; display: flex; }
+/* the steps that come before the switch: the switch row follows them at a section's distance */
+.wc-steps + .wc-switch { margin-top: var(--s6); }
+
+.wc-status { margin-top: var(--s3); }
+/* the facts straight under the switch: the row's hairline is their top rule */
+.wc-stale [data-testid=spec-last] dd { color: var(--faint); }
+
+/* numbered steps (a real sequence); a list of one carries no numeral */
+.wc-steps { list-style: none; margin: 0; padding: 0; counter-reset: wcstep; }
+.wc-steps > li {
+  display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 0 var(--s3); padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.wc-steps > li::before {
+  counter-increment: wcstep; content: counter(wcstep); color: var(--sub); font-variant-numeric: tabular-nums;
+  font-size: var(--fs-body); line-height: var(--lh-body);
+}
+.wc-steps.one > li { grid-template-columns: minmax(0, 1fr); }
+.wc-steps.one > li::before { content: none; }
+.wc-steps > li > div { display: grid; gap: var(--s1); justify-items: start; min-width: 0; }
+.wc-steps p { overflow-wrap: anywhere; }
+.wc-steps .btn { margin-top: var(--s1); }
+/* a command shown in full (Windows): the copy button copies exactly this */
+.wc-cmd { color: var(--ink); user-select: all; overflow-wrap: anywhere; }
+.wc-audio { margin-top: var(--s4); }
+.wc-foot { margin-top: var(--s7); }
+
+/* the preview: the picture the call receives, 16:9 on the photo matte, at most 640 x 360; its one caption under it */
+.wc-preview { margin: 0; width: 100%; max-width: 640px; }
+.wc-frame {
+  aspect-ratio: 16 / 9; background: var(--photo-bg); border: 1px solid var(--line); border-radius: var(--r-img);
+  overflow: hidden;
+}
+.wc-frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.wc-preview figcaption { margin-top: var(--s2); }
+
+.wc-nowrap { white-space: nowrap; }
+.wc-copied { margin-left: 6px; }
+.wc-copied:empty { margin-left: 0; }  /* the live region stays in place, empty and without width */
+
+/* Use on your phone: a calm page, the switch within reach of its label (the Webcam column's width) */
+.wc-calm { max-width: 640px; }
+.wc-qr { margin-top: var(--s5); display: grid; justify-items: start; gap: var(--s3); }
+.wc-qr svg { display: block; width: 192px; height: 192px; border: 1px solid var(--line); border-radius: var(--r-img); }
+.wc-addr { font-size: var(--fs-lead); line-height: var(--lh-lead); font-weight: 500; font-variant-numeric: tabular-nums; }
+.wc-actions { margin-top: var(--s5); display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+
+/* the pairing link under Details, on Details' own two columns */
+.wc-dlink { display: grid; grid-template-columns: minmax(96px, auto) minmax(0, 1fr); column-gap: var(--s4); color: var(--sub); }
+.wc-dlink .wc-dk { color: var(--faint); }
+.wc-dlink .num { color: var(--sub); overflow-wrap: anywhere; }
+.wc .wc-dlink { max-width: none; }
+
+/* the phone's own screen before it has access: full screen, wordmark, one status line */
+.wc-gate { min-height: 100vh; min-height: 100dvh; padding: 22px var(--gutter); display: grid; grid-template-rows: auto 1fr; }
+.wc-gate-body { padding-top: 12vh; max-width: 36rem; }
+.wc-gate-alt { margin-top: var(--s5); padding-left: 18px; }
+
+/* Connect while the webcam waits for the camera: the switch, one line */
+.wc-away { margin-top: var(--s6); }
+
+@media (max-width: 720px) {
+  /* one column: the switch row and its facts first, then the preview, then the rest. The preview turns up under
+     the switch when the webcam goes ON, so nothing above the switch moves. */
+  .wc-grid { grid-template-columns: minmax(0, 1fr); }
+  .wc-main { display: contents; }
+  .wc-top { order: 1; min-width: 0; }
+  .wc-side { order: 2; grid-column: 1 / -1; margin-top: var(--s4); }
+  .wc-rest { order: 3; min-width: 0; }
+  .wc .wc-help .r { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }  /* stacked: symptom, then the fix */
+  .wc-qr svg { width: 220px; height: 220px; }
+  .wc-gate { padding: var(--s4); }
+  .wc-gate-body { padding-top: 8vh; }
+  .wc .btn { height: var(--ctl-h); }
+}

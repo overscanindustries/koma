@@ -1,7 +1,7 @@
-# Vendored from the earlier menu-5tab mbuild.py (menu module builder). Edits: imports, firmware/data paths, writers removed.
+# Vendored from analysis/menu-5tab/mbuild.py (menu module builder). Edits: imports, firmware/data paths, writers removed.
 """Resident-module builder for the GR DIGITAL 2.40 card-module loader (offline; builds bytes only).
 
-Extends the module-loader grmod.py (imported, not edited) with what a *resident* code module needs:
+Extends analysis/module-loader/grmod.py (imported, not edited) with what a *resident* code module needs:
   * a position-independent installer (Thumb) that checks ABI 1 + image word 0x240, verifies EVERY patch's 4
     'before' bytes, relocates the body's own absolute pointers, runs an optional init routine, then writes all
     patches with IRQ/FIQ masked (service +0x28) and returns 1 so the loader keeps the body resident;

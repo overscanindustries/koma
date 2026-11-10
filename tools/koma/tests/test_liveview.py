@@ -1,6 +1,6 @@
 """liveview: the -FDWL record becomes -LVFR; the resident handler answers 451 outside a tether-held live view and
 otherwise builds the 16-byte header + frame in the USB payload buffer with the -PRET state. Unit emulation on the 2.40
-payload; the VD wait, resize and JPEG engines are stubbed (their register programs are not modelled)."""
+payload; the VD wait, resize and JPEG engines are stubbed."""
 from __future__ import annotations
 
 import struct
@@ -219,8 +219,13 @@ def test_mode2_page_b_and_unknown_base():
 
 
 def test_mode2_payload_decodes_with_grdui_render_page():
-    """The host decoder: the OSD page renderer (render_page) over the payload bytes (base 0, stride 180)."""
-    from koma.emu.grdui import display as D
+    """The host decoder: tools/grdui/display.py render_page over the payload bytes (base 0, stride 180)."""
+    import importlib.util
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location("grdui_display_unit", root / "tools/grdui/display.py")
+    D = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(D)
     u, h = _osd_unit()
     page_a, _, pal = _osd_fill(u, 0x08422800)
     _call(u, h, 2, 3, running=0)

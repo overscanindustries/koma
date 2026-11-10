@@ -1,15 +1,15 @@
 """stallfix: candidate fixes for the second-session tether stall, each one
-switchable at runtime from the host through one Koma settings byte, so a single hardware session can run the A/B.
+switchable at runtime from the host through one Koma settings byte, so one session can A/B them.
 
-Status: STATIC only. Every site, before-byte and callee below was read from the 2.40 image (firmware.ram); Codex's adversarial review (scratchpad review/codex-stall-verify.log) confirmed the three stock sites and
-their before-bytes and rated H1 "plausible, not confirmed". Nothing here has run on a camera.
+Status: STATIC only. Every site, before-byte and callee below was read from the 2.40 image; the stall hypothesis
+(H1) is plausible, not confirmed.
 
 Flag byte FLAGS = 0x1b8be (settings block offset 0x8be). It is a Koma byte that no feature and no ROWS entry uses
 (linker.ROW_BYTES 0x8b5..0x8cf, row bytes 0x8b5..0x8bd, 0x8bf..0x8cd taken), so ksettings' -KSET accepts any value
 0..255 there (count table 0: "no Koma row of this build"), writes it in any app state (state 9 included; only menu/ADJ
 open answers busy) and never runs the recipe reconcile (that starts at 0x8c0). Read at every use, so a -KSET takes
 effect on the next event. It persists with the settings block like every Koma byte. Encoding (self-validating, because
-the main body holds 0xff there):
+an unset settings block holds 0xff there):
 
     high nibble 0xA: the low nibble is the fix mask      any other value (0xff, 0x00, ...): DEFAULT_BITS
     bit 0 (1) fix 1   0xa201 no-op in the state-9 USB runner while USB is attached
@@ -26,7 +26,7 @@ it clears bit 0 of 0x12014068, calls 0x254d0(0x59), 0x50018(8), 0x50418(); else 
 [0x1bef60] = 2 when [0x1bef60] == 1, and [0x1bef5c] = 1 (sub-state 1, whose 0x5103 handling retracts at once). With
 the fix on, USB attached ([0x23a888] == 1) and not the service boot ([0x23a88c] == 0), the handler skips ALL of these
 and leaves through 0x6d6f0's own epilogue 0x6d7dc (the runner 0x6d670 ignores the return value, 0x6d6da -> 0x6d6ca):
-the runner stays in sub-state 0 exactly as before the message. Owner-visible: the LCD stays on in state 9 and the lens
+the runner stays in sub-state 0 exactly as before the message. User-visible: the LCD stays on in state 9 and the lens
 is not retracted by 0xa201 while the cable is in. Otherwise the original call runs (tail call, lr = 0x6d77d).
 
 Fix 2, redirect 0x284e6 (`bl 0x28f08`, before f000fd0f) in the transition 0x28378: record -> {1, 6, 9} with the lens

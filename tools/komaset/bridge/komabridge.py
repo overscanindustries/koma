@@ -9,15 +9,24 @@
 Stdlib only, plus tools/grdusb (pyusb + libusb are
 needed for --real only) and tools/komaset/komaset.py for the settings envelope checks.
 
-Serves 127.0.0.1:8765 only, or with --lan (phone mode) every interface with a per-run token required on every request.
+Serves 127.0.0.1:8765. Phone mode (--lan at start, or the app's Settings > Use on your phone at runtime; phoneaccess.py)
+adds this computer's network address, with a one-time pairing code by QR and a token required on every request there.
 Endpoints (JSON unless noted):
-  GET  /                  the Koma Setup page (web/koma-setup.html); GET /settings-map.json the map; GET /api the list
+  GET  /                  the Koma app (tools/komaapp/dist, built with `npm run build`; without a build the old page)
+  GET  /legacy            the Koma Setup page (web/koma-setup.html); GET /settings-map.json the map; GET /api the list
   GET  /status            bridge and camera state; touches no camera unless a new one has to be opened
   GET  /settings          RETR /EXT0/PARAM.CUR, base64 plus the komaset `check` summary
   POST /settings          {"data": base64 of 4096 bytes}; envelope-checked; -STOR to /EXT0/PARAM.DAT; read back
   POST /reboot            -CCTL poff,N (whether the camera comes back to a USB session afterwards is unknown, U)
   GET  /photos            the JPEGs under /EXT0/DCIM/*/ with size, date (-FDAT) and dimensions (-INFO)
   GET  /photos/<F>/<N>    one JPEG (image/jpeg) by RETR; ?thumb=1 serves the EXIF thumbnail if the file has one
+  GET  /photos/import     the import folder, the photos already imported (name|size|date keys) and the last import job;
+                          ?job=1 leaves out the imported list. No camera traffic (photoimport.py)
+  POST /photos/import     copy every photo not imported yet into <folder>/YYYY/MM/DD/, each read back and compared before
+                          it counts (a background job; 409 remote_on while remote control is on); DELETE stops it
+  POST /photos/folder     {"path": "~/Pictures/Koma"}: the import folder (made if its parent exists, write-checked);
+                          phone mode (--lan) refuses it from anything but this computer
+  GET  /photos?newest=1   the newest JPEG alone (by the -NLST file time): one -INFO and -FDAT, not one per photo
   POST /tether/start      -CCTL remtin + diaset,4 (still): remote control on (needs the Koma `tether` feature to fire)
   POST /tether/shoot      half-press, AF wait, full-press, release; then -NLST until a new JPEG appears or time runs out
   POST /tether/focus      half-press hold, AF wait, release
@@ -37,15 +46,20 @@ Endpoints (JSON unless noted):
   POST /keys              {"code": C, "action": A}: -CCTL keyset,A,C (A 0 release, 1 hold, 3 tap); remote control only
   POST /keys/tap          {"code": C}: -CCTL keyset,3,C (a tap presses and releases in one poll; no release is sent)
   POST /dial              {"n": N}: -CCTL diaset,N, N 0..8 (virtual mode dial); remote control only
+  GET  /webcam            the Webcam area (webcamhost.py: komacam in this process); POST /webcam/start, /webcam/stop;
+                          GET /webcam/preview, the picture the call receives. While it holds the camera, /tether/stop,
+                          /live/stop and GET /live (video) from anyone else answer 409 webcam_on (webcamhost.refuse)
+  GET  /phone             Use on your phone (phoneaccess.py): network access switched at runtime, one-time pairing
+                          code by QR; POST /phone/on, /phone/off, /phone/revoke (loopback), POST /phone/pair (network)
   GET  /ram?off=&len=     -KGET: block bytes from the camera's RAM (Looks task; a READ verb)
   GET  /ram/state         -KSTA decoded (READ verb); GET /ram/peek?addr=&len= -PEEK 1..256 bytes (READ verb)
   POST /ram               {"off": N, "val": V}: -KSET N,V, one byte, KSET_WINDOW (map-checked) or a KSET_STOCK byte
                           with one of its stock values (422 otherwise); camera `451 -KSET busy` -> 409 camera_busy
   POST /ram/batch         [{"off": N, "val": V}, ...]: up to 64, checked whole, sent in order (a busy reply retried up to 5 s)
 
-On the wire the card is /EXT0; the camera maps it to /ATA1 (handbook/07 section 3.2), so /EXT0/PARAM.DAT is the
-/ATA1/PARAM.DAT of the design doc. Hardware (2026-11-07, ~/koma-session-7..13): the selftest steps (connect, PARAM.CUR,
-photos, RETR, tether shot, -LVFR 0/1/2, -KGET/-KSET EV) ran on a real camera; POST /reboot (poff) never has.
+On the wire the card is /EXT0; the camera maps it to /ATA1 (docs/internals/07-usb-protocol.md), so /EXT0/PARAM.DAT is
+/ATA1/PARAM.DAT on the camera. Verified on a real camera: the selftest steps (connect, PARAM.CUR, photos, RETR, tether
+shot, -LVFR 0/1/2, -KGET/-KSET EV); POST /reboot (poff) has never been sent.
 """
 from __future__ import annotations
 
@@ -74,6 +88,7 @@ for p in (str(TOOLS), str(KOMASET_DIR), str(HERE)):
         sys.path.insert(0, p)
 
 import komaset  # noqa: E402  (checksum, magic and Koma header code; one implementation)
+import photoimport  # noqa: E402  (Photos import: folder, imported list, copy and check; host side only)
 from grdusb import descriptors  # noqa: E402
 from grdusb.protocol import (CHANNEL_COMMAND, CommandRefused, DirEntry, ProtocolError, encode_frame, fixed_command,  # noqa: E402
                              path_command, reply_code)
@@ -81,50 +96,49 @@ from grdusb.session import CameraError, Session, ShortWrite  # noqa: E402
 from grdusb.stage import STOR_DONE, STOR_OPEN, chunks, encode_data_frame  # noqa: E402
 from grdusb.transport import GateRefused, TransportError  # noqa: E402
 
-BRIDGE_VERSION = "0.3.2"
+BRIDGE_VERSION = "1.0.0"
 HOST, PORT = "127.0.0.1", 8765
 MAP_PATH = KOMASET_DIR / "settings-map.json"
 
-PARAM_CUR = "/EXT0/PARAM.CUR"  # written by the camera at every boot (decision 3; Koma feature, not built yet)
-PARAM_DAT = "/EXT0/PARAM.DAT"  # imported by the camera at the next boot (decision 2; not built yet)
+PARAM_CUR = "/EXT0/PARAM.CUR"  # written by the camera at every boot
+PARAM_DAT = "/EXT0/PARAM.DAT"  # imported by the camera at the next boot
 DCIM = "/EXT0/DCIM"
-POFF_ARG = "5"  # the value the emulator harness used; its meaning is U
+POFF_ARG = "5"  # the value the emulator harness used; its meaning is unknown
 
 # ------------------------------------------------------------------------------------------------ write allowlist
-# Decision 11: USB writes are allowlisted to the PARAM.DAT push and -CCTL poff. The owner extended it (2026-11-07) to
-# the tether key sequence: -CCTL remtin, diaset,0..8, keyset,A,C with A in {0 release, 1 hold, 3 tap} and C in
-# {2 clear-all, 26 RL1 half-press, 27 RL2 full-press}, and remtout (handbook/07 section 4.3). Extended again the same
-# day for the Remote task (a camera with a broken LCD): keyset,A,C for every key code C in 0..41 except the refused
-# ones below, with the same three actions. This table is the only place a write command can come from. Each row is
+# USB writes are allowlisted to the PARAM.DAT push and -CCTL poff, plus the tether key sequence: -CCTL remtin,
+# diaset,0..8, keyset,A,C with A in {0 release, 1 hold, 3 tap} and C in {2 clear-all, 26 RL1 half-press, 27 RL2
+# full-press}, and remtout. The Remote task (a camera with a broken LCD) adds keyset,A,C for every key code C in 0..41
+# except the refused ones below, with the same three actions. This table is the only place a write command can come
+# from. Each row is
 # (verb, the one argument it may carry), spelled out in full so the table is the audit. Nothing else is built, with no
 # override. Refused key codes are absent in every action.
 #
 # What the Remote extension lets the host reach: MENU/OK and the arrows drive the whole camera menu, including FORMAT
 # and RESTORE DEFAULTS. That is the reason card-script key macros were rejected before; here the OSD overlay
-# (-LVFR mode 2) makes it sighted. All of it is RAM-only injection (S class); none of it has fired on hardware.
-TETHER_DIAL = 4  # diaset,4 -> app state 2, still shooting (handbook/08 section 2.4 dial map; tether-feature README)
+# (-LVFR mode 2) makes it sighted. All of it is RAM-only injection; none of it has fired on hardware.
+TETHER_DIAL = 4  # diaset,4 -> app state 2, still shooting (dial map: 4 = still shooting)
 KEY_CLEAR, KEY_HALF, KEY_FULL = 2, 26, 27
 KEY_RELEASE, KEY_HOLD, KEY_TAP = 0, 1, 3
 KEY_ACTIONS = {KEY_RELEASE: "release", KEY_HOLD: "hold", KEY_TAP: "tap"}
-# Key table 0x18108c. Names are the
-# firmware's; physical labels are inference from the names only (I).
+# Key table 0x18108c. Names are the firmware's; physical labels are inferred from the names only.
 KEY_NAMES = ("MODE0", "MODE1", "MODE2", "MODE3", "SLIDE1", "SLIDE2", "POWER", "PLAY", "USB", "AVJACK", "DCJACK", "UP",
              "DOWN", "RIGHT", "LEFT", "TELE", "WIDE", "MACRO", "FLASH", "MENU", "TRASH", "CANCEL", "DISP", "ENTER",
              "QACCESS", "SHAKE", "RL1", "RL2", "DIAL_AC", "DIAL_BC", "PLUS", "MINUS", "DIAL2_AC", "DIAL2_BC", "PLUS2",
              "MINUS2", "DPUSH", "RING1", "RING2", "LENS1", "LENS2", "HEADUP")
 assert len(KEY_NAMES) == 42
 KEY_REFUSED = {
-    6: "POWER: a press also posts power-off 0x720d (handbook/08 section 2.4)",
-    7: "PLAY: a long hold can post power-off (0x5129c); with 8 the owner's power exclusion (handbook/07 section 4.3)",
-    8: "USB: the owner's power exclusion (handbook/07 section 4.3: 7 pressed / 8 released -> 0x720d)",
+    6: "POWER: a press also posts power-off 0x720d",
+    7: "PLAY: a long hold can post power-off (0x5129c); with 8 the firmware's power exclusion",
+    8: "USB: the firmware's power exclusion (7 pressed / 8 released -> 0x720d)",
     9: "AVJACK: a jack level, not a button; injecting it may move the picture to the AV output (I)",
-    24: "QACCESS: action 1 in state 9 calls 0xc4b64, switch to PTP mode (handbook/07 section 4.3)",
-    36: "DPUSH (ADJ push): action 1 in state 9 calls 0xc4b64, switch to PTP mode (handbook/07 section 4.3)",
+    24: "QACCESS: action 1 in state 9 calls 0xc4b64, switch to PTP mode",
+    36: "DPUSH (ADJ push): action 1 in state 9 calls 0xc4b64, switch to PTP mode",
 }
 # Inert when injected (polarity 2) or not injectable (generated from the wheel inputs): allowed, but they do nothing.
 KEY_INERT = {3, 4, 5, 10, 17, 18, 19, 21, 25, 30, 31, 34, 35, 39, 40}
 KEYSET_CODES = tuple(c for c in range(42) if c not in KEY_REFUSED)
-# The Remote panel, after the emulator key codes (ADJ is 36, refused here).
+# The Remote panel, after tools/grdui/playground.py KEYS (the emulator's key map; ADJ there is 36, refused here).
 PANEL_KEYS = {11: "Up", 12: "Down", 13: "Right", 14: "Left", 23: "MENU/OK", 22: "DISP", 15: "Zoom in (T)",
               16: "Zoom out (W)", 20: "Delete", 26: "Half press", 27: "Full press"}
 TETHER_ARGS = (("remtin",) + tuple(f"diaset,{n}" for n in range(9))
@@ -139,16 +153,17 @@ SETTINGS_SIZE = 4096
 # -KSET <off>,<val>: one byte of the settings block in RAM (offsets relative to 0x1b000, decimal on the wire), the Koma
 # live-settings verb (`ksettings` v1.1). The one write that is a RANGE rule rather than a
 # row of WRITE_ALLOWLIST, and it matches the firmware's own check exactly:
-#   KSET_WINDOW: the Koma rows 0x8b5..0x8cf, the recipe records 0x910..0x9ff and the FX table 0xa00..0xa13, any value
+#   KSET_WINDOW: the Koma rows 0x8b5..0x8cf, the look records 0x910..0x9ff, the FX table 0xa00..0xa14 and (Look IA)
+#     the ADJ LEVER mask 0xa18..0xa1b and STANDARD's record 0xa1c..0xa27 (0xa15..0xa17 pad), any value
 #     0..255 here (the bridge adds the map's per-row check). ALL of 0x8d0..0x8ff is refused (KSIO sub-header and its
 #     reserve), as are the recipe store header 0x900..0x90f (a bad header makes Koma reset every recipe), everything
-#     below 0x8b5 and from 0xa14 (checksum 0xffc included).
+#     below 0x8b5 and from 0xa28 (checksum 0xffc included).
 #   KSET_STOCK: the stock whitelist, a second table of single stock bytes with the exact values stock writes; after
 #     each one the camera runs the stock apply (0x553d4), so exposure / ISO / WB / metering / IMG SET take effect
 #     live. The camera answers `451 -KSET busy` while its menu or ADJ screen is open, while it is not idle in still
 #     record, or while its monitor is stopped (the bridge maps that to HTTP 409 camera_busy).
 # RAM only: the camera saves the block itself at a normal power-off. Never sent on hardware yet.
-KSET_WINDOW = ((0x8B5, 0x8CF), (0x910, 0x9FF), (0xA00, 0xA13))
+KSET_WINDOW = ((0x8B5, 0x8CF), (0x910, 0x9FF), (0xA00, 0xA27))
 KSET_STOCK = {
     0x053: frozenset(range(1, 26, 2)),          # EXPOSURE COMP.: odd 1..25 (13 = 0.0, -2.0..+2.0 in 1/3 EV)
     0x059: frozenset((0, 1, 2, 4, 6, 7, 8)),    # ISO SETTING: AUTO, 64, 100, 200, 400, 800, 1600
@@ -309,7 +324,7 @@ def _card_path(path: str) -> str:
 
 
 def read_command(verb: str, path: str | None = None) -> bytes:
-    """Read-only verbs, each hardware-confirmed (handbook/07 section 4.2). -VER/-NLST/RETR come from grdusb itself."""
+    """Read-only verbs, each hardware-confirmed. -VER/-NLST/RETR come from grdusb itself."""
     if verb == "-VER":
         return fixed_command("version")
     if verb == "PWD":
@@ -561,7 +576,7 @@ class BridgeError(Exception):
 
 class Link:
     """One camera connection, opened lazily and kept. -VER is sent once per connection, never by polling: on hardware
-    a -VER is followed by the main camera's screen going dark (handbook/07 section 6.2), so /status must not repeat it.
+    a -VER is followed by the camera's screen going dark, so /status must not repeat it.
     Polling only enumerates descriptors. All camera traffic is serialised by one lock."""
 
     def __init__(self, backend):
@@ -571,35 +586,37 @@ class Link:
         self.session: BridgeSession | None = None
         self.firmware = None
         self.message = "No camera yet."
+        # why no camera is open, for the app's words: "usb" (no usable USB library), "two" (more than one Ricoh device),
+        # "open" (on the bus, could not be opened), "mode" (USB CONNECTION not ORIGINAL), None otherwise
+        self.problem = None
         self.usb_mode = None
         self.photo_meta: dict = {}  # (path, size, stamp) -> (date, w, h)
         self.cache: "collections.OrderedDict[str, bytes]" = collections.OrderedDict()
         self.cache_bytes = 0
         self.tether = None  # {"active": bool} after /tether/start
+        self.tether_stops = 0  # bumped by every /tether/stop: a start that waited for the lock behind one is dropped
         # tether timings (seconds); tests shorten them
         self.af_wait_s, self.press_s, self.first_poll_s, self.poll_s, self.shot_timeout_s = 0.7, 0.3, 1.0, 0.5, 30.0
-        # after diaset,4 the camera can sit in USB app state 9 and answer -LVFR 0 with 451 until a key press (hardware,
-        # 2026-11-07): _start polls -LVFR 0 until it answers 150, up to this long, before any key is pressed. 15 s, not
-        # 6: two selftest runs on tether 1.6 saw no 150 within 6 s. lvfr_150_s is the last wait's measured time to the
-        # first 150 (None: that wait timed out or ended on another reply)
-        # 30 s (2026-11-07, sessions 10+): a second-session arm stalls ~16 s (5.6 s in state 9 + a 10.0 s record-init
-        # wait, root cause under investigation); 30 s covers it with margin
+        # after diaset,4 the camera can sit in USB app state 9 and answer -LVFR 0 with 451 until a key press:
+        # _start polls -LVFR 0 until it answers 150, up to this long, before any key is pressed. 30 s: a second-session
+        # arm stalls ~16 s (5.6 s in state 9 + a 10.0 s record-init wait) and a first arm can take over 6 s.
+        # lvfr_150_s is the last wait's measured time to the first 150 (None: that wait timed out or ended on another
+        # reply)
         self.lvfr_wait_s, self.lvfr_poll_s = 30.0, 0.4
         self.lvfr_150_s, self.lvfr_rearms_used = None, 0
-        # re-arm (hardware 2026-11-07, sessions 8/9): remtin + diaset,4 can both answer 200 and not take (-LVFR stays
+        # re-arm: remtin + diaset,4 can both answer 200 and not take (-LVFR stays
         # 451, keyset fires nothing; a later diaset,4 got 150 at once). With no 150 lvfr_rearm_s after the last arm,
         # the wait logs a -KSTA snapshot and sends remtin + diaset,4 again, at most lvfr_rearms times in lvfr_wait_s
         self.lvfr_rearm_s, self.lvfr_rearms = 5.0, 5
-        self.stable_poll_s = 0.3  # kept for old callers; the shot path no longer lists while the camera writes
-        # shot settle (HW 2026-11-08): no card command until -KSTA shows the camera done (cam_state 2, monitor_run 1)
+        self.stable_poll_s = 0.3  # unused by the shot path; kept for callers that set it
+        # shot settle: no card command until -KSTA shows the camera done (cam_state 2, monitor_run 1)
         self.ksta_poll_s, self.settle_unseen_s = SETTLE_KSTA_POLL_S, SETTLE_UNSEEN_S
         self.settle_delay_s, self.list_retry_s = SETTLE_DELAY_S, SETTLE_LIST_RETRY_S
         # the connect-time -VER arms a 3 s firmware timer (0xccb5c -> 0x114824) that posts message 0xa201; in record
-        # state 2 stock ends the runner with 12-30-05 (hardware, exit-probe-hw1.json), tether 1.5+ swallows it (in USB
-        # state 9 the stock runner handles it: LCD off / lens retract per the static read). With tether 1.6 (build
-        # 64CE9496) the old 5 s wait only delayed remtin, so remtin now follows connect at once (exit_probe and a race
-        # probe: remtin ~2 s after connect, 150 within ~0.5 s, 0 errors). ver_settle_s > 0 restores the old wait
-        # (remote control no sooner than that after -VER); it is off for every backend (tests set it explicitly).
+        # state 2 stock ends the runner with 12-30-05, tether 1.5+ swallows it (in USB state 9 the stock runner
+        # handles it: LCD off / lens retract per the static read). With tether 1.6 remtin follows connect at once.
+        # ver_settle_s > 0 delays remote control until that long after -VER; it is off for every backend (tests set it
+        # explicitly).
         self.ver_settle_s = 0.0
         self.ver_at = None        # link.clock() when this connection's -VER was answered
         self.sleep, self.clock = time.sleep, time.monotonic
@@ -612,10 +629,10 @@ class Link:
         self.live_hold = 0        # > 0 while a shoot or focus wants the camera
         self.live_max_fps = 30.0  # the loop never asks faster than this
         self.live_pause_poll_s = 0.05
-        # a 451 mid-stream is transient for this long: 10 s, not 3, since live view comes back ~7 s after a tethered
-        # shot on hardware (2026-11-07); the page shows "camera busy" meanwhile (/live/status paused, reason)
+        # a 451 mid-stream is transient for this long: 10 s, since live view comes back ~7 s after a tethered
+        # shot on hardware; the page shows "camera busy" meanwhile (/live/status paused, reason)
         self.live_off_grace_s, self.live_off_retry_s = 10.0, 0.1
-        # a RETR / -INFO / -FDAT inside remote control drops live view on hardware (2026-11-07, selftest re-entry): with
+        # a RETR / -INFO / -FDAT inside remote control drops live view on hardware: with
         # rearm_after_read on (the HTTP server sets it; the selftest re-arms itself) run() sends diaset,<dial> again
         # after any request that read the card while remote control was on. read_rearms counts them
         self.rearm_after_read = False
@@ -639,7 +656,7 @@ class Link:
         self.keepalive_idle_s, self.keepalive_check_s = 20.0, 5.0
         self.keepalives = 0
         self.log = lambda text: None
-        # -KSET busy retry (hardware 2026-11-07, session 7 step 8): right after an EV change the camera answers
+        # -KSET busy retry: right after an EV change the camera answers
         # `451 -KSET busy` for a moment (the EV overlay / AE redraw sets the flag ks_idle checks). ram_write retries a
         # busy reply every kset_busy_poll_s for up to kset_busy_wait_s before reporting camera_busy.
         self.kset_busy_wait_s, self.kset_busy_poll_s = 5.0, 0.25
@@ -675,6 +692,10 @@ class Link:
         self.last_keyset = self.clock()
 
     def start_keepalive(self):
+        if getattr(self, "_keepalive_started", False):  # one thread per Link (main() and the webcam both ask)
+            return
+        self._keepalive_started = True
+
         def loop():
             while True:
                 time.sleep(self.keepalive_check_s)
@@ -706,7 +727,7 @@ class Link:
     def remote_on(self) -> bool:
         return bool(self.tether and self.tether.get("active"))
 
-    def _drop(self, message: str):
+    def _drop(self, message: str, problem: str | None = None):
         if self.transport is not None:
             try:
                 self.transport.close()
@@ -720,24 +741,25 @@ class Link:
         self.photo_meta.clear()
         self.tether = None
         self.message = message
+        self.problem = problem
 
     def _ensure(self) -> bool:
         """Caller holds the lock. Returns True with an open session, else False with self.message set."""
         try:
             devices = self.backend.scan()
         except Exception as error:  # libusb missing, permissions, ...
-            self._drop(f"USB is not available: {type(error).__name__}: {error}")
+            self._drop(f"USB is not available: {type(error).__name__}: {error}", "usb")
             return False
         if not devices:
             self.usb_mode = None
             self._drop("No camera on USB.")
             return False
         if len(devices) > 1:
-            self._drop(f"{len(devices)} Ricoh devices on USB; connect one camera only.")
+            self._drop(f"{len(devices)} Ricoh devices on USB; connect one camera only.", "two")
             return False
         self.usb_mode = usb_mode_name(devices[0].product)
         if self.usb_mode != "ORIGINAL":
-            self._drop(f"A Ricoh camera is connected in {self.usb_mode} mode; set USB CONNECTION to ORIGINAL.")
+            self._drop(f"A Ricoh camera is connected in {self.usb_mode} mode; set USB CONNECTION to ORIGINAL.", "mode")
             return False
         if self.session is not None:
             return True
@@ -748,9 +770,10 @@ class Link:
             self.firmware = self.session.version()
             self.ver_at = self.clock()
             self.message = "Camera connected."
+            self.problem = None
             return True
         except (GateRefused, TransportError, ProtocolError, CameraError, CommandRefused) as error:
-            self._drop(f"Could not open the camera: {type(error).__name__}: {error}")
+            self._drop(f"Could not open the camera: {type(error).__name__}: {error}", "open")
             return False
 
     def status(self) -> dict:
@@ -759,6 +782,9 @@ class Link:
             if not busy:
                 self._ensure()
             connected = self.session is not None
+            problem = None if connected else self.problem
+            if not connected and problem is None and self.usb_mode and self.usb_mode != "ORIGINAL":
+                problem = "mode"
             return {
                 "bridge": "komabridge", "bridge_version": BRIDGE_VERSION, "backend": self.backend.name,
                 "simulated": self.backend.simulated, "connected": connected, "busy": busy,
@@ -767,7 +793,8 @@ class Link:
                            "usb_mode": self.usb_mode} if connected else None,
                 "tether": self.remote_on, "interval": self.interval.snapshot(),
                 "live": self.live.snapshot(), "osd": self.osd.snapshot(),
-                "usb_mode": self.usb_mode, "message": self.message,
+                "usb_mode": self.usb_mode, "message": self.message, "problem": problem,
+                "webcam": bool(getattr(self, "webcam", None) and self.webcam.holds),
                 **({"emu": self.backend.info()} if hasattr(self.backend, "info") else {}),
             }
         finally:
@@ -827,7 +854,9 @@ class Link:
 
 def read_root_file(s: BridgeSession, path: str) -> bytes | None:
     """RETR of a card-root file; None when the camera answers 450 (no such file). Never lists /EXT0: on a big card
-    (widefs FAT32) -NLST /EXT0 times out and poisons the session (HW 2026-11-08)."""
+    (widefs FAT32) -NLST /EXT0 times out and poisons the session.
+    The Koma feature rootlist 1.0 (tools/koma/features/rootlist.py) fixes this in firmware; it is verified only in the
+    emulator and the mock, so keep this workaround until it is proven on a 64 GB card."""
     try:
         return s.read_file(path)
     except CameraError as error:
@@ -941,15 +970,43 @@ REMOTE_ON_PHOTOS_MESSAGE = "Remote mode is on. Leave Remote before reading photo
 
 
 def _photos_blocked(link: Link):
-    """409 while tether is active: a card read in shooting state drops live view (HW 2026-11-08, stream ~1 fps after)."""
+    """409 while tether is active: a card read in shooting state drops live view (the stream runs at ~1 fps afterwards)."""
     if link.remote_on:
         raise BridgeError(409, REMOTE_ON_PHOTOS_MESSAGE, code="remote_on")
 
 
-def list_photos(link: Link) -> dict:
-    photos = link.run(lambda s: [photo_record(link, s, f, e) for f, e in dcim_jpegs(s)])
+def _guarded(link: Link, guard: bool, fn):
+    """fn for link.run, refused (409 remote_on) under the link's lock when guard is set. The route's own check runs
+    before the lock; remote control can come on while a request waits for it (tether_start queued behind a RETR), and
+    only a check under the lock sees that. The selftest reads inside remote control on purpose and passes no guard."""
+    if not guard:
+        return fn
+
+    def checked(s: BridgeSession):
+        _photos_blocked(link)
+        return fn(s)
+    return checked
+
+
+def list_photos(link: Link, guard: bool = False) -> dict:
+    photos = link.run(_guarded(link, guard, lambda s: [photo_record(link, s, f, e) for f, e in dcim_jpegs(s)]))
     photos.sort(key=lambda p: (p["date"], p["path"]), reverse=True)
     return {"count": len(photos), "photos": photos}
+
+
+def newest_photo(link: Link, guard: bool = False) -> dict:
+    """GET /photos?newest=1 (the Looks try-on's one photo): the same -NLST walk as list_photos, then -INFO and -FDAT for
+    the newest JPEG only, picked by the file time in its -NLST record (the time the camera wrote it; list_photos falls
+    back to it when -FDAT fails). A full listing costs both per photo (75 ms on HW: a big card outlasts a page's
+    timeout). "count" is every JPEG listed; "photos" holds the newest one, or none."""
+    def newest(s):
+        found = dcim_jpegs(s)
+        if not found:
+            return 0, []
+        folder, e = max(found, key=lambda fe: (fe[1].modified, fe[0], fe[1].name))
+        return len(found), [photo_record(link, s, folder, e)]
+    count, photos = link.run(_guarded(link, guard, newest))
+    return {"count": count, "photos": photos}
 
 
 def exif_thumbnail(jpeg: bytes) -> bytes | None:
@@ -980,20 +1037,51 @@ def exif_thumbnail(jpeg: bytes) -> bytes | None:
     return None
 
 
-def get_photo(link: Link, rel: str, thumb: bool) -> bytes:
+def get_photo(link: Link, rel: str, thumb: bool, guard: bool = False) -> bytes:
     parts = rel.split("/")
     if len(parts) != 2 or not all(_NAME83.match(p) for p in parts) or not parts[1].upper().endswith(".JPG"):
         raise BridgeError(400, "Photo paths look like 100RICOH/RIMG0001.JPG.")
     path = f"{DCIM}/{parts[0]}/{parts[1]}"
-    data = link.run(lambda s: link.cached_read(s, path))
+    data = link.run(_guarded(link, guard, lambda s: link.cached_read(s, path)))
     if thumb:
         return exif_thumbnail(data) or data
     return data
 
 
+def import_read(link: Link, rel: str, size: int) -> bytes:
+    """One photo for the import (photoimport.py), by RETR through the per-connection cache. A cached copy of another
+    size (read while the camera was still writing it) is dropped and read again. Guarded like the routes: live view
+    can start between the importer's own check and this read."""
+    path = f"{DCIM}/{rel}"
+
+    def fn(s: BridgeSession) -> bytes:
+        old = link.cache.get(path)
+        if old is not None and len(old) != size:
+            del link.cache[path]
+            link.cache_bytes -= len(old)
+        return link.cached_read(s, path)
+    return link.run(_guarded(link, True, fn))
+
+
+_IMPORTER_LOCK = threading.Lock()
+
+
+def importer(link: Link, **kw) -> "photoimport.Importer":
+    """The Photos import of this bridge, made on first use. kw (tests, screenshots) sets state_dir, folder and home; a
+    simulated camera gets a temporary state directory unless KOMA_STATE_DIR names one."""
+    with _IMPORTER_LOCK:
+        imp = getattr(link, "importer", None)
+        if imp is None or kw:
+            imp = link.importer = photoimport.Importer(
+                list_photos=lambda: list_photos(link, guard=True)["photos"],
+                read=lambda rel, size: import_read(link, rel, size),
+                blocked=lambda: link.remote_on, simulated=link.backend.simulated, **kw)
+        return imp
+
+
 # ------------------------------------------------------------------------------------------------ tether
 # Hardware-unproven, all of it. On stock firmware every -CCTL below answers 200 and nothing fires; with the Koma
-# `tether` feature loaded the camera should leave the USB state and shoot (EMU only).
+# `tether` feature loaded the camera should leave the USB state and shoot.
 # The bridge cannot tell the two apart from the replies, so a shot counts only when a new JPEG shows up in -NLST or
 # when -INFO on the predicted next file name answers 200 (-NLST can lag within one USB session).
 
@@ -1141,10 +1229,19 @@ def not_armed_message(link: Link) -> str:
 
 
 def tether_start(link: Link) -> dict:
+    # Requests run in lock order, not arrival order: a start sent before a stop (a page closing while live view retried)
+    # can win the lock after it and leave remote control on with nobody to turn it off. Such a start does nothing.
+    stops = link.tether_stops
+
     def fn(s):
+        if link.tether_stops != stops:
+            return None, []
         log = []
         return _start(link, s, log), log
     ok, log = link.run(fn)
+    if ok is None:
+        return {"ok": False, "active": False, "armed": False, "replies": [], "stopped": True,
+                "message": "Remote control was turned off before it started."}
     armed = bool(ok and link.tether and link.tether["armed"])
     message = ("Remote control is on." if armed else not_armed_message(link) if ok else
                "The camera refused remote control (see replies).")
@@ -1201,9 +1298,9 @@ def info_size(s: BridgeSession, folder: str, name: str) -> int | None:
         return None
 
 
-# Shot settle (HW 2026-11-08, main body, -KSTA every 0.3 s): before the press cam_state 2, rec_dispatch 5, monitor_run 1;
+# Shot settle (measured on a camera, -KSTA every 0.3 s): before the press cam_state 2, rec_dispatch 5, monitor_run 1;
 # half-press cam_state 6; full press cam_state 9 (capture and write); about 2.5 s after the press cam_state is back to 2
-# and monitor_run 1. A -NLST / -INFO on the card while the camera writes corrupted 1 of 3 shots on the spare (JPEG header
+# and monitor_run 1. A -NLST / -INFO on the card while the camera writes corrupted 1 of 3 shots (JPEG header
 # at byte 1 MiB). So after the keys: touch no card file until -KSTA says settled, wait SETTLE_DELAY_S more, then list.
 SETTLE_KSTA_POLL_S = 0.3      # -KSTA poll interval while waiting
 SETTLE_UNSEEN_S = 1.5         # cam_state 6 / 9 never seen: accept cam_state 2 + monitor_run 1 after this long
@@ -1283,6 +1380,7 @@ def tether_shoot(link: Link, fetch: bool) -> dict:
 
 
 def tether_stop(link: Link) -> dict:
+    link.tether_stops += 1
     link.stop_live()  # live view needs remote control; end the stream first
     link.interval.stop("tether stopped")
 
@@ -1398,7 +1496,7 @@ def interval_start(link: "Link", obj: dict) -> dict:
 # and refused whole (nothing sent) if one write fails the check; on the camera it runs in order (the live stream held
 # off) and stops at the first refusal; a busy reply is retried first (Link.kset_busy_wait_s). Nothing here is persistent: the camera saves the block itself at a normal power-off.
 # A `451 -KSET busy` (stock byte while the camera's menu / ADJ is open or it is not idle) is HTTP 409 camera_busy.
-# Hardware status: -KSET / -KGET do not exist on a camera yet (firmware lane); mock-tested only.
+# Hardware status: mock-tested only.
 RAM_BATCH_MAX = 64
 _MAP_CACHE: dict = {}
 
@@ -1578,9 +1676,8 @@ def ram_write(link: Link, writes: list, busy_wait_s: float | None = None) -> dic
 # The Remote task (a camera with a broken LCD): press the camera's keys over -CCTL keyset, set the virtual dial with
 # diaset. Refused unless remote control is on (POST /tether/start ran on this connection), so every press happens
 # inside the remtin ... keyset,0,2 + remtout bracket that /tether/stop closes. Tap (action 3) is one poll, press and
-# release (handbook/08 section 2.4), so a tap sends no release. Holds stay held until a release, or until
-# /tether/stop clears every injected key. Hardware status: never sent beyond keyset,3,22 / 1,26 / 1,27 (handbook/07
-# section 4.3); what the camera's UI does with an injected key is unobserved (its LCD is broken).
+# release, so a tap sends no release. Holds stay held until a release, or until
+# /tether/stop clears every injected key. Hardware status: never sent beyond keyset,3,22 / 1,26 / 1,27; what the camera's UI does with an injected key is unobserved (its LCD is broken).
 
 REMOTE_OFF_MESSAGE = "Remote control is off. Start it first (POST /tether/start)."
 
@@ -1787,16 +1884,16 @@ def grey_png(width: int, height: int, y: bytes) -> bytes:
             + chunk(b"IDAT", zlib.compress(raw, 1)) + chunk(b"IEND", b""))
 
 
-# ---- mode 2: the OSD page (firmware lane: -LVFR 2,<seq> = OSD page pull; payload layout as that lane reports it)
+# ---- mode 2: the OSD page (-LVFR 2,<seq> = OSD page pull)
 # Pixels: the 4 bpp OSD page rows, high nibble = left pixel, ceil(width / 2) bytes per row, width x height from the
-# header (authoritative; the lane expects 320x240 = 38,400 bytes, the emulator's page is 360x240 at stride 0xb4).
+# header (authoritative; the firmware page is 320x240 = 38,400 bytes, the emulator's is 360x240 at stride 0xb4).
 # Palette: header scale 0 = none sent, use OSD_FIXED_PALETTE; scale N > 0 = N entries of 4 bytes appended after the
 # pixels, each the raw VEN palette register for index 0..N-1 (u32 big-endian like the header, Y<<16 | Cb<<8 | Cr,
 # 0x161d30). Index 0 has no palette register (0x161f18 rejects it) and is transparent over the video plane: the
-# inference tools/koma/emu/grdui/display.py render_page makes, reused here. Entries past N render magenta, as display.py does.
+# inference tools/grdui/display.py render_page makes, reused here. Entries past N render magenta, as display.py does.
 OSD_TRANSPARENT = 0
 OSD_MAX_ENTRIES = 64  # the VEN has palette registers 0x12020100 + i*4 for i < 64 (0x161f18)
-# Raw VEN palette 0..15 read from the emulator (Session.ven.palette() in tools/koma/emu/grdui after a MENU/OK tap; the dump is in
+# Raw VEN palette 0..15 read from the emulator (tools/grdui Session.ven.palette() after a MENU/OK tap; the dump is in
 # testdata/osd-pages.json). Emulator RAM state, not a camera reading. The firmware rewrites some entries per screen: on
 # the shooting screen indexes 2, 7, 8, 9, 12 and 13 differ, so a fixed palette is approximate; prefer an appended one.
 OSD_FIXED_PALETTE_RAW = (None, 0xda0000, 0xcc0000, 0x2000000, 0x320000, 0x200000, 0x0, 0x3320000, 0x2000000, 0x8c0001,
@@ -1813,7 +1910,7 @@ PALETTE_ROM_NOTE = "palette: ROM default"
 
 
 def ycbcr_to_rgb(y, cb, cr):
-    """Copied from tools/koma/emu/grdui/display.py ycbcr_to_rgb (0x161d30 constants, signed Cb/Cr, Y scale 219/255). Panel
+    """Copied from tools/grdui/display.py ycbcr_to_rgb (0x161d30 constants, signed Cb/Cr, Y scale 219/255). Panel
     response unknown, so colours are approximate. Bits 24-25 of a register are ignored, as there."""
     cb = cb - 256 if cb > 127 else cb
     cr = cr - 256 if cr > 127 else cr
@@ -2003,16 +2100,54 @@ PAGE_PATH = KOMASET_DIR / "web" / "koma-setup.html"  # served at / so a phone ne
 TOKEN_HEADER = "X-Koma-Token"
 REPO_ROOT = KOMASET_DIR.parent.parent
 # Read-only static files, exact paths only (no directory serving, so no traversal): route -> (file, content type).
-# The page shell and the module files hold no camera access, so --lan serves them without the token. The module
-# files are your own builds: build/koma04.grmod (Koma 1), build/koma04w.grmod (Koma 2), plus build/SHA256SUMS.
+# The page shell holds no camera access, so --lan serves it without the token.
 STATIC_ROUTES = {
-    "/": (PAGE_PATH, "text/html; charset=utf-8"),
+    "/": (PAGE_PATH, "text/html; charset=utf-8"),  # the Koma app (tools/komaapp/dist) instead, once it is built
+    "/legacy": (PAGE_PATH, "text/html; charset=utf-8"),  # the pre-1.0 page: a checkout only (not in the koma-gr wheel)
     "/manifest.webmanifest": (KOMASET_DIR / "web" / "manifest.webmanifest", "application/manifest+json"),
     "/sw.js": (KOMASET_DIR / "web" / "sw.js", "application/javascript"),
-    "/build/koma04.grmod": (REPO_ROOT / "build" / "koma04.grmod", "application/octet-stream"),
-    "/build/koma04w.grmod": (REPO_ROOT / "build" / "koma04w.grmod", "application/octet-stream"),
-    "/build/SHA256SUMS": (REPO_ROOT / "build" / "SHA256SUMS", "text/plain; charset=utf-8"),
 }
+
+# The Koma app: Vite + Svelte compiled to static files in tools/komaapp/dist, served at /
+# with its assets under /assets/. Without a build, / stays the old page. Files are looked up by name only: one path
+# segment at the top or under assets/, plain characters, no dot files, resolved inside dist (no traversal).
+APP_DIST = TOOLS / "komaapp" / "dist"
+_APP_NAME = re.compile(r"^/(assets/)?[A-Za-z0-9][A-Za-z0-9._-]*$")
+_APP_TYPES = {".html": "text/html; charset=utf-8", ".js": "application/javascript", ".css": "text/css",
+              ".woff2": "font/woff2", ".woff": "font/woff", ".svg": "image/svg+xml", ".png": "image/png",
+              ".json": "application/json", ".webmanifest": "application/manifest+json", ".ico": "image/x-icon",
+              ".txt": "text/plain; charset=utf-8", ".jpg": "image/jpeg"}  # .jpg: the Looks try-on's sample photo
+# First path segments that belong to the bridge (endpoints and its own static files). No app file is ever served in
+# their place, so a file added to the app's public/ can neither shadow an endpoint nor skip the --lan token check.
+_API_ROOTS = {"status", "settings", "settings-map.json", "reboot", "photos", "tether", "live", "ram", "keys", "dial",
+              "api", "analysis", "docs", "legacy", "manifest.webmanifest", "sw.js", "install", "komalog", "webcam",
+              "phone"}
+
+
+def app_index() -> Path | None:
+    index = APP_DIST / "index.html"
+    return index if index.is_file() else None
+
+
+def app_file(route: str) -> tuple[Path, str] | None:
+    """(file, content type) of a built app file for an exact request path, or None."""
+    if route in ("/", "/index.html"):
+        index = app_index()
+        return (index, _APP_TYPES[".html"]) if index else None
+    if not _APP_NAME.match(route) or ".." in route or route.strip("/").split("/", 1)[0] in _API_ROOTS:
+        return None
+    path = (APP_DIST / route.lstrip("/")).resolve()
+    try:
+        path.relative_to(APP_DIST.resolve())
+    except ValueError:
+        return None
+    if not path.is_file() or path.suffix.lower() not in _APP_TYPES or path.name == "index.html" and route != "/index.html":
+        return None
+    return path, _APP_TYPES[path.suffix.lower()]
+
+
+# No fallback to the app's index for other addresses: the app routes by the hash (#/settings/camera), so the only
+# page address is /.
 
 
 def make_handler(link: Link, port: int, token: str | None = None):
@@ -2168,14 +2303,39 @@ def make_handler(link: Link, port: int, token: str | None = None):
                 raise BridgeError(400, "Send a JSON object.")
             return obj
 
+        def _photos_import(self, method: str, route: str, query):
+            """GET|POST|DELETE /photos/import and POST /photos/folder (photoimport.py). `choose` tells the app whether
+            this client may change the folder: in phone mode (--lan) only this computer may."""
+            imp = importer(link)
+            here = not token or self.client_address[0].startswith("127.") or self.client_address[0] == "::1"
+            try:
+                if route == "/photos/import" and method == "GET":
+                    out = imp.snapshot(keys=query.get("job", ["0"])[0] != "1")
+                elif route == "/photos/import" and method == "POST":
+                    _photos_blocked(link)
+                    out = imp.start()
+                elif route == "/photos/import" and method == "DELETE":
+                    out = imp.stop()
+                elif route == "/photos/folder" and method == "POST":
+                    if not here:
+                        raise BridgeError(403, photoimport.FOLDER_HERE_ONLY, code="folder_here_only")
+                    out = imp.set_folder(self._body_json().get("path"))
+                else:
+                    raise BridgeError(404, f"No such endpoint: {method} {route}")
+            except photoimport.Refused as error:
+                raise BridgeError(error.status, error.message, code=error.code)
+            out["choose"] = here
+            return self._json(200, out)
+
         def _guard(self) -> bool:
             """Loopback mode: loopback clients, our own Host header (DNS-rebinding guard), and only allowed Origins.
             Phone mode (--lan): the token, nothing else (a rebinding page cannot know it)."""
             if token:
                 if self.command == "OPTIONS" or self._token_ok():
                     return True
-                if self.command in ("GET", "HEAD") and urlsplit(self.path).path in STATIC_ROUTES:
-                    return True  # page shell and module files: no camera access
+                path = urlsplit(self.path).path
+                if self.command in ("GET", "HEAD") and (path in STATIC_ROUTES or path == "/legacy/" or app_file(path)):
+                    return True  # page shell, the app's files: no camera access
                 self._json(403, {"error": "token required (?token= or X-Koma-Token)", "code": "token"})
                 return False
             if not (self.client_address[0].startswith("127.") or self.client_address[0] == "::1"):
@@ -2207,7 +2367,23 @@ def make_handler(link: Link, port: int, token: str | None = None):
             url = urlsplit(self.path)
             route = url.path.rstrip("/") or "/"
             query = parse_qs(url.query)
+            if method in ("GET", "HEAD") and url.path == "/legacy/":  # the old page's relative links need /legacy
+                self.send_response(301)
+                self.send_header("Location", "/legacy" + ("?" + url.query if url.query else ""))
+                self.send_header("Content-Length", "0")
+                self.end_headers()
+                return
             try:
+                if route == "/webcam" or route.startswith("/webcam/"):  # the Webcam area (webcamhost.py)
+                    import webcamhost
+                    return webcamhost.dispatch(self, link, port, method, route, query)
+                if route == "/phone" or route.startswith("/phone/"):  # Use on your phone (phoneaccess.py)
+                    import phoneaccess
+                    return phoneaccess.dispatch(self, link, port, method, route, sys.modules[__name__])
+                if getattr(link, "webcam", None) is not None:  # the webcam holds the camera: only it ends live view
+                    import webcamhost
+                    if webcamhost.refuse(self, link, method, route, query):
+                        return None
                 if method == "GET" and route == "/status":
                     return self._json(200, link.status())
                 if method == "GET" and route == "/settings":
@@ -2295,31 +2471,67 @@ def make_handler(link: Link, port: int, token: str | None = None):
                         return self._json(200, set_dial(link, _int_field(obj, "n")))
                     action = KEY_TAP if route == "/keys/tap" else _int_field(obj, "action")
                     return self._json(200, press_key(link, _int_field(obj, "code"), action))
+                if route in ("/photos/import", "/photos/folder"):  # Photos import: no card read in the request itself
+                    return self._photos_import(method, route, query)
+                if route in ("/komalog", "/install", "/install/QRFLECT3", "/install/GRMOD.BIN", "/install/KOMAINST.BIN",
+                             "/install/stock"):
+                    import komainstall as KI  # the app's setup glue: card files and KOMALOG.TXT; no camera writes
+                    try:
+                        if method == "GET" and route == "/komalog":
+                            return self._json(200, KI.get_komalog(link))
+                        if method == "GET" and route == "/install":
+                            return self._json(200, KI.install_info())
+                        if method == "GET" and route == "/install/QRFLECT3":
+                            return self._send(200, KI.firmware_image(query.get("image", [""])[0]), "application/octet-stream")
+                        if method == "GET" and route == "/install/GRMOD.BIN":
+                            return self._send(200, KI.package_bytes(), "application/octet-stream")
+                        if method == "GET" and route == "/install/KOMAINST.BIN":
+                            return self._send(200, KI.installer_bytes(), "application/octet-stream")
+                        if method == "POST" and route == "/install/stock":
+                            length = int(self.headers.get("Content-Length") or 0)
+                            if length < 0:
+                                raise BridgeError(400, "Bad Content-Length.")
+                            if length > KI.STOCK_MAX:
+                                raise BridgeError(413, "Body too large.")
+                            return self._json(200, KI.take_stock(self.rfile.read(length)))
+                    except KI.InstallError as error:
+                        raise BridgeError(error.status, error.message, **error.extra)
                 if method == "GET" and (route == "/photos" or route.startswith("/photos/")):
                     _photos_blocked(link)
+                if method == "GET" and route == "/photos" and query.get("newest", ["0"])[0] == "1":
+                    return self._json(200, newest_photo(link, guard=True))
                 if method == "GET" and route == "/photos":
-                    return self._json(200, list_photos(link))
+                    return self._json(200, list_photos(link, guard=True))
                 if method == "GET" and route.startswith("/photos/"):
                     rel = unquote(route[len("/photos/"):])
-                    data = get_photo(link, rel, query.get("thumb", ["0"])[0] == "1")
+                    data = get_photo(link, rel, query.get("thumb", ["0"])[0] == "1", guard=True)
                     return self._send(200, data, "image/jpeg",
                                       [("Content-Disposition", f'inline; filename="{rel.rsplit("/", 1)[-1]}"')])
-                if method == "GET" and route in STATIC_ROUTES:  # the page itself (phone mode needs no file://), app shell
+                if method == "GET" and (route == "/" or route.startswith("/assets/") or route.count("/") == 1):
+                    found = app_file(url.path if url.path.startswith("/assets/") else route)
+                    if found:  # the Koma app (tools/komaapp/dist); / falls back to the old page without a build
+                        return self._send(200, found[0].read_bytes(), found[1])
+                if method == "GET" and route in STATIC_ROUTES and STATIC_ROUTES[route][0].is_file():
+                    # the page itself (phone mode needs no file://), app shell
                     path, ctype = STATIC_ROUTES[route]
                     return self._send(200, path.read_bytes(), ctype)
-                if method == "GET" and route.startswith("/build/"):
-                    raise BridgeError(403, "Only the Koma module files are served.")
                 if method == "GET" and route == "/settings-map.json":
                     return self._send(200, MAP_PATH.read_bytes(), "application/json")
                 if method == "GET" and route == "/api":
                     return self._json(200, {"bridge": "komabridge", "endpoints": [
-                        "GET / (the Koma Setup page)", "GET /settings-map.json", "GET /ram?off=&len=", "POST /ram",
+                        "GET / (the Koma app)", "GET /legacy (the Koma Setup page)", "GET /settings-map.json", "GET /ram?off=&len=", "POST /ram",
                         "POST /ram/batch",
                         "GET /status", "GET /settings", "POST /settings", "POST /reboot", "GET /photos",
-                        "GET /photos/<folder>/<name>[?thumb=1]", "POST /tether/start", "POST /tether/shoot[?fetch=1]",
+                        "GET /photos/<folder>/<name>[?thumb=1]", "GET|POST|DELETE /photos/import[?job=1]",
+                        "POST /photos/folder", "POST /tether/start", "POST /tether/shoot[?fetch=1]",
                         "POST /tether/focus", "POST /tether/stop", "POST|GET|DELETE /tether/interval",
                         "GET /live?mode=1|0|2", "GET /live/frame?mode=1|0|2", "GET /live/status[?mode=2]",
-                        "POST /live/stop[?mode=1|2]", "GET /keys", "POST /keys", "POST /keys/tap", "POST /dial"]})
+                        "POST /live/stop[?mode=1|2]", "GET /keys", "POST /keys", "POST /keys/tap", "POST /dial",
+                        "GET /komalog", "GET /install", "GET /install/QRFLECT3?image=koma|official", "GET /install/GRMOD.BIN",
+                        "GET /install/KOMAINST.BIN",
+                        "POST /install/stock",
+                        "GET /webcam[?check=1]", "POST /webcam/start", "POST /webcam/stop", "GET /webcam/preview",
+                        "GET /phone", "POST /phone/on", "POST /phone/off", "POST /phone/revoke", "POST /phone/pair"]})
                 raise BridgeError(404, f"No such endpoint: {method} {route}")
             except BridgeError as error:
                 return self._json(error.status, {"error": error.message, **error.extra})
@@ -2353,19 +2565,19 @@ def make_server(link: Link, host: str = HOST, port: int = PORT, token: str | Non
 
 REAL_WARNING = """\
 WARNING: komabridge --real talks to a REAL camera over USB.
-  Its selftest passed 9/9 on a camera with Koma tether 1.6 (2026-11-07): reads (-VER, PWD, -NLST, RETR, -INFO, -FDAT,
+  Its selftest passed 9/9 on a camera with the Koma tether feature: reads (-VER, PWD, -NLST, RETR, -INFO, -FDAT,
   -LVFR 0/1/2, -KGET), a tethered shot, an EV change by -KSET. It can write: -STOR of /EXT0/PARAM.DAT, -CCTL poff,{poff}
   (never sent on hardware), -KSET, and the remote keys (-CCTL remtin, diaset,0..8, keyset,0|1|3 with any key code 0..41 except the
   power, PTP-switch and AV-jack codes 6, 7, 8, 9, 24, 36, remtout). The keys reach the whole camera menu, FORMAT and
   RESTORE DEFAULTS included. The shutter fires only with the Koma tether feature loaded. Power the camera on BEFORE
-  plugging in USB. Use the spare body first. Stop with Ctrl-C.
+  plugging in USB. Stop with Ctrl-C.
 """.format(poff=POFF_ARG)
 
 
 LAN_NOTE = """\
-PHONE MODE (--lan): the bridge listens on every network interface. Anyone on this network who has the token
-  (it is in the URL and the QR code below, new each run) can read the card and press the camera's buttons.
-  Use it on a network you trust; stop with Ctrl-C.
+PHONE MODE (--lan): the bridge also listens on this computer's network address. The first phone that opens the address
+  below (or scans its QR code) pairs, and the code then stops working. A paired phone can read the card and press the
+  camera's buttons. Revoke or turn it off in the Koma app: Settings > Use on your phone. Use it on a network you trust.
 """
 
 
@@ -2390,20 +2602,31 @@ def main(argv=None) -> int:
     mode.add_argument("--real", action="store_true", help="open a real camera over USB (off by default)")
     mode.add_argument("--emu", action="store_true",
                       help="the real 2.40 firmware + a Koma module in the emulator (needs KOMA_FIRMWARE and unicorn)")
-    ap.add_argument("--module", help="--emu: the GRMOD to load (default: koma04, built in memory)")
+    ap.add_argument("--module", help="--emu: the GRMOD to load (default: emulink.DEFAULT_MODULE)")
     ap.add_argument("--port", type=int, default=PORT)
     ap.add_argument("--mock-reboot-s", type=float, default=4.0, help="mock: seconds the camera is away after poff")
     ap.add_argument("--mock-stays-off", action="store_true", help="mock: after poff the camera does not come back")
     ap.add_argument("--mock-hw", action="store_true",
-                    help="mock: tonight's hardware timings (20 s second-session arm, 7 s -KSET busy after an EV change, "
+                    help="mock: timings measured on a camera (20 s second-session arm, 7 s -KSET busy after an EV change, "
                          "live view back 7 s after a shot, a card read in remote control drops live view)")
     ap.add_argument("--mock-tether", action="store_true",
                     help="mock: the Koma tether feature is loaded, so a full press makes a new JPEG (~1.5 s later)")
+    ap.add_argument("--mock-koma", action="store_true",
+                    help="mock: PARAM.CUR is a Koma camera's (KOMA header, look store, KSIO sub-header, GR II layout)")
+    ap.add_argument("--mock-earlier", action="store_true",
+                    help="mock: as --mock-koma, on an earlier (pre-1.0) Koma build: firmware tag 240K2, not 240K1.0")
+    ap.add_argument("--mock-patterns", action="store_true",
+                    help="mock: the drawn test photos and moving live pattern, not the sample frames from "
+                         "tools/komaapp/design/samples (the default when that folder is there)")
     ap.add_argument("--quiet", action="store_true", help="no request log")
     ap.add_argument("--lan", action="store_true",
-                    help="phone mode: listen on every interface (0.0.0.0) and require a random per-run token")
+                    help="phone mode at start: also listen on this computer's network address, with a one-time pairing "
+                         "code (the app's Settings > Use on your phone switches the same thing at runtime)")
+    ap.add_argument("--mock-vcam", action="store_true",
+                    help="mock: the Webcam area sees a simulated computer with OBS Virtual Camera ready and feeds a "
+                         "simulated virtual camera (webcamhost.MockProbe), so it never touches this computer's own")
     ap.add_argument("--selftest", action="store_true",
-                    help="no server: run the USB self-test steps once (selftest.py), "
+                    help="no server: run the hardware USB steps once (selftest.py), "
                          "write report.md + report.json + artifacts to --out, exit 0 if nothing failed")
     ap.add_argument("--out", default=str(Path.home() / "koma-session"),
                     help="--selftest: the directory for the report and saved files (default ~/koma-session)")
@@ -2426,9 +2649,12 @@ def main(argv=None) -> int:
         sys.stderr.write(REAL_WARNING)
         backend = RealBackend()
     else:
-        from mockcard import MockBody, NOTICE
+        import mockcard
+        from mockcard import MockBody, NOTICE, SAMPLES_DIR
         backend = MockBackend(MockBody(reboot_s=a.mock_reboot_s, returns_after_poff=not a.mock_stays_off,
-                                       tether=a.mock_tether))
+                                       tether=a.mock_tether, koma=a.mock_koma or a.mock_earlier,
+                                       **({"koma_tag": mockcard.EARLIER_MOCK_TAG} if a.mock_earlier else {}),
+                                       samples=None if a.mock_patterns or not SAMPLES_DIR.is_dir() else SAMPLES_DIR))
         if a.mock_hw:
             backend.body.hw_timings()
         sys.stderr.write(NOTICE + "\n")
@@ -2439,31 +2665,48 @@ def main(argv=None) -> int:
         link = Link(backend)
         link.log = lambda text: sys.stderr.write(text + "\n")
         return selftest.run(link, a.out, log=link.log, connect_wait_s=180.0 if a.emu else 0.0)
-    token = secrets.token_urlsafe(16) if a.lan else None
     link = Link(backend)
     link.log = lambda text: sys.stderr.write(text + "\n")
     link.rearm_after_read = True  # the page reads photos inside remote control; the selftest re-arms itself
     link.start_keepalive()
-    server = make_server(link, host="0.0.0.0" if a.lan else HOST, port=a.port, token=token)
+    if a.mock and a.mock_vcam:
+        import webcamhost
+        webcamhost.configure_mock(link)
+    server = make_server(link, host=HOST, port=a.port)
     server.quiet = a.quiet
-    if a.lan:
-        url = f"http://{lan_address()}:{a.port}/?token={token}"
-        sys.stderr.write(LAN_NOTE)
-        print(f"komabridge {BRIDGE_VERSION} ({backend.name}), phone mode. Open this on the phone (same Wi-Fi):\n\n  {url}\n",
-              flush=True)
-        try:
-            import qrmini
-            print(qrmini.terminal(url), flush=True)
-        except Exception as error:  # noqa: BLE001  (the URL above is enough)
-            print(f"(no QR code: {error})", flush=True)
-    else:
-        sys.stderr.write(f"komabridge {BRIDGE_VERSION} ({backend.name}) on http://127.0.0.1:{a.port}/ "
-                         f"(the page is served there too)\n")
+    sys.stderr.write(f"komabridge {BRIDGE_VERSION} ({backend.name}) on http://127.0.0.1:{a.port}/ "
+                     f"(the page is served there too)\n")
+    if a.lan:  # phone mode: the runtime switch of Settings > Use on your phone, turned on at start (phoneaccess.py)
+        import phoneaccess
+        snap = phoneaccess.for_link(link, a.port, sys.modules[__name__]).turn_on()
+        if snap["on"]:
+            sys.stderr.write(LAN_NOTE)
+            print(f"komabridge {BRIDGE_VERSION} ({backend.name}), phone mode. Open this on the phone (same Wi-Fi):\n\n"
+                  + phoneaccess.terminal_note(snap["url"]), flush=True)
+        else:
+            print(f"phone mode did not start: {snap['error']['text']}", file=sys.stderr, flush=True)
+    if threading.current_thread() is threading.main_thread():  # Quit (SIGTERM) and a closed terminal stop cleanly too
+        import signal
+
+        def _stop(signum, frame):
+            raise KeyboardInterrupt
+        for sig in ("SIGTERM", "SIGHUP"):
+            if hasattr(signal, sig):
+                signal.signal(getattr(signal, sig), _stop)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        ends = [sys.modules[n] for n in ("webcamhost", "phoneaccess") if n in sys.modules]
+        if ends:  # the webcam ends remote control through this server's own endpoints, so it keeps serving meanwhile
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            for mod in ends:
+                try:
+                    mod.shutdown(link)
+                except Exception as error:  # noqa: BLE001
+                    sys.stderr.write(f"komabridge: {mod.__name__} shutdown: {type(error).__name__}: {error}\n")
+            server.shutdown()
         server.server_close()
     return 0
 

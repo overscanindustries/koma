@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""verify_session: read a copy of the spare's card root after a blind hardware session and say what happened.
+"""verify_session: read a copy of a camera's card root after a hardware session and say what happened.
 
   python3 tools/komaset/verify_session.py <card-root-dir> [--expect-tag Rev024M] [--baseline PARAM.CUR]
 
@@ -10,6 +10,7 @@ ATTENTION but KOMALOG.TXT or PARAM.CUR is MISSING.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import sys
 from pathlib import Path
 
@@ -186,8 +187,10 @@ def section_import(root, out):
 
 def _metadata():
     try:
-        import makernote
-        return makernote
+        spec = importlib.util.spec_from_file_location("_vs_meta", HERE.parent / "spare_test" / "metadata.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
     except Exception:
         return None
 
@@ -208,7 +211,7 @@ def section_jpeg(root, out, expect_tag):
     for p in files[:3]:
         rel = p.relative_to(root)
         if meta is None:
-            out.append(f"  {rel}: MakerNote reader tools/komaset/makernote.py could not be loaded, firmware tag skipped")
+            out.append(f"  {rel}: MakerNote reader tools/spare_test/metadata.py could not be loaded, firmware tag skipped")
             continue
         try:
             rev = meta.read(p).get("rev")

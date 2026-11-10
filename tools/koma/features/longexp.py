@@ -1,8 +1,8 @@
 """longexp: long exposure limit (byte 0x1b8ba) 0 = 180 s (stock), 1 = 240 s, with the shooting-display and EXIF labels.
 
-Setting-driven port of the earlier long-exposure patch (O-emu: table[8] = 7200 -> count 902 -> ~240.5 s).
+Setting-driven: table[8] = 7200 gives count 902, ~240.5 s.
 
-Code (D): M index 0x1b0c5 is clamped to 42 (0x6f42c), Tv 0x17ec3c[42] = -120. The exposure count is
+Code: M index 0x1b0c5 is clamped to 42 (0x6f42c), Tv 0x17ec3c[42] = -120. The exposure count is
 0x17fe86[bucket 0x4699c(Tv)]; bucket 8 is Tv <= -120, i.e. index 42 only. Readers: 0x46ef4 (shot, via 0x47074 at
 0x470f4) and 0x469d2 (0x47074 / 0x45354). Above 0x3fd the count becomes round(n/8) and is packed into a 10-bit field
 (0x457c8/0x459ac): 8172 is the largest safe value (field 1023, ~273 s); 7200 keeps a 121-unit margin.

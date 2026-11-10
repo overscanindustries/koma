@@ -35,6 +35,7 @@ import komabridge  # noqa: E402
 from mockcard import MockBody  # noqa: E402
 
 SOAK_S = float(os.environ.get("KOMACAM_SOAK_S", "60"))
+BENCH = REPO / "analysis" / "webcam" / "bench-mock.json"
 
 
 def free_port() -> int:
@@ -59,7 +60,7 @@ class StampedBody(MockBody):
 
 class SlowArmBody(StampedBody):
     """The first arm after a session opens takes arm_s seconds to answer -LVFR 150 (hardware: a second-session arm
-    stalled ~16 s, 2026-11-07); re-arms inside that window do not reset it."""
+    stalled ~16 s); re-arms inside that window do not reset it."""
 
     def __init__(self, *a, arm_s=20.0, from_session=1, **kw):
         super().__init__(*a, **kw)
@@ -171,8 +172,11 @@ def stats(xs):
 
 
 def write_bench(key, value):
-    """Print one benchmark result (simulated camera: komabridge mock, in-process; says nothing about a real camera)."""
-    print(f"bench {key}: {json.dumps(value)}")
+    BENCH.parent.mkdir(parents=True, exist_ok=True)
+    data = json.loads(BENCH.read_text()) if BENCH.exists() else {}
+    data["_note"] = "SIMULATED camera (komabridge mock, in-process). Says nothing about a real GR DIGITAL."
+    data[key] = value
+    BENCH.write_text(json.dumps(data, indent=2) + "\n")
 
 
 # ------------------------------------------------------------------------------------------------ tests
@@ -296,8 +300,8 @@ def test_slow_arm_20s():
 
 
 def test_unplug_reconnect_with_slow_second_session_arm():
-    """USB pulled for 4 s, then the second session's arm takes ~20 s (HW 2026-11-07: a second-session arm stalled
-    ~16-20 s): komacam waits for the camera, reconnects, waits out the slow arm with one /tether/start, streams."""
+    """USB pulled for 4 s, then the second session's arm takes ~20 s (a second-session arm stalled ~16-20 s on
+    hardware): komacam waits for the camera, reconnects, waits out the slow arm with one /tether/start, streams."""
     body = SlowArmBody(arm_s=20.0, from_session=2)
     with Rig(body) as rig:
         assert rig.wait(lambda: rig.app.sup.state == "streaming", 10)

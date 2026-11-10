@@ -105,7 +105,7 @@ def test_three_way_chain_with_recipe_slots_runs_the_real_recipe_hook():
 
 
 def test_recipe_port_matches_original_behaviour():
-    """Same observable result as the earlier recipe-slots selfcheck slot-1/slot-2 unit runs, through Koma."""
+    """Same observable result as the standalone recipe-slot unit runs, through Koma."""
     for slot, imgset, want_mmio, curve in (("1", 3, [], "9aad2861"),
                                            ("2", 5, [("12018004", "7a676172"), ("12018104", "098f0400"),
                                                      ("12018108", "03870600"), ("1201810c", "03018300"),

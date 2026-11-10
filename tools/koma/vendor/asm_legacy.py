@@ -1,4 +1,4 @@
-# Vendored from the earlier emu_frontier2_asm.py (the emu-frontier-2 Thumb assembler wrapper). Edits: imports, firmware/data paths, writers removed.
+# Vendored from tools/emu_frontier2_asm.py (the emu-frontier-2 Thumb assembler wrapper). Edits: imports, firmware/data paths, writers removed.
 """Tiny Thumb (ARMv4T, big-endian) assembler wrapper for emu-frontier-2 patches. Offline; writes no image.
 
 assemble(src, base, calls) runs llvm-mc (thumbeb, arm7tdmi) on `src`, which may contain absolute-call

@@ -1,8 +1,8 @@
 """waitdiag: TEMPORARY diagnostic for the second-session record-entry stall (tether). Not a release feature.
 
-Hardware (2026-11-07): after a previous `-CCTL remtin` / `remtout` session, `remtin` + `diaset,4` spends ~5.6 s in state 9
-and then ~10.0 s in record init (rec_dispatch [0x1fb9bc] = 0) before live view; a fresh boot takes 0.5 s. Codex's static
-analysis (scratchpad review/codex-arm2.log) found no proven culprit, only 10 s waits reachable from record init (LCD
+Observed: after an earlier `-CCTL remtin` / `remtout` session, `remtin` + `diaset,4` spends ~5.6 s in state 9
+and then ~10.0 s in record init (rec_dispatch [0x1fb9bc] = 0) before live view; a fresh boot takes 0.5 s. Static
+analysis found no proven culprit, only 10 s waits reachable from record init (LCD
 semaphores [0x1a8d14] / [0x1a8d18], [0x1a923c], [0x1a9210], [0x1f4c5c], the 0x67020 / 0x6706c handshakes, event-flag
 waits) and designed one hook set that times the shared wait implementations. This is that design.
 
@@ -78,7 +78,7 @@ RING_OFF = 4 * HDR_WORDS
 assert PROV_OFF + 16 * len(HANDLES) <= RING_OFF
 RECORD = ["status", "kind", "caller", "parent", "task", "object", "timeout", "entry", "exit", "ret", "detail",
           "dispatch"]
-# kind: (name, hook site, original target, Codex before-bytes, what caller / parent / detail mean)
+# kind: (name, hook site, original target, expected before-bytes, what caller / parent / detail mean)
 KINDS = {
     1: ("sem_wait", 0x5D992, 0x15F458, "f101fd61", "caller of 0x5d978 ([r5+0x10])"),
     3: ("queue_send", 0x5D7C8, 0x15F244, "f101fd3c", "caller of 0x5d7a8 ([r6+0x10]); detail = message id"),
@@ -760,7 +760,7 @@ def _hooks():
 
 
 def before_bytes():
-    """(site, Codex before-bytes) for every hook: tests check them against the 2.40 image."""
+    """(site, expected before-bytes) for every hook: tests check them against the 2.40 image."""
     return [(s, bytes.fromhex(b)) for _, s, _, b, _ in KINDS.values()] + [(SEM_REL[0], bytes.fromhex(SEM_REL[2]))] + \
         [(s, bytes.fromhex(b)) for s, _, b, _, _ in PHASE_HOOKS]
 
@@ -789,7 +789,7 @@ def smoke_checks(obs):
 def make(opts):
     for site, b in before_bytes():
         if fw.ram(site, 4) != b:
-            raise ValueError(f"waitdiag: before-bytes at {site:#x} differ from Codex's {b.hex()}")
+            raise ValueError(f"waitdiag: before-bytes at {site:#x} differ from the expected {b.hex()}")
     return Feature(
         name=NAME, version=VERSION, summary=SUMMARY, options=opts, source=SRC, init="wd_init", smoke=smoke_checks,
         hooks=_hooks(), requires=["ksettings"],

@@ -1,0 +1,3 @@
+# Koma identity
+
+The Koma logo is コマ: "koma" is one frame of film. The two katakana are drawn as plain geometric shapes, with the tick of マ in amber, and sit beside the word KOMA (outlined from `KomaWordmark.ttf`, no live text). The README header uses `koma-logo-light.svg` and `koma-logo-dark.svg`, picked by the viewer's colour scheme. マ alone is the icon: favicon, tray and app icons. The geometry has one source, `tools/komalauncher/komamark.py`; the icons are regenerated with `tools/komalauncher/make_assets.py`, and the two lockups are written from the same module and the wordmark font. This is an independent project identity, not a Ricoh logo.

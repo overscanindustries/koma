@@ -1,0 +1,190 @@
+/* Looks: the gallery and the look editor. Built from the shared tokens, classes and components (app.css
+   .title, .micro, .camlabel, .small, .btn, .select, .link; ui/SectionHead, ui/Segmented, ui/Details); only the Looks
+   layout lives here, scoped under .lk, .ed and .lk-bar. Spacing is the tokens': section heads by SectionHead, the
+   lede gap, 1 px hairlines instead of boxes, radius --r-img on photographs. */
+
+/* ---------------------------------------------------------------- gallery */
+.lk { max-width: 1120px; padding-top: 4px; }
+.lk-head h1:focus, .ed-head h1:focus { outline: none; }
+.lk-src, .lk-status {
+  margin-top: var(--lede-gap); display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); color: var(--sub);
+}
+/* line 1: what the looks are drawn on, with its APPROXIMATE tag; line 2: why the sample, and the one action */
+.lk-src { flex-direction: column; gap: 4px; }
+.lk-src p { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s1) var(--s3); margin: 0; }
+.lk-src .why { align-items: center; gap: 4px 0; min-height: 38px; }
+.lk-src .why .btn { margin-left: var(--s4); }
+.lk-src .hold { margin-top: var(--s2); }
+.lk-src .micro { color: var(--sub); }
+.lk-status { align-items: center; gap: 10px; }
+.lk .dot, .lk-bar .dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%; flex: none; margin-right: 8px;
+  vertical-align: middle; position: relative; top: -1px;
+}
+.lk .dot.faint, .lk-bar .dot.faint { background: var(--faint); }
+.lk .dot.ok, .lk-bar .dot.ok { background: var(--ok); }
+.lk .dot.bad, .lk-bar .dot.bad { background: var(--bad); }
+
+.lk-list { margin-top: var(--s6); }
+.lk-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s6) var(--col-gap);
+}
+/* the section heads are ui/SectionHead (.sh); the grid under one keeps a little more air than the head's own gap */
+.lk-list .sh + .lk-grid { margin-top: var(--s3); }
+
+.lk .card { display: block; position: relative; cursor: pointer; --frame-line: var(--line); }
+.lk .card:hover { --frame-line: var(--sub); }
+.lk .card.sel { --frame-line: var(--ink); }
+.lk .card input:focus-visible ~ .frame { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* the look on the camera: a 2 px amber rule over its photograph, nothing else */
+.lk .rule, .ed-pic .rule { display: block; height: 2px; margin-bottom: 6px; background: transparent; }
+.lk .card.on .rule, .ed-pic.on .rule { background: var(--acc); }
+.lk .cap { display: flex; align-items: baseline; gap: 10px; margin-top: var(--s3); min-width: 0; }
+/* names in --sub; the selected card's in ink at 600, with its outline (the amber rule alone marks the camera's look) */
+.lk .cap .name { color: var(--sub); transition: color var(--t-fast) var(--ease); }
+.lk .card:hover .cap .name { color: var(--ink); }
+.lk .card.sel .cap .name { color: var(--ink); font-weight: 600; }
+.lk .cap .micro { color: var(--sub); }
+.lk .cap .tag { margin-left: auto; padding: 1px 4px 0; border: 1px solid var(--line-strong); line-height: 14px; }
+.lk .line { display: block; margin-top: var(--s1); color: var(--sub); }
+
+/* no photo to draw on: the looks as a hairline list of names and lines (a Row), no frames that say nothing;
+   the amber rule still marks the look on the camera, the 1 px ink outline the selected one */
+.lk-list.bare .lk-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+.lk-list.bare .sh + .lk-grid { margin-top: calc(-1 * var(--head-below)); }   /* the head's hairline is the first row's top edge */
+.lk-list.bare .card {
+  display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: baseline; column-gap: var(--col-gap);
+  min-height: var(--row-h); padding: var(--s3) var(--s2); border-bottom: 1px solid var(--line);
+}
+.lk-list.bare .rule { position: absolute; left: 0; right: 0; top: -1px; margin: 0; }
+.lk-list.bare .cap, .lk-list.bare .line { margin-top: 0; }
+.lk-list.bare .line { transition: color var(--t-fast) var(--ease); }
+.lk-list.bare .card:hover .line { color: var(--ink); }
+.lk-list.bare .card.sel { outline: 1px solid var(--ink); outline-offset: -1px; }
+.lk-list.bare .card:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.lk-empty { margin-top: var(--head-above); display: grid; gap: var(--s2); justify-items: start; max-width: 60ch; }
+.lk-empty .micro { color: var(--sub); }
+
+.lk-details { margin-top: var(--head-above); }
+
+/* ---------------------------------------------------------------- the bar: the selected look, then the area's
+   pending changes, one pinned block on PendingBar's metrics (padding --s3, --s6 above it, one hairline on top) */
+.lk-bar {
+  position: sticky; bottom: 0; z-index: 6; max-width: var(--content-max);
+  margin-top: var(--s6); padding: 0 0 env(safe-area-inset-bottom);
+  background: var(--bg); border-top: 1px solid var(--line);
+}
+.lk-row { display: flex; align-items: center; gap: var(--s3) var(--s5); padding: var(--s3) 0; }
+.lk-row + .lk-row { border-top: 1px solid var(--line); }
+.lk-bar-text { display: flex; align-items: baseline; gap: var(--s1) var(--s4); flex-wrap: wrap; min-width: 0; flex: 1; }
+.lk-bar-text .camlabel { color: var(--ink); }
+.lk-bar-text .micro { color: var(--ink); }
+.lk-bar .say { color: var(--sub); }
+.lk-adj { display: flex; align-items: center; gap: var(--s3); flex: none; }
+.lk-adj .camlabel { color: var(--sub); }
+.lk-bar-act { display: flex; gap: var(--s2); flex: none; }
+.lk-bar a.btn { text-decoration: none; }
+
+/* ---------------------------------------------------------------- editor */
+.ed { max-width: var(--content-max); padding-top: var(--s1); }
+.ed-head { margin-bottom: var(--s6); }
+.ed-head .lede { margin-top: var(--lede-gap); }
+.ed-top { display: block; height: 0; }
+.ed-cols { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--col-gap); align-items: start; }
+/* the photo and its caption fit the window above the bar (the page head and the bar take about 372 px); 7 columns
+   for the photo and 5 for the scales, so a nine-step scale gets about 28 px a step */
+.ed-pic {
+  grid-column: 1 / span 7; position: sticky; top: calc(var(--ed-pin, 0px) + var(--s4)); width: 100%;
+  max-width: max(320px, calc((100vh - 372px) * 4 / 3));
+}
+.ed-ctl { grid-column: 8 / span 5; padding-top: var(--s2); }   /* level with the photo, below the place of its amber rule */
+.ed-ctl.solo { grid-column: 1 / span 7; }                 /* no photo to draw on: the rows take its columns */
+.ed-rows { border-top: 1px solid var(--line); }
+.ed-row {
+  display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: center; column-gap: var(--s3);
+  min-height: var(--row-h); border-bottom: 1px solid var(--line);
+}
+.ed-row .lab { color: var(--sub); }
+.ed-row .ctl { justify-self: end; display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.ed-row .select { min-width: 132px; height: 32px; }
+.ed-row.adj { padding-top: 6px; }
+.ed-row .help { grid-column: 1 / -1; color: var(--sub); margin: 2px 0 var(--s3); }
+/* the Koma before the Look IA:
+   STANDARD's editor is the photo and its one line; a look's ADJ LEVER row is its line alone */
+.ed-note { color: var(--sub); margin: 0; padding-top: var(--s1); max-width: 48ch; }
+.ed-row.older { display: block; padding: var(--s3) 0; }
+.ed-row.older p { color: var(--sub); margin: 0; }
+.ed .mark { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--ink); flex: none; }
+.ed-stock { margin-top: var(--s5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+.ed-stock p { color: var(--sub); }
+
+.ed-group + .ed-group { margin-top: var(--s5); }
+.ed-group h3 { color: var(--ink); margin: 0 0 var(--s2); }
+.ed-changes { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.ed-changes li {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--s3);
+  min-height: var(--row-h); padding: var(--s1) 0; border-bottom: 1px solid var(--line);
+}
+.ed-changes .camlabel { color: var(--sub); }
+.ed-changes .vals { display: inline-flex; gap: var(--s2); align-items: baseline; font-size: var(--fs-body); }
+.ed-changes .old { color: var(--sub); }
+.ed-changes .to { color: var(--faint); font-size: var(--fs-small); }
+/* Undo is the shared Review sheet's small quiet button; its hit area is the row's 44 px */
+.ed-changes .btn.sm { position: relative; }
+.ed-changes .btn.sm::after { content: ''; position: absolute; left: 0; right: 0; top: -7px; bottom: -7px; }
+.ed-changes ~ .grow, .grow { flex: 1; }
+
+@media (max-width: 1080px) {
+  .lk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ed-pic { grid-column: 1 / -1; position: static; }
+  .ed-ctl, .ed-ctl.solo { grid-column: 1 / -1; padding-top: 0; }
+}
+
+@media (max-width: 720px) {
+  .lk-grid { gap: var(--s5) var(--s4); }
+  .lk-list .sh + .lk-grid { margin-top: var(--s2); }
+  .lk .cap { margin-top: var(--s2); gap: 6px; }
+  .lk .cap .tag { padding: 0 3px; }
+  .lk-list.bare .card { grid-template-columns: minmax(0, 1fr); row-gap: var(--s1); }
+  .lk-row { flex-wrap: wrap; padding: var(--s2) 0; gap: var(--s2) var(--s3); }
+  .lk-row .lk-bar-act { width: 100%; }
+  .lk-row .lk-bar-act .btn { flex: 1; }
+  .lk-row.pend .say:not(.why) { display: none; }   /* what Apply does stays in Review; why there is no Apply stays */
+  /* Edit look alone: on the text row, link-sized, not a full-width bar */
+  .lk-row.solo { flex-wrap: nowrap; }
+  .lk-row.solo .lk-bar-act { width: auto; }
+  .lk-row.solo .lk-bar-act .btn { flex: none; height: 32px; padding: 0 12px; font-size: var(--fs-small); }
+  .lk-adj { order: 3; width: 100%; justify-content: space-between; }
+  .lk-row.solo .lk-adj { order: 0; }
+  .lk-row.solo:has(.lk-adj) { flex-wrap: wrap; }
+  .lk-row.solo:has(.lk-adj) .lk-adj { order: 3; }
+  .ed-head { margin-bottom: var(--s5); }
+  /* the photo stays in view while the rows scroll under it, cut off by one hairline (which is also the top edge of
+     the rows) */
+  .ed-cols { row-gap: 0; }
+  .ed-pic {
+    position: sticky; top: var(--ed-pin, 0px); z-index: 3; max-width: none;
+    background: var(--bg); padding-bottom: var(--s3); border-bottom: 1px solid var(--line);
+  }
+  /* on a shorter phone the photo gets smaller, never the rows' room: what the top line, the caption, the changes bar
+     and the tab bar take, plus room for two rows, is about 460 px; the photo and its caption narrow to what is left
+     (centred over the full-width hairline), down to 240 px */
+  .ed .ed-pic .split { max-width: max(240px, min(100%, calc((100dvh - 460px) * 4 / 3))); margin: 0 auto;
+    transition: max-width var(--t) var(--ease); }
+  /* once the rows scroll under it, the photo and its caption take about 40 % of the window */
+  .ed .ed-pic.shrunk .split {
+    max-width: max(240px, min(100%, calc((100dvh - 460px) * 4 / 3), calc((40dvh - 56px) * 4 / 3)));
+  }
+  .ed-rows { border-top: 0; }
+  .ed-changes li { grid-template-columns: 1fr auto; }
+  .ed-changes .vals { grid-column: 1; }
+  .ed-changes li .btn { grid-row: 1 / span 2; grid-column: 2; }
+}
+
+/* too short for a pinned photo even at 240 px (a phone held sideways, a small window): it scrolls with the rows */
+@media (max-width: 720px) and (max-height: 640px) {
+  .ed-pic { position: static; }
+  .ed .ed-pic .split, .ed .ed-pic.shrunk .split { max-width: none; }
+}

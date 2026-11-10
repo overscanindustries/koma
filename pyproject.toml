@@ -1,5 +1,13 @@
+# The `koma-gr` Python package: the `koma` command (launcher, USB bridge, app). Its metadata, file list and version
+# (komalauncher.VERSION) live in packaging/koma_build.py, a standard-library build backend:
+#   python3 -m pip wheel . --no-deps -w dist     or     python3 packaging/koma_build.py
+[build-system]
+requires = []
+build-backend = "koma_build"
+backend-path = ["packaging"]
+
 [tool.pytest.ini_options]
 # Only used if pytest is installed (it is not in requirements.txt). The supported runner is tools/check.py.
 pythonpath = ["tools", "."]
 python_files = ["test_*.py"]
-testpaths = ["tools"]
+testpaths = ["tools", "packaging"]

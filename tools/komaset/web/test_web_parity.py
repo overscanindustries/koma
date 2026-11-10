@@ -5,7 +5,7 @@ Honest scope: this does NOT execute the JavaScript. It checks that the page carr
 constants (checksum at 0x0ffc: big-endian u16 sum stored as a 4-byte big-endian word; KOMA header
 at 0x8b0), that the checksum, field codec and merge code contain the algorithm's tokens, that the
 embedded data matches the fixtures and settings-map.json, and that task text has no jargon.
-The Python reference checksum below is checked against the owner's real block (demo-main.cur).
+The Python reference checksum below is checked against a real block (demo-main.cur).
 Run behaviour checks by hand in a browser (?demo=copy|edit|mode|backup).
 """
 import base64
@@ -26,8 +26,8 @@ HTML = (HERE / "koma-setup.html").read_text()
 TD = HERE / "testdata"
 MAP = HERE.parent / "settings-map.json"
 REPO = HERE.parents[2]
-SUMS = REPO / "build" / "SHA256SUMS"
-MODULES = {"1": "koma04.grmod", "2": "koma04w.grmod"}  # Koma 1 (Rev024M), Koma 2 (240K2, SDHC)
+SUMS = REPO / "analysis" / "koma-0.4-candidate" / "SHA256SUMS"
+MODULE = REPO / "analysis" / "koma-0.4-candidate" / "koma04.grmod"
 
 
 def func_body(name):
@@ -55,7 +55,7 @@ def node(prog, stdin=""):
 
 
 def ref_checksum(b):
-    """Verified 2026-11-07 on a real block: BE u16 sum over 0x000..0xffb, stored BE u32 at 0xffc."""
+    """Verified on a real block: BE u16 sum over 0x000..0xffb, stored BE u32 at 0xffc."""
     return sum(int.from_bytes(b[i:i + 2], "big") for i in range(0, 0xFFC, 2)) & 0xFFFFFFFF
 
 
@@ -77,6 +77,12 @@ class Parity(unittest.TestCase):
         self.assertIn("KOMA_VER_OFF = 0x8b4", HTML)
         self.assertEqual(komaset.KOMA_MAGIC, b"KOMA")
         self.assertIn("BLOCK_SIZE = 4096", HTML)
+
+    def test_photo_card_hidden_while_remote_on(self):
+        # The Review photos card is hidden (not just disabled) while Remote or Shoot is on, and re-shown when it ends.
+        self.assertIn("$('photosTask').hidden = remoteOn();", func_body("renderBridge"))
+        self.assertIn("$('photosTask').hidden = remoteOn();", func_body("rSync"))
+        self.assertIn("return !!(S.active || r);", func_body("remoteOn"))
 
     def test_old_variants_gone(self):
         for tok in ("'u16-sum'", "'u16-sum-be'", "'byte-sum'", 'id="algo"', "$('algo')"):
@@ -162,7 +168,7 @@ class Parity(unittest.TestCase):
                              capture_output=True, text=True)
         self.assertEqual(res.returncode, 0, res.stderr)
         got = json.loads(res.stdout)
-        # a tag mismatch no longer refuses (2026-11-07): same result as komaset merge, with the same warning text
+        # a tag mismatch does not refuse: same result as komaset merge, with the same warning text
         self.assertEqual([g[0] for g in got], [True, True, True, True])
         self.assertEqual([g[1] for g in got], ["", "", "", ""])
         want = komaset.tag_problem(cases[0][0], cases[0][1])
@@ -215,6 +221,16 @@ class Parity(unittest.TestCase):
         self.assertEqual(table["n"], B.N)
         self.assertEqual(table["defaults"], [list(r["params"]) + [r["type"]] for r in B.RECIPES])
         self.assertEqual(table["limits"], [B.LIMITS[t] for t in range(3)])
+        # Look IA: STANDARD's defaults (look 21), the IMG SET display order (ids) and the default ADJ LEVER mask
+        self.assertEqual(table["std"], list(B.STANDARD["params"]) + [B.STANDARD["type"]])
+        self.assertEqual(table["order"], B.DMAP)
+        self.assertEqual(table["adj"], B.DEFMASK)
+        # the camera reloads its rows when the raw mask changes, so any order works; the editor sends offset order (check
+        # byte 0xa1b last) and the same check rule as bwrecipes aput: m0 ^ m1 ^ m2 ^ 0x5a
+        for tok in ("std: 0xa1c", "adjm: 0xa18", "adjrow: 0x8ce", "^ 0x5a) === b[RCP.adjm + 3]",
+                    "for (let o = RCP.rec; o < RCP.hi; o++) push(o);",
+                    "b[RCP.adjm + 3] = b[RCP.adjm] ^ b[RCP.adjm + 1] ^ b[RCP.adjm + 2] ^ 0x5a;"):
+            self.assertIn(tok, HTML)
         alts = {r["id"]: r["variants"]["alts"] for r in B.ROWS if "variants" in r}
         self.assertEqual(table["slots"], [[[alts[k][t][0], list(alts[k][t][1])] for k in ("rp_p5", "rp_p6", "rp_p7")]
                                           for t in range(3)])
@@ -249,13 +265,11 @@ console.log(JSON.stringify([y[0], y[7], hs[y[0]], hs[y[7]], a, b, c]));"""
         self.assertIn("'looks', 'setup', 'advanced'", HTML)                   # VIEWS
         self.assertIn("else if (UI.view === 'setup') renderSetup();", HTML)
         for tok in ("Choose the module file you downloaded", "Save as GRMOD.BIN", "saveBytes(SU.bytes, 'GRMOD.BIN')",
-                    "crypto.subtle.digest('SHA-256'", "sha256Js(bytes)", "'../../build/koma04.grmod'",
-                    "'../../build/koma04w.grmod'", "'../../build/SHA256SUMS'", "sumsLine(sums, KOMA_FILES[koma])",
-                    "if (!/^https?:$/.test(location.protocol)) { drawSetupModule(); return; }  // file://",
-                    "Which Koma does your camera run?", "build_koma04w.py -o build/koma04w.grmod",
-                    "bridgeJson('/ram?off=' + KSIO_OFF", "<h2>3. Check a card</h2>",
+                    "crypto.subtle.digest('SHA-256'", "sha256Js(bytes)", "'../../analysis/koma-0.4-candidate/koma04.grmod'",
+                    "'../../analysis/koma-0.4-candidate/SHA256SUMS'", "sumsLine(sums, MODULE_NAME)",
+                    "if (!/^https?:$/.test(location.protocol)) return;  // file://", "<h2>3. Check a card</h2>",
                     "webkitdirectory", "window.showDirectoryPicker", "vsRun(card)",
-                    "docs/install.md", "That step is a firmware flash",
+                    "open the Koma app</a>", "That step is a firmware flash",
                     "Format the card in the camera", "copy GRMOD.BIN to the top level of the card",
                     "Enter the code from the bridge"):
             self.assertIn(tok, HTML, tok)
@@ -268,36 +282,20 @@ console.log(JSON.stringify([y[0], y[7], hs[y[0]], hs[y[7]], a, b, c]));"""
             self.assertIn(line, HTML)
 
     def test_module_hash_embedded(self):
-        d = embedded("moduleData")["modules"]
-        self.assertEqual({k: m["name"] for k, m in d.items()}, MODULES)
-        for k, m in d.items():
-            self.assertRegex(m["sha256"], r"^[0-9a-f]{64}$", k)
+        d = embedded("moduleData")
+        self.assertEqual(d["name"], "koma04.grmod")
         if not SUMS.exists():
             self.skipTest("SHA256SUMS not present")
         sums = {l.split()[1].lstrip("*"): l.split()[0] for l in SUMS.read_text().splitlines() if len(l.split()) == 2}
-        for m in d.values():
-            self.assertEqual(m["sha256"], sums.get(m["name"]), m["name"] + ": embedded hash is stale; rerun testdata/make_demo.py")
+        self.assertEqual(d["sha256"], sums["koma04.grmod"], "embedded module hash is stale; rerun testdata/make_demo.py")
 
-    def test_module_files_match_sums(self):
+    def test_module_file_matches_sums(self):
         """Repository state, not page code: the page refuses to save a module whose hash differs from SHA256SUMS."""
-        if not SUMS.exists():
-            self.skipTest("SHA256SUMS not present")
+        if not (SUMS.exists() and MODULE.exists()):
+            self.skipTest("module or SHA256SUMS not present")
         sums = {l.split()[1].lstrip("*"): l.split()[0] for l in SUMS.read_text().splitlines() if len(l.split()) == 2}
-        for name in MODULES.values():
-            mod = REPO / "build" / name
-            if not mod.exists():
-                continue
-            self.assertEqual(hashlib.sha256(mod.read_bytes()).hexdigest(), sums.get(name),
-                             "build/%s does not match its SHA256SUMS line (rebuilt without updating the sums?)" % name)
-
-    def test_koma_of_tag(self):
-        """The firmware tag picks the package: 240K2 -> Koma 2 (koma04w), Rev024M -> Koma 1 (koma04), else no pick."""
-        js = func_body("komaOfTag")
-        prog = ("const KOMA_TAGS={1:'Rev024M',2:'240K2'};\n" + js +
-                "\nconsole.log(JSON.stringify(['240K2.4','240K2\\0\\0','Rev024M','Rev0240','',null].map(komaOfTag)));")
-        self.assertEqual(node(prog), [2, 2, 1, 0, 0, 0])
-        self.assertIn("const KOMA_TAGS = {1: 'Rev024M', 2: '240K2'};", HTML)
-        self.assertIn("const KOMA_FILES = {1: 'koma04.grmod', 2: 'koma04w.grmod'};", HTML)
+        self.assertEqual(hashlib.sha256(MODULE.read_bytes()).hexdigest(), sums["koma04.grmod"],
+                         "analysis/koma-0.4-candidate/koma04.grmod does not match its SHA256SUMS line (rebuilt without updating the sums?)")
 
     def test_manifest(self):
         m = json.loads((HERE / "manifest.webmanifest").read_text())
@@ -331,7 +329,9 @@ console.log(JSON.stringify([y[0], y[7], hs[y[0]], hs[y[7]], a, b, c]));"""
 
     def test_service_worker(self):
         sw = (HERE / "sw.js").read_text()
-        for tok in ("'./', './settings-map.json', './manifest.webmanifest'", "'./koma-setup.html', '../settings-map.json'",
+        # under komabridge the shell is /legacy, never / (the Koma app's index; caching it gave a blank page offline)
+        for tok in ("'./legacy', './settings-map.json', './manifest.webmanifest'", "'./koma-setup.html', '../settings-map.json'",
+                    "const CACHE = 'koma-setup-v2';",
                     "if (req.method !== 'GET') return;", "if (!KEYS.has(k)) return;", "searchParams.set('token', TOKEN)"):
             self.assertIn(tok, sw)
         self.assertNotRegex(sw, r"https?://")
@@ -345,7 +345,8 @@ console.log(JSON.stringify([y[0], y[7], hs[y[0]], hs[y[7]], a, b, c]));"""
 const d = JSON.parse(require('fs').readFileSync(0, 'utf8'));
 console.log(JSON.stringify(d.map(x => sha256Js(Uint8Array.from(Buffer.from(x, 'base64'))))));"""
         cases = [b"", b"abc", b"a" * 55, b"a" * 56, b"a" * 64, bytes(range(256)) * 9]
-        cases += [(REPO / "build" / n).read_bytes() for n in MODULES.values() if (REPO / "build" / n).exists()]
+        if MODULE.exists():
+            cases.append(MODULE.read_bytes())
         got = node(prog, json.dumps([base64.b64encode(c).decode() for c in cases]))
         self.assertEqual(got, [hashlib.sha256(c).hexdigest() for c in cases])
 

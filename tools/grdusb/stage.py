@@ -3,7 +3,7 @@
 This is the only write-capable module in grdusb. The read-only client modules (cli, plan, session, protocol, ...) still
 cannot build a write command; this module holds the two write verbs, their fixed targets and the host data frame. It
 writes card files only. There is no flash command in this protocol: the camera flashes later, at a keyed power-on.
-Built for the owner's expendable spare body; the expected camera version comes from --require-version.
+Built for the owner's expendable spare body; the expected camera version comes from --require-version. Spec: research/usb-protocol.md "Firmware update sequence".
 """
 from __future__ import annotations
 
@@ -40,7 +40,8 @@ class Payload:
 DIR_240 = ROOT / "firmware" / "extracted" / "GR DIGITAL Update" / "Firmware rel 2.40"
 DIR_231 = (ROOT / "firmware" / "original" / "history" / "gr-231-win-en" / "x" / "GR DIGITAL Update"
            / "Firmware rel 2.31")
-# Pinned payload hashes. No option exists to pass a different file.
+# Pins: qrflect3 2.40 from the task brief; qrflect7 2.40 as in research/recovery-analysis.md (and the manifests under
+# analysis/script-monitor-entry); 2.31 per research/downgrade-plan.md. No option exists to pass a different file.
 P240_3 = Payload("qrflect3", "/EXT0/QRFLECT3", "de00e03d563fd1bdd0a2a925761b1a029993425049841119e3e83eef990c783b")
 P240_7 = Payload("qrflect7", "/EXT0/QRFLECT7", "1dd1a9d9cb2d5a8386b059722c01ac025f10dbe5f507c7cdb9f5d486f9c21c3f")
 P231_3 = Payload("qrflect3", "/EXT0/QRFLECT3", "8cbf2d3a97376efe32dc9beceee9aed3a85a2e817b28ffd702330c688b91731c")
@@ -63,7 +64,7 @@ SWEEP_TARGETS = tuple(f"/EXT0/{name}" for name in SWEEP_NAMES)
 STORE_TARGETS = tuple(sorted({p.target for s in PAYLOAD_SETS.values() for p in s.payloads}))
 
 RICOH_NOTE = (
-    "Next steps on the camera, from Ricoh's updater (dialog 132): switch the camera "
+    "Next steps on the camera, from Ricoh's updater (dialog 132, research/usb-protocol.md step 10): switch the camera "
     "off and unplug the USB cable. Set the mode dial to Movie. Hold UP and TELE (zoom), then press and hold PLAY until "
     "the LCD lights. Then press RIGHT, then MENU/OK, and follow the screen. The AF and flash lamps blink; playback "
     "appears after about 2 minutes. Never cut the power while the lamp blinks.")
@@ -376,8 +377,8 @@ class Stager:
         elif any(state != "untouched" for state in self.card.values()):
             lines.append(f"  Before any keyed power-on, delete {' and '.join(staged_names(self.loaded))} from the card root "
                          "in a card reader "
-                         "(or reformat the card). The camera checks size and checksum before erasing flash, "
-                         "but do not rely on that.")
+                         "(or reformat the card). The camera checks size and checksum before erasing flash "
+                         "(research/usb-protocol.md 'What the camera does'), but do not rely on that.")
         else:
             lines.append("  No write or delete command was sent; the card is as it was.")
         return lines

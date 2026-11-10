@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""End-to-end: the real koma-setup.html in headless Chrome against komabridge + the SIMULATED camera (mockcard).
+"""End-to-end: the real koma-setup.html (served at /legacy) in headless Chrome against komabridge + the SIMULATED camera (mockcard).
 
 The bridge runs in-process (so a test can pull the cable, restart the bridge or open a second tab) on a free port and
-serves the page at /, as it does for the owner. The mock runs tonight's hardware timings (MockBody.hw_timings,
-~/koma-session-7..13): fresh-boot arm 0.8 s, a second remote session 20 s, -KSET busy 7 s after an EV change, live
+serves the page at /, as it does for a user. The mock runs measured hardware timings (MockBody.hw_timings): fresh-boot arm 0.8 s, a second remote session 20 s, -KSET busy 7 s after an EV change, live
 view back 7 s after a shot, a card read inside remote control dropping live view, RETR 3.9 MB/s. One test runs them at
-full scale (the slow arm and the EV busy window as the owner will see them); the others at a quarter scale.
+full scale (the slow arm and the EV busy window as a user will see them); the others at a quarter scale.
 
 Everything here is MOCK: it proves the page and the bridge agree, not that a camera does any of it.
 
@@ -68,7 +67,7 @@ class Bridge:
 
     @property
     def url(self) -> str:
-        return f"http://127.0.0.1:{self.port}/"
+        return f"http://127.0.0.1:{self.port}/legacy"  # the old page; / is the Koma app (test_e2e_app.py)
 
     def warm_second_session(self):
         """One remote session before the page opens, so the page's arm is a second session (the slow one)."""
@@ -279,7 +278,7 @@ class E2E(unittest.TestCase):
             raise AssertionError("bridge did not start")
         proc = spawn()
         try:
-            br = type("B", (), {"url": f"http://127.0.0.1:{port}/"})()
+            br = type("B", (), {"url": f"http://127.0.0.1:{port}/legacy"})()
             pg = self.page(br, "#shoot")
             self.shoot_ready(pg)
             pg.click("#liveBtn")

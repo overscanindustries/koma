@@ -1,41 +1,42 @@
 """SIMULATED camera for komabridge --mock and the tests. Nothing here says anything about a real GR DIGITAL.
 
 It reuses grdusb's MockTransport (framing, -NLST, RETR, -STOR, bring-up) and adds the four read verbs the bridge also
-uses (PWD, -INFO, -FDAT) plus -CCTL poff, answered with the reply texts seen on hardware (handbook/07 section 4.2). The card holds tools/komaset/web/testdata/demo-main.cur as PARAM.CUR
-and three small grayscale JPEGs drawn here (stdlib only).
+uses (PWD, -INFO, -FDAT) plus -CCTL poff, answered with the reply texts seen on hardware. The card holds tools/komaset/web/testdata/demo-main.cur as PARAM.CUR
+and three small grayscale JPEGs drawn here (stdlib only), or with MockBody(samples=...) the sample frames
+(load_samples). Every photo carries a SIMULATED MakerNote firmware tag (maker_app1): Rev0240, or MOCK_TAG with koma=True.
 
 poff is modelled as: reply 200, the camera leaves the bus, and after MockBody.reboot_s seconds it comes back. On the
-way back it runs the boot-time PARAM.DAT import (envelope check, copy,
-rename to PARAM.OK or PARAM.BAD, rewrite PARAM.CUR). That camera feature is NOT built yet, and whether a real camera
-returns to a USB session after poff is unknown (U). Both are simulated here only so the page flow can be exercised.
+way back it runs the boot-time PARAM.DAT import (envelope check, copy, rename to PARAM.OK or PARAM.BAD, rewrite
+PARAM.CUR). Whether a real camera returns to a USB session after poff is unknown; both are simulated here only so the
+page flow can be exercised.
 
--CCTL remtin / diaset / keyset / remtout follow the accept rules of handbook/07 section 4.3 (remtin only from state 0,
+-CCTL remtin / diaset / keyset / remtout follow the accept rules of docs/internals/07-usb-protocol.md (remtin only from state 0,
 diaset needs a non-zero state and N < 9, keyset needs state 2, remtout needs a non-zero state; 451 otherwise). With
 MockBody(tether=True) (komabridge --mock-tether) the Koma `tether` feature is simulated: a full press (keyset,1,27 or
 keyset,3,27) with the virtual dial on 4 (still) adds a new RIMGnnnn.JPG about shot_delay_s later. Without it every
 -CCTL answers 200 and nothing fires, as on the stock camera.
 
--LVFR <mode>,<seq> (the Koma `liveview` feature; not built on the camera yet) answers 150, one
+-LVFR <mode>,<seq> (the Koma `liveview` feature) answers 150, one
 data frame holding the 16-byte LVFR header plus the frame, then 250, and 451 unless remote control is in state 2 (after
 diaset) with no shot being written. Frames follow the wall clock at 30 per second (a 30-frame loop of a moving disc).
 Mode 1 frames are real baseline 4:2:2 JPEG scans, made here with the firmware's 193-byte header layout and then
 stripped of it, so the bridge has to rebuild that header; the encoder is DC-only (flat 8x8 blocks), Annex K tables.
 Mode 0 frames are 160x120 raw Y bytes.
 
--LVFR 2,<seq> (the OSD page pull the firmware lane is adding) answers 150 in every remote state, stock USB state
-included, and while the monitor is stopped. The page is one of three real OSD pages dumped from the
+-LVFR 2,<seq> (the OSD page pull) answers 150 in every remote state, stock USB state
+included, and while the monitor is stopped. The page is one of three real OSD pages dumped from the tools/grdui
 emulator of the 2.40 firmware (testdata/osd-*.bin, 360x240 at 4 bpp, see testdata/osd-pages.json): the shooting screen,
 the menu after MENU/OK, and the menu after a DOWN. A tiny menu model picks the page: ENTER (23) opens the menu and
 stops the monitor (mode 0/1 then answer 451), DOWN (12) / UP (11) move between the two menu pages, DISP (22) closes
 the menu. That model is a stand-in for the test, not how the camera's menu works. The palette is appended (16 raw
 register words, scale 16) unless MockBody(osd_palette="fixed") sends scale 0.
 
--KSET <off>,<val> / -KGET <off>,<len> (the Koma live-settings verbs the firmware lane is adding; not on a camera yet)
+-KSET <off>,<val> / -KGET <off>,<len> (the Koma live-settings verbs)
 work on MockBody.ram, the simulated RAM copy of the 4096-byte settings block: demo-main.cur with a Koma 0.3 recipe store
 written into it (KOMA header, 'RCP6' store with all 20 records valid at their defaults, FX table OFF, MONO active and
 its values in the EDIT RECIPE rows), as a camera running Koma 0.3 would hold it. -KSET answers "200 -KSET off=val"
-inside the window (0x8b5..0x8cf, 0x910..0xa13; all of 0x8d0..0x8ff refused), "451 -KSET range" outside it, "451 -KSET
-value" above 255 and 501 on bad syntax. The ksettings v1.1 stock whitelist (EV 0x053, ISO 0x059, WB 0x054, WB detail
+inside the window (0x8b5..0x8cf, 0x910..0xa27; all of 0x8d0..0x8ff refused), "451 -KSET range" outside it, "451 -KSET
+value" above 255 and 501 on bad syntax. The ksettings stock whitelist (EV 0x053, ISO 0x059, WB 0x054, WB detail
 0x0a6, metering 0x050, IMG SET 0x030, 0x031..0x036, TE 0x1a9 / 0x1aa) takes only the stock values ("451 -KSET value"
 otherwise) and answers "451 -KSET busy" unless remote control is in state 2 with the stand-in menu closed and no shot
 being written; -KGET answers 150, one data frame, 250 (451 -KGET range outside the block). -KSTA (ksettings v1.3,
@@ -184,6 +185,122 @@ def _scene_shot(n):
 FOLDER = "/EXT0/DCIM/100RICOH"
 
 
+# ---------------------------------------------------------------- the firmware tag in a JPEG's MakerNote
+# Layout as tools/spare_test/metadata.py and the app's onboardExif.js read it: APP1
+# 'Exif\0\0', big-endian TIFF, IFD0 -> EXIF IFD (0x8769) -> MakerNote (0x927c) starting 'Ricoh\0\0\0' with a
+# big-endian IFD at +8, value offsets from the TIFF start; note tag 0x2 is ASCII 'Rev%04x' ('Rev0240' on the official
+# 2.40; '240K2' on earlier Koma builds). SIMULATED here: the mock's photos carry
+# the official tag, or the Koma tag (MOCK_TAG, below) when the mock plays a Koma camera, so the app's classifier sees a
+# real body. Nothing else of a camera's EXIF is made up.
+OFFICIAL_TAG = b"Rev0240"
+TAG_FIELD = 8  # the tag's ASCII field on the camera: 8 bytes, NUL-padded
+
+
+def maker_app1(tag: bytes) -> bytes:
+    """An APP1 Exif segment holding only IFD0 -> EXIF IFD -> the Ricoh MakerNote with tag 0x2."""
+    ifd0 = 8
+    exif = ifd0 + 2 + 12 + 4
+    note = exif + 2 + 12 + 4
+    note_ifd = 8 + 2 + 12 + 4
+    value = note + note_ifd
+    body = (struct.pack(">HHHI", 1, 0x8769, 4, 1) + struct.pack(">I", exif) + b"\0\0\0\0"
+            + struct.pack(">HHHI", 1, 0x927C, 7, note_ifd + TAG_FIELD) + struct.pack(">I", note) + b"\0\0\0\0"
+            + b"Ricoh\0\0\0" + struct.pack(">HHHI", 1, 0x0002, 2, TAG_FIELD) + struct.pack(">I", value) + b"\0\0\0\0"
+            + tag[:TAG_FIELD - 1].ljust(TAG_FIELD, b"\0"))
+    tiff = b"MM\0*" + struct.pack(">I", ifd0) + body
+    return b"\xff\xe1" + struct.pack(">H", len(tiff) + 8) + b"Exif\0\0" + tiff
+
+
+def _maker_tag_span(jpeg: bytes):
+    """(start, length) of MakerNote tag 0x2's ASCII field inside `jpeg`, or None."""
+    i = 2
+    while i + 4 <= len(jpeg) and jpeg[i] == 0xFF:
+        marker, length = jpeg[i + 1], int.from_bytes(jpeg[i + 2:i + 4], "big")
+        if marker == 0xE1 and jpeg[i + 4:i + 10] == b"Exif\0\0":
+            base, t = i + 10, jpeg[i + 10:i + 2 + length]
+            o = ">" if t[:2] == b"MM" else "<"
+            try:
+                def entries(off, order=o):
+                    n = struct.unpack_from(order + "H", t, off)[0]
+                    return {struct.unpack_from(order + "H", t, off + 2 + 12 * k)[0]: off + 2 + 12 * k for k in range(n)}
+                ifd0 = entries(struct.unpack_from(o + "I", t, 4)[0])
+                exif = entries(struct.unpack_from(o + "I", t, ifd0[0x8769] + 8)[0])
+                at = struct.unpack_from(o + "I", t, exif[0x927C] + 8)[0]
+                if t[at:at + 5] != b"Ricoh":
+                    return None
+                e = entries(at + 8, ">")[0x0002]
+                kind, count = struct.unpack_from(">HI", t, e + 2)
+                if kind != 2:
+                    return None
+                start = e + 8 if count <= 4 else struct.unpack_from(">I", t, e + 8)[0]
+                return base + start, count
+            except (KeyError, struct.error):
+                return None
+        if marker in (0xDA, 0xD9):
+            return None
+        i += 2 + length
+    return None
+
+
+def with_maker_tag(jpeg: bytes, tag: bytes) -> bytes:
+    """`jpeg` carrying firmware tag `tag`: rewritten in place when it has a Ricoh MakerNote (a real camera's file),
+    otherwise with maker_app1 inserted after SOI (the mock's own drawings)."""
+    span = _maker_tag_span(jpeg)
+    if span:
+        start, count = span
+        out = bytearray(jpeg)
+        out[start:start + count] = tag[:count - 1].ljust(count, b"\0")
+        return bytes(out)
+    return jpeg[:2] + maker_app1(tag) + jpeg[2:]
+
+
+# ---------------------------------------------------------------- sample frames as the mock's card and live view
+# tools/komaapp/design/samples: R00nnnnn.JPG photos taken on a GR DIGITAL (komabridge --mock serves them as
+# DCIM unless --mock-patterns), and live-0n.jpg frames in the movie recorder's format (AVI1, 320x240 4:2:2 at scale
+# LV_SCALE, Annex K tables), served as mode 1 live view one after another. A frame whose tables are not that format is
+# left out, so the bridge's rebuilt header always decodes what it is sent.
+SAMPLES_DIR = TOOLS / "komaapp" / "design" / "samples"
+SAMPLE_HOLD_S = 4.0  # each live sample frame stays this long (a held camera, not a slideshow at 30 fps)
+
+
+def _exif_date(jpeg: bytes) -> str | None:
+    """DateTimeOriginal (0x9003) as 'YYYY:MM:DD HH:MM:SS', or None."""
+    m = re.search(rb"(\d{4}:\d\d:\d\d \d\d:\d\d:\d\d)\0", jpeg[:65536])
+    return m.group(1).decode() if m else None
+
+
+def load_samples(folder: Path | None = None):
+    """([(name, bytes, -FDAT date)], [mode 1 scans]) from the samples folder; ([], []) when it is not there."""
+    folder = Path(folder or SAMPLES_DIR)
+    if not folder.is_dir():
+        return [], []
+    photos = []
+    for k, p in enumerate(sorted(folder.glob("*.JPG"))):
+        if not re.fullmatch(r"[A-Z0-9_]{1,8}\.JPG", p.name):
+            continue
+        data = p.read_bytes()
+        photos.append((p.name, data, _exif_date(data) or f"2026:11:0{1 + k % 8} 12:00:00"))
+    frames = []
+    for p in sorted(folder.glob("live-*.jpg")):
+        scan = _avi1_scan(p.read_bytes())
+        if scan is not None:
+            frames.append(scan)
+    return photos, frames
+
+
+def _avi1_scan(jpeg: bytes) -> bytes | None:
+    """The scan + EOI of a live sample when its DQT and SOF are what avi1_header() writes for LV_SCALE, else None."""
+    want = avi1_header(LV_SCALE, LV_JPEG_W, LV_JPEG_H)
+    dqt = want[want.index(b"\xff\xdb"):want.index(b"\xff\xc0")]
+    sof = want[want.index(b"\xff\xc0"):want.index(b"\xff\xda")]
+    if dqt not in jpeg or sof not in jpeg:
+        return None
+    i = jpeg.find(b"\xff\xda")
+    if i < 0:
+        return None
+    return jpeg[i + 2 + int.from_bytes(jpeg[i + 2:i + 4], "big"):]
+
+
 # ---------------------------------------------------------------- simulated live view (-LVFR)
 # Written independently of komabridge (no import), from the same firmware facts, so the tests can compare the two.
 LV_FPS, LV_LOOP = 30, 30
@@ -275,8 +392,8 @@ RECIPE_DEFAULTS = (
     (1, 2, 6, 6, 1, 3, 6, 2, 2, 65), (1, 7, 4, 2, 3, 6, 4, 3, 2, 81), (0, 4, 4, 4, 4, 0, 0, 2, 3, 0),
     (0, 4, 4, 4, 4, 0, 0, 2, 3, 0), (0, 4, 4, 4, 4, 0, 0, 2, 3, 0))
 RCP_STORE, RCP_REC, RCP_FX, RCP_ACTIVE, RCP_EDIT = 0x900, 0x910, 0xA00, 0x8C0, 0x8C1
-KSET_RANGES = ((0x8B5, 0x8CF), (0x910, 0xA13))  # written here independently of komabridge (0x8d0..0x8ff refused)
-# The ksettings v1.1 stock whitelist, independent copy: off -> stock values.
+KSET_RANGES = ((0x8B5, 0x8CF), (0x910, 0xA27))  # written here independently of komabridge (0x8d0..0x8ff refused)
+# The ksettings stock whitelist, independent copy: off -> stock values.
 KSET_STOCK = {0x053: set(range(1, 26, 2)), 0x059: {0, 1, 2, 4, 6, 7, 8}, 0x054: {0, 1, 2, 3, 4, 5, 7},
               0x0A6: set(range(17)), 0x050: {0, 1, 2}, 0x030: set(range(7)), 0x1A9: {1, 2, 3, 4, 6},
               0x1AA: set(range(1, 6)), **{o: set(range(1, 6)) for o in range(0x031, 0x037)}}
@@ -305,6 +422,34 @@ def koma_ram(block: bytes) -> bytearray:
     return ram
 
 
+KSIO_OFF, KSIO_TAG_OFF, KSIO_STATUS = 0x8D0, 0x8D5, 0x8DC
+MOCK_TAG = b"240K1.0"     # a Koma 1.0 camera's firmware tag (7 bytes)
+# An earlier (pre-1.0) build's tag, NUL-padded to 7. The app shows such a camera as "An earlier Koma build" (--mock-earlier).
+EARLIER_MOCK_TAG = b"240K2\0\0"
+
+
+def block_checksum(blk) -> bytes:
+    return (sum(int.from_bytes(blk[i:i + 2], "big") for i in range(0, 0xFFC, 2)) & 0xFFFFFFFF).to_bytes(4, "big")
+
+
+def koma_cur(block: bytes, layout: int = 2, tag: bytes = MOCK_TAG) -> bytes:
+    """SIMULATED PARAM.CUR of a camera running Koma with settingsio: koma_ram's block (KOMA header, look store, MONO
+    active), MENU LAYOUT `layout` (0 5-TAB, 1 STOCK+KOMA, 2 GR II), KOMA FEATURES FULL, the KSIO sub-header with no
+    import yet (status 0), checksum set."""
+    cur = koma_ram(block)
+    import json
+    for f in json.loads((HERE.parent / "settings-map.json").read_text())["fields"]:
+        if f.get("page") == "koma" and f.get("type") == "enum" and not f["name"].startswith("recipe_") \
+                and isinstance(f.get("default"), int):
+            cur[int(f["offset"], 16)] = f["default"]  # the Koma rows at their defaults, as a fresh install has them
+    cur[0x8BB], cur[0x8BC] = layout, 0
+    cur[KSIO_OFF:KSIO_OFF + 5] = b"KSIO\x01"
+    cur[KSIO_TAG_OFF:KSIO_TAG_OFF + 7] = tag.ljust(7, b"\0")[:7]
+    cur[KSIO_STATUS] = 0
+    cur[0xFFC:] = block_checksum(cur)
+    return bytes(cur)
+
+
 def active_tone(ram) -> tuple[int, int]:
     """(CONTRAST, KEY) steps 0..8 of the active recipe: its record if valid, else its default; (4, 4) with none."""
     rid = ram[RCP_ACTIVE]
@@ -326,34 +471,14 @@ def lvfr_payload(mode, flags, seq, width, height, scale, data) -> bytes:
 _OSD_PAGES: dict = {}
 
 
-def osd_pages_present() -> bool:
-    """The emulator OSD dumps (osd-*.bin) are rendered from Ricoh's firmware, so the repository does not ship them."""
-    import json
-    meta = json.loads((OSD_DIR / "osd-pages.json").read_text())
-    return all((OSD_DIR / p["file"]).exists() for p in meta["pages"].values())
-
-
-def _synthetic_page(w: int, h: int, stride: int, name: str) -> bytes:
-    """A stand-in 4 bpp page when the dumps are absent: a frame (index 1) and one bar (index 11) per page."""
-    rows = bytearray(stride * h)
-    bar = {"ready": 200, "menu": 60, "down": 90}.get(name, 120)
-    for y in range(h):
-        for x in range(w):
-            v = 1 if x in (0, w - 1) or y in (0, h - 1) else 11 if bar <= y < bar + 20 and 20 <= x < w - 20 else 0
-            rows[y * stride + x // 2] |= v << (0 if x & 1 else 4)
-    return bytes(rows)
-
-
 def osd_page(name: str) -> tuple[int, int, bytes, list]:
-    """(width, height, 4 bpp rows, raw palette 0..15) of a stored emulator OSD page: ready, menu or down.
-    Without the osd-*.bin dumps a synthetic page with the same geometry is used."""
+    """(width, height, 4 bpp rows, raw palette 0..15) of a stored emulator OSD page: ready, menu or down."""
     if name not in _OSD_PAGES:
         import json
         meta = json.loads((OSD_DIR / "osd-pages.json").read_text())
         page = meta["pages"][name]
-        f = OSD_DIR / page["file"]
-        rows = f.read_bytes() if f.exists() else _synthetic_page(meta["width"], meta["height"], meta["stride"], name)
-        _OSD_PAGES[name] = (meta["width"], meta["height"], rows, page.get("palette_raw", meta["palette_raw"]))
+        _OSD_PAGES[name] = (meta["width"], meta["height"], (OSD_DIR / page["file"]).read_bytes(),
+                            page.get("palette_raw", meta["palette_raw"]))
     return _OSD_PAGES[name]
 
 
@@ -374,16 +499,27 @@ class MockBody:
     bridge, which serialises camera access behind one lock anyway."""
 
     def __init__(self, reboot_s: float = 4.0, returns_after_poff: bool = True, version: str = "02.40",
-                 clock=time.monotonic, tether: bool = False, shot_delay_s: float = 1.5, grow_s: float = 0.6):
+                 clock=time.monotonic, tether: bool = False, shot_delay_s: float = 1.5, grow_s: float = 0.6,
+                 koma: bool = False, samples: Path | None = None, koma_tag: bytes = MOCK_TAG):
         self.reboot_s = reboot_s
         self.returns_after_poff = returns_after_poff
         self.version = version
         self.clock = clock
         self.lock = threading.Lock()
-        self.card = {"/EXT0/PARAM.CUR": DEMO_CUR.read_bytes()}
+        # koma=True: PARAM.CUR is a Koma camera's (koma_cur); default the stock demo block, as the older tests expect
+        self.koma_tag = koma_tag
+        self.card = {"/EXT0/PARAM.CUR": koma_cur(DEMO_CUR.read_bytes(), tag=koma_tag) if koma else DEMO_CUR.read_bytes()}
         self.photo_dates = {}
-        for name, scene, date in PHOTOS:
-            self.card[f"{FOLDER}/{name}"] = encode_gray_jpeg(PHOTO_W, PHOTO_H, scene)
+        # the firmware tag every photo carries: the Koma camera's or the official 2.40's (SIMULATED, see maker_app1)
+        self.maker_tag = koma_tag.rstrip(b"\0") if koma else OFFICIAL_TAG
+        # samples: the sample frames as the card and the live view (load_samples), else the drawings here
+        self.sample_photos, self.lv_samples = load_samples(samples) if samples else ([], [])
+        if self.sample_photos:
+            listing = [(name, data, date) for name, data, date in self.sample_photos]
+        else:
+            listing = [(name, encode_gray_jpeg(PHOTO_W, PHOTO_H, scene), date) for name, scene, date in PHOTOS]
+        for name, data, date in listing:
+            self.card[f"{FOLDER}/{name}"] = with_maker_tag(data, self.maker_tag)
             self.photo_dates[f"{FOLDER}/{name}"] = date
         self.off_until = None  # monotonic time when a poff reboot finishes; inf when it stays off
         self.poff_count = 0
@@ -400,7 +536,7 @@ class MockBody:
         self.keys: set[int] = set()  # injected keys currently held
         self.pending: list[tuple[float, str]] = []  # (due, name) shots being written
         self.fail_keys: set[str] = set()  # test hook: these -CCTL arguments answer 451
-        self.folder_entries = [_dirent(name, 0x20, len(self.card[f"{FOLDER}/{name}"]), date) for name, _, date in PHOTOS]
+        self.folder_entries = [_dirent(name, 0x20, len(self.card[f"{FOLDER}/{name}"]), date) for name, _, date in listing]
         self.next_number = len(PHOTOS) + 1
         self.lv_cache: dict = {}  # (mode, n) -> frame bytes
         self.lv_scale = LV_SCALE
@@ -412,12 +548,12 @@ class MockBody:
         self.key_log: list = []    # (action, code) of every accepted keyset, for the tests
         self.ram = koma_ram(self.card["/EXT0/PARAM.CUR"])  # the settings block in RAM (-KSET / -KGET)
         self.kset_log: list = []   # (off, val) of every accepted -KSET
-        # test hooks for the 2026-11-07 hardware findings: after diaset the first lvfr_451_polls -LVFR 0/1 pulls answer
+        # test hooks modelling hardware behaviour: after diaset the first lvfr_451_polls -LVFR 0/1 pulls answer
         # 451 (USB app state 9 until a key press), and a new shot shows in -INFO at once but in -NLST only nlst_lag_s
         # later (-NLST lagging within one USB session)
         self.lvfr_451_polls = 0
         self.lvfr_left = 0
-        # hardware 2026-11-07 (sessions 8 and 9): remtin/diaset,4 can answer 200 and still not take; the next
+        # remtin/diaset,4 can answer 200 and still not take; the next
         # diaset_duds diaset commands do that (-LVFR stays 451 and keyset presses fire nothing until a diaset takes)
         self.diaset_duds = 0
         self.armed = True
@@ -427,17 +563,17 @@ class MockBody:
         self.kset_busy_until = 0.0
         self.ksta = bool(tether)   # -KSTA known (ksettings v1.3); False: 501 (stock, or an older Koma build)
         self.ksta_overrides: dict = {}  # test hook: name -> value forced into the -KSTA frame
-        # SIMULATED shot timeline in -KSTA (HW 2026-11-08 main body: cam_state 6 on the half-press, 9 during capture and
+        # SIMULATED shot timeline in -KSTA (measured on a camera: cam_state 6 on the half-press, 9 during capture and
         # write, back to 2 about 2.5 s after the press): after a full press cam_state is 6 for ksta_busy_start_s, then 9,
         # then 2 at shot_delay_s + grow_s + 0.1 s (about 2.2 s by default). monitor_run follows live view as before.
         self.ksta_busy_start_s = 0.3
         self.shot_ksta_t0 = None   # clock() of the last full press that fired a shot
         self.ksta_log: list = []   # (clock, cam_state) of every -KSTA answer
-        # hardware timings of 2026-11-07 (hw_timings() / komabridge --mock-hw); all off by default, so the old model
+        # hardware timings (hw_timings() / komabridge --mock-hw); all off by default, so the default model
         # and its tests stay as they were. arm_*_s: after remtin + diaset the monitor needs this long before -LVFR 0/1
         # answer 150 and a full press fires (first arm since boot ~0.8 s; every later arm, a second session, ~16-20 s;
         # a diaset re-sent while one is pending does not restart it). post_shot_lv_s: live view returns this long after
-        # a full press (None: shot_delay_s + 1 s, the old model). read_drops_live: a RETR / -INFO / -FDAT inside remote
+        # a full press (None: shot_delay_s + 1 s by default). read_drops_live: a RETR / -INFO / -FDAT inside remote
         # control drops live view (-LVFR 451) until the next diaset.
         self.arm_first_s = self.arm_later_s = 0.0
         self.arms = 0
@@ -450,11 +586,9 @@ class MockBody:
         self.meta_s = 0.0        # hw_timings: each -INFO / -FDAT takes this long (hardware: 100 JPEGs listed in ~7.5 s)
 
     def hw_timings(self, scale: float = 1.0) -> "MockBody":
-        """SIMULATED: tonight's hardware timings (sessions 7-13, ~/koma-session-*/report.md), times scaled by `scale`
-        (tests use < 1). Fresh-boot arm 0.8 s, a second remote session 20 s (session 13: first 150 after 19.8 s), a
-        stock -KSET busy 7 s after the last one (session 10: 8.4-8.9 s; session 13: under 0.5 s), live view back 7 s
-        after a shot, a card read inside remote control drops live view until diaset is sent again (selftest
-        re-entry), RETR at 3.9 MB/s (sessions 10/13: 3.46-3.88) and -INFO + -FDAT 75 ms a photo (100 listed in 7.5 s)."""
+        """SIMULATED: timings measured on a camera, scaled by `scale` (tests use < 1). Fresh-boot arm 0.8 s, a second
+        remote session 20 s, a stock -KSET busy 7 s after the last one, live view back 7 s after a shot, a card read
+        inside remote control drops live view until diaset is sent again, RETR at 3.9 MB/s and -INFO + -FDAT 75 ms a photo (100 listed in 7.5 s)."""
         self.arm_first_s, self.arm_later_s = 0.8 * scale, 20.0 * scale
         self.kset_busy_after_s = 7.0 * scale
         self.post_shot_lv_s = 7.0 * scale
@@ -487,6 +621,8 @@ class MockBody:
             # EV comp: (ev - 13) / 6 stops, about 45 levels a stop (a stand-in for the camera's exposure)
             base, gain, lift = _lv_pattern(n), 1 + 0.22 * (con - 4), 14 * (key_step - 4) + 7.5 * (ev - 13)
             lum = lambda x, y: _clamp(128 + (base(x, y) - 128) * gain + lift)  # noqa: E731
+            if mode == 1 and self.lv_samples:  # the sample frames, each held SAMPLE_HOLD_S (tone and EV not applied)
+                return self.lv_samples[int((self.clock() - self.lv_epoch) / SAMPLE_HOLD_S) % len(self.lv_samples)]
             if mode == 1:
                 full = encode_avi1_frame(LV_JPEG_W, LV_JPEG_H, lambda bx, by: lum(bx * 8 + 4, by * 8 + 4), self.lv_scale)
                 self.lv_cache[key] = full[193:]
@@ -502,7 +638,7 @@ class MockBody:
         if m.group(1) not in "012":
             return "501 -LVFR mode", None
         mode, seq = int(m.group(1)), int(m.group(2))
-        if mode == 2:  # the OSD page answers in every state (firmware lane), monitor stopped or not
+        if mode == 2:  # the OSD page answers in every state, monitor stopped or not
             w, h, rows, raw = osd_page(self.osd_screen)
             pal = b"" if self.osd_palette == "fixed" else b"".join(struct.pack(">I", v or 0) for v in raw)
             return "150 -LVFR", lvfr_payload(2, 0, seq, w, h, len(pal) // 4, rows + pal)
@@ -581,7 +717,10 @@ class MockBody:
             self.pending = [p for p in self.pending if p[0] > self.clock()]
         for _, name in due:
             path = f"{FOLDER}/{name}"
-            full = encode_gray_jpeg(PHOTO_W, PHOTO_H, _scene_shot(self.next_number))
+            if self.sample_photos:  # a new shot is one of the sample frames, in turn
+                full = with_maker_tag(self.sample_photos[self.next_number % len(self.sample_photos)][1], self.maker_tag)
+            else:
+                full = with_maker_tag(encode_gray_jpeg(PHOTO_W, PHOTO_H, _scene_shot(self.next_number)), self.maker_tag)
             stamp = time.strftime("%Y:%m:%d %H:%M:%S")
             self.photo_dates[path] = stamp
             if self.nlst_lag_s > 0:  # on the card (-INFO sees it), not in -NLST yet
@@ -703,7 +842,7 @@ class MockBody:
             self.off_until = self.clock() + self.reboot_s if self.returns_after_poff else float("inf")
 
     def _boot(self):
-        """SIMULATED Koma boot import (decision 2; not built on the camera yet)."""
+        """SIMULATED Koma boot import (PARAM.DAT import at boot)."""
         self.arms, self.arm_until, self.lv_dropped = 0, 0.0, False
         dat = self.card.pop("/EXT0/PARAM.DAT", None)
         if dat is None:
@@ -713,8 +852,18 @@ class MockBody:
             sum(int.from_bytes(dat[i:i + 2], "big") for i in range(0, 0xffc, 2)) & 0xffffffff)
         self.card["/EXT0/PARAM.OK" if ok else "/EXT0/PARAM.BAD"] = dat
         if ok:
-            self.card["/EXT0/PARAM.CUR"] = dat
-            self.ram = bytearray(dat)
+            # the export after an import (SETTINGS-EXTERNAL.md): the file's settings, this body's KSIO sub-header with
+            # the import status (1 OK, 3 OK with a differing firmware tag), checksum rewritten
+            old = self.card.get("/EXT0/PARAM.CUR", b"")
+            tag = old[KSIO_TAG_OFF:KSIO_TAG_OFF + 7] if old[KSIO_OFF:KSIO_OFF + 4] == b"KSIO" else self.koma_tag
+            file_tag = dat[KSIO_TAG_OFF:KSIO_TAG_OFF + 7] if dat[KSIO_OFF:KSIO_OFF + 4] == b"KSIO" else None
+            cur = bytearray(dat)
+            cur[KSIO_OFF:KSIO_OFF + 5] = b"KSIO\x01"
+            cur[KSIO_TAG_OFF:KSIO_TAG_OFF + 7] = tag
+            cur[KSIO_STATUS] = 3 if file_tag is not None and file_tag != tag else 1
+            cur[0xFFC:] = block_checksum(cur)
+            self.card["/EXT0/PARAM.CUR"] = bytes(cur)
+            self.ram = bytearray(cur)
         self.boot_log.append(f"boot: PARAM.DAT -> {'PARAM.OK' if ok else 'PARAM.BAD'}")
 
 
@@ -747,7 +896,7 @@ class BridgeMockTransport(grd_mock.MockTransport):
             text = data[8:8 + length].decode("latin-1")
             verb = text.split(" ")[0].strip()
             if self.body.read_drops_live and self.body.remote == 2 and verb in ("RETR", "-INFO", "-FDAT"):
-                self.body.lv_dropped = True  # hardware 2026-11-07: a card read inside remote control drops live view
+                self.body.lv_dropped = True  # on hardware a card read inside remote control drops live view
             if verb in ("-INFO", "-FDAT") and self.body.meta_s > 0:
                 time.sleep(self.body.meta_s)
             elif verb == "RETR" and self.body.retr_bps > 0:

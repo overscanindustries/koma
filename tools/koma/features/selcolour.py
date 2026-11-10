@@ -1,11 +1,9 @@
 """selcolour: selective colour. The picture goes mono except one chosen hue band, which keeps its colour.
 
-Hardware facts it rests on (O-hw 2026-11-06):
-the IQ hue stage is dead, so the hue selection is done in software on the finished master UV plane.
+Hardware fact it rests on: the IQ hue stage is dead, so the hue selection is done in software on the finished master UV plane.
 
-Koma 0.2: driven by the recipes' SELECT look (bwrecipes type 2: base NORMAL, COLOUR / RANGE are its p5 / p6). bwrecipes
-publishes them per shot in its 'RCP6' store header: +9 COLOUR 1..6 (0 = no SELECT shot), +10 RANGE. No rows of its own
-(0.1's SEL COLOUR / SEL RANGE rows at 0x1b8cb/cc collided with the recipe editor's RESET row and are gone).
+Driven by the recipes' SELECT look (bwrecipes type 2: base NORMAL, COLOUR / RANGE are its p5 / p6). bwrecipes
+publishes them per shot in its 'RCP6' store header: +9 COLOUR 1..6 (0 = no SELECT shot), +10 RANGE. No rows of its own.
 
 Hook: 0x117382 `bl 0x1173e8` (r0 = cp) at the tail of CamStillRecGenMasterYUV 0x11703c, reached on every path of the
 function that produced a master plane (all five callers pass r1 = 0). By then the master resize 0x5e8f0 has returned
@@ -55,7 +53,7 @@ COLB, RNGB = STB + 9, STB + 10
 MODEB = 0x23B08A                    # cp+0x22: develop mode 0 colour, 1 B&W, 2 toning
 COLOURS = ["OFF", "RED", "ORANGE", "YELLOW", "GREEN", "BLUE", "MAGENTA"]
 RANGES = ["NARROW", "WIDE"]
-ROWS = []                           # the SELECT recipe's COLOUR / RANGE rows replace 0.1's SEL COLOUR / SEL RANGE
+ROWS = []                           # no rows of its own: COLOUR / RANGE are SELECT recipe parameters
 
 SITE, TARGET = 0x117382, 0x1173E8
 SDLO, SDHI = 0x08000000, 0x0C000000
@@ -476,22 +474,23 @@ def source(thr=12, soft=8, order="cbcr", force=0):
 
 # Bytes the pass depends on (2.40, all D from the disassembly; verified against the payload in make()).
 CHECKS = [
-    (0x11706C, "1de51de636593539", "0x11703c: r5 = cp+0x40, r6 = cp+0x60 (geometry fields below are [r5+0x1c/0x1e], [r6])"),
-    (0x1171F6, "6d60900a6da0900b8ba8", "0x11703c: resize job args: Y = [cp+0x54], UV = [cp+0x58], stride = h[cp+0x5c]"),
-    (0x117206, "8be8901188309012", "... width = h[cp+0x5e], lines = h[cp+0x60]"),
-    (0x117270, "a805f747fb3d2800d00d", "0x11703c: master resize 0x5e8f0; non-zero = error return (skips the hook)"),
-    (0x117358, "6d6191016da191028ba98199", "date imprint 0x13f0b4 args: Y [cp+0x54], UV [cp+0x58], stride h[cp+0x5c]"),
+    (0x11706C, 8, "0x11703c: r5 = cp+0x40, r6 = cp+0x60 (geometry fields below are [r5+0x1c/0x1e], [r6])"),
+    (0x1171F6, 10, "0x11703c: resize job args: Y = [cp+0x54], UV = [cp+0x58], stride = h[cp+0x5c]"),
+    (0x117206, 8, "... width = h[cp+0x5e], lines = h[cp+0x60]"),
+    (0x117270, 10, "0x11703c: master resize 0x5e8f0; non-zero = error return (skips the hook)"),
+    (0x117358, 12, "date imprint 0x13f0b4 args: Y [cp+0x54], UV [cp+0x58], stride h[cp+0x5c]"),
     (0x117380, "1c20", "0x117380: r0 = cp, then the hooked bl 0x1173e8 at 0x117382"),
-    (0x117386, "481778002801d102", "after the hooked site: [0x1bed50] == 1 -> second bl 0x1173e8 (not hooked)"),
+    (0x117386, 8, "after the hooked site: [0x1bed50] == 1 -> second bl 0x1173e8 (not hooked)"),
 ]
+CHECKS_SHA256 = "85584db16797e7b90b36895c55d05ee12dbb8dbac6faee12b8e4551453fe9d56"
 
 
 def _checks():
     out = []
-    for a, h, w in CHECKS:
-        b = fw.ram(a, len(h) // 2)
-        if b.hex() != h:
-            raise AssertionError(f"selcolour check {a:#x}: payload {b.hex()} != {h}")
+    for a, h, w in fw.pinned(CHECKS, CHECKS_SHA256):
+        b = fw.ram(a, len(h))
+        if b != h:
+            raise AssertionError(f"selcolour check {a:#x}: payload {b.hex()} != {h.hex()}")
         out.append(Check(a, b, w))
     return out
 

@@ -109,7 +109,7 @@ def test_install_writes_only_the_records():
 
 EDGES = [(0x000, False), (0x8B4, False), (0x8B5, True), (0x8CF, True), (0x8D0, False), (0x8DF, False),
          (0x8E0, False), (0x8FF, False), (0x900, False), (0x90F, False), (0x910, True), (0x9FF, True), (0xA00, True),
-         (0xA13, True), (0xA14, False), (0xFFC, False), (0xFFF, False), (0x1000, False), (9999999, False)]
+         (0xA13, True), (0xA14, True), (0xA18, True), (0xA27, True), (0xA28, False), (0xFFC, False), (0xFFF, False), (0x1000, False), (9999999, False)]
 
 
 def test_window_edges_accept_and_refuse_with_no_other_block_write():
@@ -129,8 +129,9 @@ def test_window_edges_accept_and_refuse_with_no_other_block_write():
 def test_value_and_option_count_refusal():
     u = _unit()
     counts = K.row_counts(F.make("bwrecipes").rows)
-    assert counts[0x8C0] == 21 and counts[0x8C2] == 9
-    cases = [(0x8C0, 20, True), (0x8C0, 21, False), (0x8C2, 8, True), (0x8C2, 9, False), (0x8C2, 255, False),
+    assert counts[0x8C0] == 22 and counts[0x8C2] == 9 and counts[0x8CE] == 2    # Look IA: + STANDARD, ADJ LEVER row
+    cases = [(0x8C0, 21, True), (0x8C0, 22, False), (0x8C2, 8, True), (0x8C2, 9, False), (0x8C2, 255, False),
+             (0x8CE, 1, True), (0x8CE, 2, False),
              (0x910, 255, True), (0x910, 256, False), (0x8B5, 255, True), (0x8CF, 0, True)]
     for off, val, ok in cases:
         before = u.u8(BLK + off)
@@ -383,7 +384,7 @@ def test_koma_rows_busy_while_menu_or_adj_open():
         for off in (0x910, 0x9FF, 0xA00, 0xA13):
             reply, _, _, blk = _kset(u, off, 2)
             assert reply == f"200 -KSET {off}=2\r\n" and blk == [BLK + off], (overlay, off)
-        reply, *_ = _kset(u, 0x8C0, 21)
+        reply, *_ = _kset(u, 0x8C0, 22)
         assert reply == K.S451_VALUE                          # value before busy
 
 

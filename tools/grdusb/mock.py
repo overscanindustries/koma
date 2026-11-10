@@ -1,6 +1,6 @@
 """SIMULATED camera for tests. It implements our reading of the spec and nothing else.
 
-Passing against this mock proves the tool is consistent with docs/internals/07-usb-protocol.md. It does not establish how a real
+Passing against this mock proves the tool is consistent with research/usb-protocol.md. It does not establish how a real
 camera behaves. Commands the tool must never send are logged as violations. DELE, -STOR and host data frames are
 accepted only when the transport is built writable (stage-update); otherwise they are violations too.
 """

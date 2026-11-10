@@ -10,9 +10,9 @@ so the other features' inits have run before the export.
      validated in a first pass: magic MG1H at 0, checksum (sum of big-endian u16 halves over 0x000..0xffb == the
      big-endian u32 at 0xffc), Koma header (if 'KOMA' is at 0x8b0, the version byte 0x8b4 must equal the running Koma
      settings version 1; a file without a KOMA header is accepted). The firmware tag is compared but never refuses
-     (2026-11-07, SDHC session): if 'KSIO' is at 0x8d0 and its 7-byte tag 0x8d5..0x8db differs from the running body's
-     tag at 0x112578, the import proceeds and the status is 3 (OK, tag differed). The two bodies run the same Koma
-     module on different firmware tags (main Rev024M, spare 240K2), and the block layout is governed by the Koma
+     if 'KSIO' is at 0x8d0 and its 7-byte tag 0x8d5..0x8db differs from the running body's
+     tag at 0x112578, the import proceeds and the status is 3 (OK, tag differed). The same Koma
+     module runs on different firmware tags (e.g. Rev024M, 240K2), and the block layout is governed by the Koma
      settings version (0x8b4) and the KSIO version (0x8d4), not the tag. A second pass re-reads the file and copies it over
      0x1b000..0x1bffb, byte by byte, skipping every byte inside the sorted keep table (the map's exclude_on_merge
      plus this feature's per-body bytes, see EXCLUDE_RANGES and range_table()). A file without a KOMA header copies only 0x000..0x7ff: the running Koma area
@@ -22,10 +22,10 @@ so the other features' inits have run before the export.
      sits in RAM for a session. A short read in pass 2 (the card changed between passes) is BAD READ: the bytes copied
      so far stay applied (no 4 KB undo buffer), they are clamped, and the file is consumed with status 2.
      The file is read in 64-byte chunks into a buffer on the init's stack frame (92 B frame): no pool allocation, no
-     4 KB buffer, and no body space (the emulated pool has no slack for a bigger transient body; README section 6).
-  2. One-shot. No rename or delete routine is proven on hardware, so the one-shot rests on the marker fallback of the
-     design doc: PARAM.DAT is re-created with the 4 bytes "DONE" (create/write/close, hardware-proven by telemetry; the
-     next boot fails the size check). Then PARAM.DAT is removed with the firmware's delete 0x55d80 (r0 = path; STATIC:
+     4 KB buffer, and no body space (the emulated pool has no slack for a bigger transient body).
+  2. One-shot. No rename or delete routine is proven on hardware, so the one-shot rests on a marker: PARAM.DAT is
+     re-created with the 4 bytes "DONE" (create/write/close, hardware-proven by telemetry; the next boot fails the
+     size check). Then PARAM.DAT is removed with the firmware's delete 0x55d80 (r0 = path; STATIC:
      the CONFIG rotation 0x653c0 calls it that way, and the GX8/R2 PARAM.DAT helpers save with remove + create + write
      + close, never rename). If the remove does nothing on hardware, the DONE file stays
      and the one-shot still holds. No rename is used. Then /ATA1/PARAM.OK ("OK\\r\\n") or /ATA1/PARAM.BAD (one ASCII
@@ -45,7 +45,7 @@ store-write routine. Lint exception: the import writes stock settings bytes with
 breaks the rule "a stock settings byte may only receive a value stock also writes". It is declared as
 Settings(bulk=True), which linker.BULK_SETTINGS_WRITERS allows for this feature only. The envelope checks above and the
 host tool's byte-map validation (tools/komaset) are the guard; stock validators (0x3d4a4) still coerce at the next
-load (SETTINGS-EXTERNAL decision 8).
+load.
 
 The KOMA-page rows (MENU LAYOUT, KOMA FEATURES, SAVE TO CARD) are in the companion feature settingsio-menu, because a
 transient feature cannot carry rows or resident code (linker rule).
@@ -68,7 +68,8 @@ FRAME = BUF + CHUNK
 KOMA_OFF, KOMA_VER_OFF, KOMA_VERSION = 0x8B0, 0x8B4, 1        # linker.SET_MAGIC / SET_VERSION_ADDR / SET_VERSION
 NOKOMA_LIMIT = 0x800            # file without a KOMA header: copy only the stock area 0x000..0x7ff
 KSIO = 0x1B8D0                  # sub-header: +0 'KSIO', +4 version, +5..+11 firmware tag, +12 last-import status
-KSIO_END = 0x1B900              # 0x1b8d0..0x1b8ff reserved for settings-io (bwrecipes store starts at 0x1b900)
+KSIO_END = 0x1B900              # 0x1b8d0..0x1b8ff: per-body area, never imported (bwrecipes store starts at 0x1b900).
+                                # settingsio owns 0x1b8d0..0x1b8df; clockkeep owns 0x1b8e0..0x1b8e3; the rest is reserve
 KSIO_VERSION = 1
 TAG_SRC, TAG_LEN = 0x112578, 7  # MakerNote version format: 'Rev%4.4x' stock, 'Rev024M' on the flash-1 image
 ST_NONE, ST_OK, ST_BAD, ST_OK_TAG = 0, 1, 2, 3
@@ -78,7 +79,7 @@ SAVE_BYTE = 0x1B8BD             # settingsio-menu SAVE TO CARD row (per-boot act
 PATH_DAT, PATH_CUR, PATH_OK, PATH_BAD = "/ATA1/PARAM.DAT", "/ATA1/PARAM.CUR", "/ATA1/PARAM.OK", "/ATA1/PARAM.BAD"
 DONE, OK_TEXT = b"DONE", b"OK\r\n"
 REASONS = {1: b"BAD MAGIC\r\n", 2: b"BAD CHECKSUM\r\n", 3: b"BAD KOMA VERSION\r\n", 4: b"BAD REOPEN\r\n",
-           6: b"BAD READ\r\n"}    # 5 (BAD TAG) retired 2026-11-07: a tag mismatch imports with status 3
+           6: b"BAD READ\r\n"}    # no status 5: a tag mismatch imports with status 3
 KSIO_OFF, TAG_OFF = KSIO - BASE, KSIO - BASE + 5             # 0x8d0 'KSIO', 0x8d5..0x8db firmware tag (in a file)
 SET_BASE = 0x1B8B0                                             # linker.SET_MAGIC: the clamp table's offsets are from here
 
@@ -87,11 +88,11 @@ SET_BASE = 0x1B8B0                                             # linker.SET_MAGI
 CREATE, WRITE, CLOSE = 0x55CF4, 0x560EC, 0x55F0C
 # File remove (delete): r0 = path -> 0 / -1. STATIC only: 18 callers incl. the CONFIG rotation 0x653c0
 # (`mov r0, sp; bl 0x55d80` at 0x6541e) and the GR match of the GX8/R2 PARAM.DAT helpers' remove
-#. Never run on hardware by Koma, so it is only a cleanup after the
+# Never run on hardware by Koma, so it is only a cleanup after the
 # proven DONE marker.
 REMOVE = 0x55D80
 
-# exclude_on_merge of tools/komaset/settings-map.json (33 entries, 2026-11-07), as (offset, size); the import keeps the
+# exclude_on_merge of tools/komaset/settings-map.json (33 entries), as (offset, size); the import keeps the
 # running body's bytes there. tests/test_settingsio.py checks this table against the map file.
 MAP_EXCLUDE = [(0x000, 4), (0x010, 14), (0x028, 8), (0x038, 1), (0x056, 1), (0x057, 1), (0x05E, 1), (0x063, 1),
                (0x064, 1), (0x06B, 1), (0x06F, 1), (0x070, 4), (0x074, 4), (0x07F, 1), (0x080, 26), (0x09E, 2),
@@ -539,7 +540,7 @@ def make(opts):
         name=NAME, version=VERSION, summary=SUMMARY, options={}, source=source(), late_source=source, init="sio_init",
         transient=True,
         blobs={"keep": range_table()},
-        settings=[Settings(KSIO, KSIO_END, True, "settings-io sub-header: KSIO, version, firmware tag, import status"),
+        settings=[Settings(KSIO, KSIO + 0x10, True, "settings-io sub-header: KSIO, version, firmware tag, import status"),
                   Settings(BASE, BASE + CK_OFF, False, "boot import of a validated PARAM.DAT (bulk copy, per-body "
                            "bytes kept)", bulk=True)],
         checks=[Check(CREATE, fw.ram(CREATE, 4), "file create 0x55cf4 prologue"),

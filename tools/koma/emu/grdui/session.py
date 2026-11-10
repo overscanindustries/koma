@@ -212,7 +212,7 @@ class Session:
 
     def sync_dial(self):
         """Same as a script's `keyset 0 1`: sink code 1, virtual dial = real dial, so injection doesn't resolve the app
-        state to 6. This is the trap in the dial view."""
+        state to 6."""
         self.pending_inject.append((1, 0))
 
     def run_until(self, vt):

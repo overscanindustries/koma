@@ -1,0 +1,340 @@
+/* Koma app: design tokens and base styles ("GR instrument").
+   Views never define sizes, colours, radii or durations of their own: they take them from here. Token changes are one
+   commit prefixed "tokens:". Shared components live in src/components/ui (README there). */
+
+:root {
+  /* colour, dark (default) */
+  --bg: #161718;          /* page, nav column, rails, pinned bars */
+  --surf: #1d1e20;        /* sheets and the instrument strip only */
+  --raise: #25262a;       /* controls */
+  --sunk: #111213;        /* LCD inset, inputs */
+  --line: #35373b;        /* hairlines */
+  --line-strong: #44474c; /* a focused or expanded row, control borders */
+  --ink: #e7e5e0;         /* text, values */
+  --sub: #a3a5a7;         /* labels, helper (7.4:1 on --bg) */
+  --faint: #85888c;       /* the quietest text (5:1 on --bg) */
+  --acc: #e39b3a;         /* active state, the live dot and the shutter; nothing else */
+  --acc-ink: #1a1206;     /* text on amber */
+  --ok: #6faa6a;          /* the 6 px status dot and the done phase marker; never text, never a fill */
+  --bad: #de6f57;         /* the status dot, the failed phase marker, the Danger button's text (4.7:1 on --raise) */
+  --photo-bg: #000;       /* behind photographs, thumbnails and live view */
+  --on-photo: rgba(255, 255, 255, .62);  /* text on --photo-bg, both themes */
+  --photo-mark: #fff;     /* a mark drawn on the photograph itself (a split line, a crop tick), both themes */
+  --scrim: rgba(8, 8, 9, .62);
+  --shadow: 0 18px 48px rgba(0, 0, 0, .46), 0 2px 8px rgba(0, 0, 0, .28);  /* sheets only */
+
+  /* type: Archivo variable, wdth 62..125, wght 100..900; every line height on the 4 px grid */
+  --font: 'Archivo Variable', Archivo, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --fs-micro: 11px;   --lh-micro: 16px;
+  --fs-small: 12.5px; --lh-small: 16px;
+  --fs-cam: 13px;     --lh-cam: 16px;
+  --fs-body: 14px;    --lh-body: 20px;
+  --fs-btn: 13.5px;
+  --fs-lead: 16px;    --lh-lead: 24px;
+  --fs-title: 22px;   --lh-title: 28px;
+  --fs-h1: 28px;      --lh-h1: 32px;
+  --fs-display: 48px; --lh-display: 56px;
+
+  /* space: 4 px base */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px;
+  --head-above: var(--s7);  /* above a section head */
+  --head-below: var(--s3);  /* below it */
+  --sub-above: var(--s6);
+  --sub-below: var(--s2);
+  --lede-gap: var(--s5);    /* title to lede */
+
+  /* layout */
+  --nav-w: 216px;
+  --gutter: 28px;
+  --content-max: 1120px;
+  --col-gap: 24px;
+  --row-h: 44px;          /* settings rows */
+  --spec-h: 40px;         /* spec-sheet rows */
+  --ctl-h: 36px;          /* buttons, inputs, segments */
+  --tabbar-h: 56px;
+  --spec-label: 144px;
+
+  /* radii: images 3, controls 4, panels and sheets 6; nothing else */
+  --r-img: 3px;
+  --r-ctl: 4px;
+  --r-panel: 6px;
+  --r-box: 0;             /* a selection box on a contact-sheet cell: square frames in 2 px gaps */
+
+  /* motion: one curve, state feedback only */
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --t-fast: 120ms;
+  --t: 180ms;
+
+  /* the Icon set's chevron at 16 px (Icon.svelte "chevron" scaled 0.8, 1.5 px stroke), for CSS-drawn disclosures */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M6.2 3.6l4.4 4.4-4.4 4.4' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
+
+  color-scheme: dark;
+}
+
+/* Light is paper, not inverted grey: near-white ground, black type, the photograph the only dark field. */
+:root[data-theme="light"] {
+  --bg: #f4f4f1;
+  --surf: #fafaf8;
+  --raise: #ffffff;
+  --sunk: #e9e9e5;
+  --line: #d2d2ce;
+  --line-strong: #bfbfba;
+  --ink: #18191b;
+  --sub: #4f5054;
+  --faint: #67686c;
+  --acc: #c8741a;
+  --acc-ink: #18191b;     /* not #fff: #fff on #c8741a is 3.5:1, this is 5:1 (filed deviation) */
+  --ok: #2f7a3a;
+  --bad: #a83d2a;
+  --photo-bg: #0d0d0e;
+  --scrim: rgba(36, 36, 34, .34);
+  --shadow: 0 18px 48px rgba(30, 30, 25, .16), 0 2px 8px rgba(30, 30, 25, .08);
+  color-scheme: light;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --gutter: 16px;
+    --head-above: var(--s6);
+    --head-below: var(--s2);
+    --sub-above: var(--s5);
+    --lede-gap: var(--s4);
+    --row-h: 48px;
+    --ctl-h: 44px;
+    --spec-label: 128px;
+    --fs-h1: 22px; --lh-h1: 28px;
+    --fs-display: 36px; --lh-display: 44px;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-stretch: 100%;
+  font-weight: 400;
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-feature-settings: 'kern';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+#app { min-height: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; }
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+h1, h2, h3, h4, p, figure, dl, dd { margin: 0; }
+ul, ol { margin: 0; padding: 0; }
+::selection { background: color-mix(in srgb, var(--ink) 22%, transparent); }
+
+/* Focus: 2 px ink, 2 px off, both themes. Never amber. */
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+[tabindex="-1"]:focus { outline: none; }
+
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ---------------------------------------------------------------- type */
+
+/* The camera's label voice, for NON-interactive labels only: section heads, micro-tags, step index, pending count.
+   Plain tight caps, as the camera engraves and prints them; never inside a button, tab or link. */
+.micro {
+  font-size: var(--fs-micro); line-height: var(--lh-micro);
+  font-stretch: 88%; font-weight: 560; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--sub);
+}
+/* wdth 72 survives only here, for a label inside the instrument strip if one is ever needed. */
+.micro-narrow { font-stretch: 72%; }
+/* Camera strings (IMG SET, SPOT AF, MENU OK) in rows, tabs, keys and segments: the camera's spelling and case. */
+.cam, .camlabel {
+  font-size: var(--fs-cam); line-height: var(--lh-cam);
+  font-stretch: 88%; font-weight: 560; letter-spacing: .06em;
+}
+.small { font-size: var(--fs-small); line-height: var(--lh-small); }
+.lead { font-size: var(--fs-lead); line-height: var(--lh-lead); font-weight: 500; }
+.title { font-size: var(--fs-title); line-height: var(--lh-title); font-weight: 500; letter-spacing: -.01em; }
+h1.title, .h1 { font-size: var(--fs-h1); line-height: var(--lh-h1); font-weight: 500; letter-spacing: -.015em; }
+.display {
+  font-size: var(--fs-display); line-height: var(--lh-display); font-weight: 500; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.lede { color: var(--sub); font-size: var(--fs-body); line-height: var(--lh-body); max-width: 60ch; }
+.muted { color: var(--sub); }
+.faint { color: var(--faint); }
+.num { font-variant-numeric: tabular-nums; }
+.prose { max-width: 60ch; }
+.unit { font-size: var(--fs-small); color: var(--sub); }
+
+/* ---------------------------------------------------------------- buttons */
+
+/* Quiet is the default: --raise fill, 1 px hairline, ink text. Primary is ink, one per view. Amber never. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  height: var(--ctl-h); padding: 0 14px;
+  border-radius: var(--r-ctl);
+  border: 1px solid var(--line-strong);
+  background: var(--raise);
+  color: var(--ink);
+  font-size: var(--fs-btn); line-height: 1; font-weight: 500; letter-spacing: 0;
+  text-decoration: none; white-space: nowrap;
+  transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.btn:hover:not(:disabled) { border-color: var(--sub); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .45; }
+.btn.quiet { color: var(--ink); }
+.btn.primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 86%, var(--bg)); border-color: transparent; }
+.btn.danger { color: var(--bad); }
+.btn.sm { height: 32px; padding: 0 12px; font-size: var(--fs-small); }
+.btn.lg { height: 44px; padding: 0 20px; font-size: var(--fs-body); }
+.btn svg { width: 16px; height: 16px; flex: none; }
+
+/* Links: underlined at rest, solid on hover. */
+.link {
+  background: none; border: 0; padding: 0; font: inherit;
+  color: var(--sub); cursor: pointer;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .2em;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+  transition: color var(--t-fast) var(--ease), text-decoration-color var(--t-fast) var(--ease);
+}
+.link:hover, .link:focus-visible { color: var(--ink); text-decoration-color: currentColor; }
+
+/* ---------------------------------------------------------------- form controls */
+
+.input, .select {
+  height: var(--ctl-h);
+  border-radius: var(--r-ctl);
+  border: 1px solid var(--line-strong);
+  background: var(--sunk);
+  color: var(--ink);
+  padding: 0 10px;
+  font-size: var(--fs-btn);
+  min-width: 0;
+  transition: border-color var(--t-fast) var(--ease);
+}
+/* the arrow is the Icon set's "down" at 16 px, the one chevron (Icon.svelte, scaled 0.8), in --sub */
+.select {
+  appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M3.6 6.2l4.4 4.4 4.4-4.4' fill='none' stroke='%23a3a5a7' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+:root[data-theme="light"] .select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='M3.6 6.2l4.4 4.4 4.4-4.4' fill='none' stroke='%234f5054' stroke-width='1.5' stroke-linecap='square'/%3E%3C/svg%3E");
+}
+.input:hover, .select:hover { border-color: var(--sub); }
+.input::placeholder { color: var(--faint); }
+.input:disabled, .select:disabled { opacity: .45; }
+
+/* Segmented: two to four joined quiet buttons, camera strings, the chosen one inverted like a lit key. Also every
+   on/off value as OFF | ON (there is no pill switch). Markup: .seg > label > input[type=radio] + span. */
+.seg {
+  display: inline-flex; flex-wrap: wrap; max-width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-ctl);
+  background: var(--raise);
+  overflow: hidden;
+}
+.seg label { position: relative; display: block; flex: 1 0 auto; }
+.seg label + label { border-left: 1px solid var(--line-strong); }
+.seg input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.seg span {
+  display: flex; align-items: center; justify-content: center;
+  height: calc(var(--ctl-h) - 2px); padding: 0 12px;
+  font-size: var(--fs-cam); line-height: 1; font-stretch: 88%; font-weight: 560; letter-spacing: .06em;
+  color: var(--sub); white-space: nowrap;
+  transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.seg label:hover span { color: var(--ink); }
+.seg input:checked + span { background: var(--ink); color: var(--bg); }
+.seg input:focus-visible + span { outline: 2px solid var(--ink); outline-offset: -4px; }
+.seg input:disabled + span { opacity: .45; }
+.seg input:disabled { cursor: default; }
+.seg.sm span { height: 30px; padding: 0 10px; font-size: var(--fs-small); }
+/* On a phone the small segment keeps its type but takes the 44 px touch target. */
+@media (max-width: 720px) { .seg.sm span { height: calc(var(--ctl-h) - 2px); } }
+/* The Webcam ON segment while frames flow: the one amber segment (principle 5). */
+.seg .live input:checked + span { background: var(--acc); color: var(--acc-ink); }
+
+/* ---------------------------------------------------------------- Details */
+
+/* A link-style disclosure, closed by default; the one home for file names, byte counts, rates and versions. */
+details.details > summary {
+  list-style: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 2px;
+  color: var(--sub);
+  font-size: var(--fs-small); line-height: var(--lh-small);
+  padding: 4px 0;
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .2em;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+  transition: color var(--t-fast) var(--ease);
+}
+details.details > summary::-webkit-details-marker { display: none; }
+/* The chevron is the Icon set's own (components/Icon.svelte "chevron", 16 px, 1.5 px stroke, square caps), drawn as a
+   mask so every disclosure, row and back link shares one glyph at one size; it turns to "down" when open. */
+details.details > summary::before {
+  content: ''; width: 16px; height: 16px; flex: none; margin-left: -4px;
+  background: currentColor;
+  -webkit-mask: var(--chevron) center / 16px 16px no-repeat; mask: var(--chevron) center / 16px 16px no-repeat;
+  transition: transform var(--t) var(--ease);
+}
+details.details[open] > summary::before { transform: rotate(90deg); }
+details.details > summary:hover { color: var(--ink); text-decoration-color: currentColor; }
+details.details pre, details.details code, .mono { font-family: var(--mono); font-size: 12px; }
+details.details pre {
+  margin: var(--s2) 0 0; padding: 10px 12px; white-space: pre-wrap; word-break: break-word;
+  background: var(--sunk); border: 1px solid var(--line); border-radius: var(--r-ctl); color: var(--sub);
+  line-height: var(--lh-small);
+}
+
+/* The boxed rule at a point of no return: one statement in a 1 px outline, no fill. */
+.rule-box {
+  border: 1px solid var(--line-strong); border-radius: 4px; padding: 12px 16px;
+  color: var(--ink); font-size: var(--fs-body); line-height: var(--lh-body);
+}
+
+/* ---------------------------------------------------------------- Compatibility classes */
+
+/* A bordered panel. Allowed only for the instrument strip, a sheet and a photo frame; nothing nests inside it. */
+.panel { background: var(--surf); border: 1px solid var(--line); border-radius: var(--r-panel); }
+/* A plain statement with a hairline rule beside it: no fill, no colour. Status uses StatusLine instead. */
+.notice {
+  border-left: 1px solid var(--line-strong);
+  padding: 2px 0 2px var(--s3);
+  color: var(--ink);
+  font-size: var(--fs-body); line-height: var(--lh-body);
+  max-width: 60ch;
+}
+.notice.bad { border-left-color: var(--bad); }
+/* Error text stays ink; the StatusLine dot carries the colour. */
+.err { color: var(--ink); font-size: var(--fs-body); line-height: var(--lh-body); }
+/* An indeterminate wait: a 6 px dot, still. (No spinners.) */
+.spinner { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); flex: none; }
+
+@media (max-width: 720px) {
+  .btn { padding: 0 16px; }
+  .btn.sm { height: 44px; }  /* every phone target at 44 px */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0s !important; animation-duration: 0s !important; animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
