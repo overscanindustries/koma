@@ -1,3 +1,5 @@
+[日本語](ja/host-tools.md)
+
 # Host tools
 
 Run `koma` to open the Koma app. Use `koma --tray` for the menu bar or system tray, and `koma doctor` to check USB. See [installation](install.md).

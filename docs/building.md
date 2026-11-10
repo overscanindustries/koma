@@ -1,3 +1,5 @@
+[日本語](ja/building.md)
+
 # Building
 
 Everything here runs on the host and never touches a camera, card or USB device.

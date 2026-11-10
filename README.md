@@ -3,6 +3,8 @@
   <img src="docs/assets/koma-logo-light.svg" alt="Koma" width="320">
 </picture>
 
+[English](README.md) · [日本語](README.ja.md)
+
 # Koma
 
 Koma gives the original Ricoh GR DIGITAL (2005) the shooting features of the GRs that came after it, fixes two problems it has had for 21 years, and connects it to a desktop app over USB. Shoot tethered with live view, or use it as the webcam on your next Zoom call.

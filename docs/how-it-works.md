@@ -1,3 +1,5 @@
+[日本語](ja/how-it-works.md)
+
 # How it works
 
 Addresses are 2.40 runtime addresses. Status tags are defined in [features](internals/evidence-ledger.md#status-tags). The firmware itself is described in [internals](internals/README.md).

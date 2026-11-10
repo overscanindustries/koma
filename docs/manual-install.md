@@ -1,3 +1,5 @@
+[日本語](ja/manual-install.md)
+
 # Manual installation
 
 For app-guided setup, see [installation](install.md). You need a GR DIGITAL on firmware 2.40, Ricoh's 2.40 update file (`qrflect3` or `gr-240.exe`, from [Ricoh](https://www.ricoh-imaging.co.jp/english/r_dc/download/firmware/grd/win.html); hashes in [installation](install.md#koma-on-the-camera)), a charged battery, a card reader, an SD card of 2 GB or less and the tools in [building](building.md). Keep an untouched copy of Ricoh's update for restoration.

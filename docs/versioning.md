@@ -1,3 +1,5 @@
+[日本語](ja/versioning.md)
+
 # Versioning
 
 The camera menu shows `2.40K1.0`; photos are tagged `240K1.0`.

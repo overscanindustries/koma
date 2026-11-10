@@ -1,3 +1,5 @@
+[日本語](ja/limitations.md)
+
 # Limitations
 
 - Koma supports the original GR DIGITAL with Ricoh firmware 2.40. Setup needs an SD card of 2 GB or less. Larger cards must be FAT32 with clusters of 32 KB or less; exFAT is not supported. Only 64 GB cards have been tested on a camera. Install Koma in the camera to use larger cards.

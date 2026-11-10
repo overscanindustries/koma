@@ -1,3 +1,5 @@
+[日本語](docs/ja/changelog.md)
+
 # Changelog
 
 ## [1.0.0]

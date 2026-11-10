@@ -1,3 +1,5 @@
+[日本語](ja/install.md)
+
 # Install
 
 ## The app
