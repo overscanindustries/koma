@@ -54,10 +54,33 @@ Run `koma doctor` to check USB dependencies and drivers. The camera does not nee
 
 ## Koma on the camera
 
-Open the app and follow setup. You need Ricoh's 2.40 update file (`qrflect3` or `gr-240.exe`), a charged battery, an SD card of 2 GB or less and a card reader. The app builds the firmware from your copy on your computer.
+Open the app and follow setup. You need Ricoh's 2.40 update file, a charged battery, an SD card of 2 GB or less and a card reader. The app builds the firmware from your copy on your computer.
 
-Flashing modified firmware can make the camera unusable. Do not interrupt power during the update.
+Download the update from [Ricoh's GR DIGITAL firmware page](https://www.ricoh-imaging.co.jp/english/r_dc/download/firmware/grd/win.html) ([`gr-240.exe`](https://www.ricoh-imaging.co.jp/english/r_dc/download/firmware/exe/gr-240.exe)). The app also accepts the `qrflect3` file inside it.
+
+| File | SHA-256 |
+|---|---|
+| `gr-240.exe` | `e9257cbd89cd3f07163ef8700a9143121ecb69ecee94c1c935c7b7486fafa555` |
+| `qrflect3` | `de00e03d563fd1bdd0a2a925761b1a029993425049841119e3e83eef990c783b` |
+
+<img src="assets/screens/setup-ricoh-file.png" alt="Setup step Prepare card: Choose Ricoh's file, with a link to Ricoh's download page" width="640">
+
+Choose Ricoh's file when setup asks for it.
+
+<img src="assets/screens/setup-card.png" alt="Setup step Prepare card: the card is written and read back, and the card is ready" width="640">
+
+Setup writes the firmware to the card and reads it back.
+
+<img src="assets/screens/setup-buttons.png" alt="Setup step Install Koma: a drawing of the camera's back with the three buttons to hold numbered" width="640">
+
+Setup shows each button to press on the camera.
+
+<img src="assets/screens/setup-writing.png" alt="Setup step Install Koma: the camera writes the Koma firmware, with a timer and a warning to keep the camera on" width="640">
+
+Flashing modified firmware can make the camera unusable. Do not touch the camera or cut power while the lamp blinks.
 
 Choose **On this card** to keep Koma on the setup card. Choose **In the camera** to use Koma with other cards, including FAT32 SDHC and SDXC cards. The camera's updater needs the small card for setup in either case.
+
+<img src="assets/screens/setup-where.png" alt="Setup step Install Koma: choose where Koma goes, On this card or In the camera" width="640">
 
 For installation without the app, updating, removal and restoring Ricoh firmware, see [manual installation](manual-install.md).

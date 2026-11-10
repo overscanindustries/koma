@@ -111,7 +111,9 @@ export const W = {
     stockLead: {install: 'Koma builds the Koma firmware from Ricoh’s 2.40 update file.',
       package: 'Koma builds the Koma file from Ricoh’s 2.40 update file.',
       official: 'The return to official firmware needs Ricoh’s 2.40 update file.'},
-    stockLine: 'Choose the GR' + NB + 'DIGITAL 2.40 update file from Ricoh’s site.',
+    // a line with a link: Spread renders {text, label, href} as text, then the link
+    stockLine: {text: 'Choose the GR' + NB + 'DIGITAL 2.40 update file. ', label: 'Download it from Ricoh',
+      href: 'https://www.ricoh-imaging.co.jp/english/r_dc/download/firmware/grd/win.html'},
     stockChoose: 'Choose Ricoh’s file',
     stockChecking: 'Checking the file.',
     stockBad: 'This is not Ricoh’s GR' + NB + 'DIGITAL 2.40 update file.',

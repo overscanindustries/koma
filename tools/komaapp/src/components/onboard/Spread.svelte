@@ -33,7 +33,8 @@
       <h1 id="onb-title" class="h1" tabindex="-1" bind:this={h1}>{title}</h1>
       {#if lead}<p class="onb-lead lead" data-testid="step-lead">{lead}</p>{/if}
       {#if lines.length}
-        <div class="lines">{#each lines as l}<p class="small">{l}</p>{/each}</div>
+        <div class="lines">{#each lines as l}<p class="small">{#if typeof l === 'string'}{l}{:else}{l.text}<a class="link"
+          href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a>.{/if}</p>{/each}</div>
       {/if}
       {#if body}<div class="body">{@render body()}</div>{/if}
     </div>

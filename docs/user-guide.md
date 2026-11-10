@@ -92,6 +92,10 @@ SAVE TO CUSTOM copies the active look's values into a slot, then returns to OFF 
 
 Edits, CUSTOM slots, ADJ LEVER choices and every KOMA row persist through the camera's normal power-off save.
 
+<img src="assets/screens/look-editor.png" alt="The app's look editor for SHINJUKU: the same rows as the camera, beside a preview on the last photo" width="640">
+
+The app's Looks editor has the same rows and previews them on your last photo.
+
 ### Live-view preview
 
 The LCD shows part of the active look: saturation, the colour matrix, TINT, the B&W filter and toning. The shot itself is always processed in full.
