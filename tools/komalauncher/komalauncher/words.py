@@ -50,7 +50,7 @@ QUIT_HELP = "Disconnects the camera and stops the webcam."
 
 # Startup window (first launch, or a launch that could not start)
 WINDOW_TITLE = "Koma"
-WINDOW_STARTING = "Starting. Camera not required yet."
+WINDOW_STARTING = "Starting."
 WINDOW_RESTARTING = "Restarting."
 WINDOW_STOPPING = "Stopping."
 WINDOW_ELAPSED = "{phase} · {elapsed}"          # past 10 s: "Starting · 0:12"

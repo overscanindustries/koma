@@ -132,7 +132,7 @@ class MenuModel(unittest.TestCase):
 
     def test_window_lines(self):
         start = model.Snapshot(phase="starting", since=100.0)
-        self.assertEqual(model.window_line(start, now=109.9).text, "Starting. Camera not required yet.")
+        self.assertEqual(model.window_line(start, now=109.9).text, "Starting.")
         self.assertEqual(model.window_line(start, now=112.4).text, "Starting · 0:12")
         self.assertEqual(model.window_line(start, now=112.4).key, model.window_line(start, now=101).key,
                          "a counter tick is not a new state for a screen reader")
@@ -147,7 +147,7 @@ class MenuModel(unittest.TestCase):
 
     def test_a_restart_is_not_called_the_first_start(self):
         """A running bridge that exited and is being started again reads "Restarting", in the menu and the window,
-        with its own counter; "Camera not required yet" belongs to the first start only."""
+        with its own counter; the plain "Starting." line belongs to the first start only."""
         again = model.Snapshot(phase="starting", restart=True, since=100.0)
         self.assertEqual(texts(again)[0], "Restarting")
         self.assertEqual(actions(again), {"open": False, "copy": False, "quit": True})
@@ -333,7 +333,7 @@ class Copy(unittest.TestCase):
     def test_window_strings(self):
         """The startup window's strings: the port line does not guess that the holder is another Koma,
         and Quit's sentence names no part."""
-        self.assertEqual(words.WINDOW_STARTING, "Starting. Camera not required yet.")
+        self.assertEqual(words.WINDOW_STARTING, "Starting.")
         self.assertEqual(words.WINDOW_PORT_IN_USE.format(port=8765),
                          "Port 8765 is in use. Quit the program using it, then try again.")
         self.assertEqual(words.RUNNING.format(port=8765), "Koma running · localhost:8765")

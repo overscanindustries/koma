@@ -14,7 +14,7 @@
     '5-TAB': "Koma's own five tabs: STILL, KOMA, PLAY, CUSTOM, SETUP.",
     'STOCK+KOMA': 'The two original tabs, plus one KOMA tab for the new features.',
     'GRII': 'Laid out as on the GR II, Koma features included.',
-    'FULL': 'Everything Koma can do.',
+    'FULL': 'Looks, shooting features and the KOMA menu.',
     'ESSENTIALS': 'Large-card (SDHC) support and small fixes only. The menus stay stock.',
   };
   const fields = $derived.by(() => { void S.rev; const M = map(); return M ? ['menu_layout', 'koma_features'].map(n => M.byName[n]).filter(f => f && f.type === 'enum') : []; });
@@ -29,7 +29,7 @@
   <EmptyState label="No modes" text="This Koma version has no modes." />
 {:else}
   {#if noKoma}
-    <p class="reason" data-testid="needs-koma">This camera is not running Koma. Changing the mode needs Koma on the camera.
+    <p class="reason" data-testid="needs-koma">Changing the mode needs Koma on the camera.
       {#if setup}{#if setup.href}<a class="link" href={setup.href} data-testid="setup-entry">{setup.label}</a>
       {:else}<button class="link" type="button" onclick={setup.onclick} data-testid="setup-entry">{setup.label}</button>{/if}{/if}</p>
   {/if}

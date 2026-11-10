@@ -78,14 +78,14 @@
       onReread: async () => { await readFromCamera(); if (!S.readError && restore) toCamera(); }});
   }
   async function toCard() { savedNote = ''; if (await saveBlock(withChecksum(restore.bytes), 'PARAM.DAT')) cardSaved = true; }
-  const effect = $derived(!diff ? 'Writes the backup to this camera and restarts it.'
-    : diff.length ? 'Writes ' + plural(diff.length, 'setting', 'settings') + ' to this camera and restarts it.'
-    : 'Writes the backup to this camera and restarts it. Every listed setting already matches.');
+  const effect = $derived(!diff ? 'Writes the backup to this camera.'
+    : diff.length ? 'Writes ' + plural(diff.length, 'setting', 'settings') + ' to this camera.'
+    : 'Every listed setting already matches.');
 </script>
 
 <section aria-labelledby="bk-h">
   <SectionHead label="Back up" id="bk-h" first />
-  <p class="lead-in">{card ? 'Keep a copy of the settings in this file.' : "A copy of this camera's settings, saved on this computer."}</p>
+  <p class="lead-in">Saves a copy on this computer.</p>
   {#if has}
     {#if facts.length}<div class="facts"><SpecSheet rows={facts} label="What the backup holds" /></div>{/if}
     <div class="row">
@@ -104,7 +104,7 @@
 
 <section aria-labelledby="rs-h">
   <SectionHead label="Restore" id="rs-h" />
-  <p class="lead-in">{card ? 'A backup saved as the settings file the camera loads at its next start.' : 'A backup put back on the camera. The camera restarts to load it.'}</p>
+  <p class="lead-in">{card ? 'The camera loads the backup at its next start.' : 'The camera restarts to load the backup.'}</p>
   {#if !restore}
     <FileDrop label="Choose a backup" hint="Backups end in .dat and are named like GR-settings-2026-11-07.dat." onfile={pick} testid="restore-file" />
   {:else}
@@ -124,7 +124,6 @@
     <div class="row go">
       {#if card}
         <button class="btn primary" type="button" onclick={toCard}>Save to card</button>
-        <span class="small muted">Saves the settings file for the camera to load at its next start.</span>
       {:else}
         <button class="btn primary" type="button" onclick={toCamera} disabled={!connected()}>Restore to camera</button>
         <button class="btn" type="button" onclick={toCard}>Save to card instead</button>
@@ -134,8 +133,7 @@
     <div class="more">
       <Details label="What a restore leaves alone">
         <p class="small muted">The counters that belong to this body (file numbers, shots taken), its battery history, the
-          values it sets each time it starts, the record of its last settings import, and the checksum. A restore keeps
-          the camera's own.</p>
+          values it sets each time it starts, the record of its last settings import, and the checksum.</p>
       </Details>
     </div>
   {/if}

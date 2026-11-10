@@ -26,7 +26,7 @@ Run `koma --install-udev-rule` to install the required udev rule. It asks for an
 SUBSYSTEM=="usb", ATTR{idVendor}=="05ca", ATTR{idProduct}=="2218", TAG+="uaccess"
 ```
 
-then run `sudo udevadm control --reload-rules && sudo udevadm trigger` and replug the camera. 
+then run `sudo udevadm control --reload-rules && sudo udevadm trigger` and replug the camera.
 
 ### Windows
 
@@ -54,7 +54,7 @@ Run `koma doctor` to check USB dependencies and drivers. The camera does not nee
 
 ## Koma on the camera
 
-Open the app and follow setup. You need Ricoh's 2.40 update file, a charged battery, an SD card of 2 GB or less and a card reader. The app builds the firmware from your copy on your computer.
+Open the app and follow setup. You need Ricoh's 2.40 update file, a charged battery, an SD card of 2 GB or less and a card reader. The app builds the firmware on your computer from your copy.
 
 Download the update from [Ricoh's GR DIGITAL firmware page](https://www.ricoh-imaging.co.jp/english/r_dc/download/firmware/grd/win.html) ([`gr-240.exe`](https://www.ricoh-imaging.co.jp/english/r_dc/download/firmware/exe/gr-240.exe)). The app also accepts the `qrflect3` file inside it.
 

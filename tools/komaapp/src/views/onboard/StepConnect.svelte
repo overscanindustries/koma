@@ -78,7 +78,7 @@
     : phase === 'done' ? (official ? W.connect.official : W.connect.running(vText))
     : official ? W.connect.leadOfficial : W.connect.lead);
   const lines = $derived(mode === 'none' ? (cam.state === 'cam' ? [] : [W.connect.line])
-    : phase === 'done' ? [official ? W.connect.officialLine : W.connect.runningLine]
+    : phase === 'done' ? []
     : [official ? W.connect.lineOfficial : W.connect.line]);
   const failText = $derived({noKoma: W.connect.noKoma, otherBuild: W.connect.otherBuild, incomplete: W.connect.incomplete,
     noNewPhoto: W.connect.noNewPhoto, stillKoma: W.connect.stillKoma, tagUnknown: W.camera.tagUnknown}[why] || W.camera.readFailed);

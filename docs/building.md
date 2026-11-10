@@ -1,6 +1,6 @@
 # Building
 
-How to set up the tools, build and check packages, write a feature, and run the tests. Everything here runs on the host; none of it touches a camera, card or USB device.
+Everything here runs on the host and never touches a camera, card or USB device.
 
 ## Setup
 
@@ -13,21 +13,21 @@ python3.12 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-`requirements.txt` pins capstone, numpy, pefile, pillow, pyusb, rawpy and unicorn. Optional, not pinned: `pytest` (the Koma tests have their own runner), `pyvirtualcam` (`komacam --vcam`), `opencv-python` (one bridge test), Playwright with Chrome (the browser end-to-end test, skipped when absent), `exiftool`, and libusb for any `--real` / `--live` USB mode.
+`requirements.txt` pins capstone, numpy, pefile, pillow, pyusb, rawpy and unicorn. Optional and unpinned: `pytest` (the Koma tests have their own runner), `pyvirtualcam` (`komacam --vcam`), `opencv-python` (one bridge test), Playwright with Chrome (the browser end-to-end test, skipped when absent), `exiftool`, and libusb for any `--real` / `--live` USB mode.
 
 ## Firmware input
 
 Every build tool (`tools/koma/koma`) command except `make-loader` reads Ricoh's 2.40 firmware, chosen in this order:
 
-1. `--firmware PATH` (before or after the command),
-2. `KOMA_FIRMWARE=PATH`,
-3. the copy in this checkout, `firmware/extracted/GR DIGITAL Update/Firmware rel 2.40/qrflect3` (or `firmware/derived/grd240-armbe.bin`), when present.
+1. `--firmware PATH` (before or after the command).
+2. `KOMA_FIRMWARE=PATH`.
+3. The copy in this checkout, `firmware/extracted/GR DIGITAL Update/Firmware rel 2.40/qrflect3` (or `firmware/derived/grd240-armbe.bin`), when present.
 
 PATH can be `qrflect3`, `gr-240.exe`, a zip holding `qrflect3`, or the bare payload (`qrflect3` without its 512-byte header). Every form is checked by SHA-256; anything else is refused. `koma smoke` needs the full `qrflect3`, not the bare payload. Provenance of the files under `firmware/`: [evidence](internals/evidence.md#firmware-inputs).
 
 ## The build tool
 
-`tools/koma/koma`, the build tool, runs `python -m koma` from `.venv` with `tools/` on the path. It is not the installed `koma` command, which runs the Koma app ([install](install.md#the-app)); in the table below `koma` means `tools/koma/koma`.
+`tools/koma/koma` runs `python -m koma` from `.venv` with `tools/` on the path. The installed `koma` command runs the Koma app instead ([install](install.md#the-app)). In the table below, `koma` means `tools/koma/koma`.
 
 | Command | Does |
 |---|---|
@@ -62,11 +62,11 @@ Named sets:
 
 With no `--features`, `build` uses an old three-feature default (`tone-r3,snap15,recipe-slots`). `koma04w` (`koma04` plus `widefs` for SDHC/SDXC) is built by `analysis/sdhc/bundle/build.py`, because `widefs` is not a registered feature ([install](manual-install.md#install-koma)).
 
-The `smoke` boots the loader image with the package as `GRMOD.BIN`, formats the modelled memory through the native menu, takes one shot and stops after develop. Per feature it checks that the loader called the package, the install status is 1, every record is in RAM, every hook ran, and the feature's own checks pass. Hooks the shot cannot reach are reported as SKIP; unit tests cover them. It is `EMU` evidence only.
+`smoke` boots the loader image with the package as `GRMOD.BIN`, formats the modelled memory through the native menu, takes one shot and stops after develop. Per feature it checks that the loader called the package, the install status is 1, every record is in RAM, every hook ran, and the feature's own checks pass. Hooks the shot cannot reach are reported as SKIP; unit tests cover them. A smoke pass is `EMU` evidence only.
 
 ## Package format
 
-The container and the four record kinds are described in [how it works](how-it-works.md#grmodbin). The installer verifies every before-byte first; any mismatch writes nothing. Resident code stays in memory; the installer, records, relocations and any `transient=True` feature are freed after install. The loader caps the whole body at 64 KiB.
+The container, the four record kinds and the install sequence are in [how it works](how-it-works.md#grmodbin). Resident code stays in memory. The installer, records, relocations and any `transient=True` feature are freed after install. The loader caps the whole body at 64 KiB.
 
 ## Writing a feature
 
@@ -105,16 +105,16 @@ def make(opts):
 
 This example links and installs cleanly in the unit emulator.
 
-- **Source** is Thumb in llvm-mc syntax (ARMv4T, `arm7tdmi`, big-endian), position independent. Labels are private to the feature. Reach another feature's export as `$other.symbol` (list it in `requires`) and core symbols as `$koma.version`. Call firmware with `ldr r3, =0xADDR+1` then `bl call_r3`, never an absolute `bl`. Never use CP15 instructions.
-- **Hook handlers** are entered like the original target (same r0-r3, stack and lr), call `next` with the original arguments, and preserve r4-r11.
-- **Patches** carry before-bytes: `Patch(addr, before, after, why)`. A `Check(addr, before, why)` verifies bytes your code depends on and writes nothing.
-- **Menu rows.** A row's byte must be in `0x1b8b5..0x1b8cf` and unused by other features; the row claims it, so do not declare it again as `Settings`. Labels are at most 16 characters (14 recommended), options at most 9, in the stock font (A-Z, 0-9, space and `!&'()+-./:*`). `default` indexes `options`. `group` is `recipe`, `recipe-edit`, `focus`, `exposure` or `display`; anything else goes to the OTHER page. Read the byte at the point of use and treat out-of-range as the default.
-- **Other settings bytes.** `Settings(start, end, owned=True)` marks a private store. Writing a stock field needs `owned=False` plus `values`, the set of values stock itself writes.
-- **Smoke hooks.** Optionally add a module-level `smoke_setup()` returning `{address: byte}` pokes made before the shot, and `smoke_checks(obs)` returning `[(name, ok, detail)]`, passed as `Feature(..., smoke=smoke_checks)`.
+- Source is Thumb in llvm-mc syntax (ARMv4T, `arm7tdmi`, big-endian), position independent. Labels are private to the feature. Reach another feature's export as `$other.symbol` (list it in `requires`) and core symbols as `$koma.version`. Call firmware with `ldr r3, =0xADDR+1` then `bl call_r3`, never an absolute `bl`. Never use CP15 instructions.
+- Hook handlers are entered like the original target (same r0-r3, stack and lr), call `next` with the original arguments, and preserve r4-r11.
+- Patches carry before-bytes: `Patch(addr, before, after, why)`. A `Check(addr, before, why)` verifies bytes your code depends on and writes nothing.
+- A menu row's byte must be in `0x1b8b5..0x1b8cf` and unused by other features; the row claims it, so do not declare it again as `Settings`. Labels are at most 16 characters (14 recommended), options at most 9, in the stock font (A-Z, 0-9, space and `!&'()+-./:*`). `default` indexes `options`. `group` is `recipe`, `recipe-edit`, `focus`, `exposure` or `display`; anything else goes to the OTHER page. Read the byte at the point of use and treat out-of-range as the default.
+- For other settings bytes, `Settings(start, end, owned=True)` marks a private store. Writing a stock field needs `owned=False` plus `values`, the set of values stock itself writes.
+- For smoke tests, optionally add a module-level `smoke_setup()` returning `{address: byte}` pokes made before the shot, and `smoke_checks(obs)` returning `[(name, ok, detail)]`, passed as `Feature(..., smoke=smoke_checks)`.
 
-The linker refuses a build, listing every problem at once, on any of the rules in [how it works](how-it-works.md#build-time-lint) or on before-byte mismatches, overlapping writes, a hook site that is not a real `bl` to the declared target, or a feature that depends on bytes another feature changes.
+The linker refuses a build that breaks any rule in [build-time lint](how-it-works.md#build-time-lint).
 
-`tools/koma/data/` holds tables the features read: a B&W tone table transcribed as numbers from a sibling Ricoh firmware, and look parameters measured from GR DIGITAL IV firmware tables, as derived values.
+`tools/koma/data/` holds tables the features read: a B&W tone table transcribed as numbers from a sibling Ricoh firmware, and look parameters derived from GR DIGITAL IV firmware tables.
 
 ### Unit tests for a feature
 
@@ -156,7 +156,5 @@ Some checks need evidence that is not in git (`analysis/camera-dumps/`, native p
 ## Other tools
 
 Research tools under `tools/` (emulator, UI playground, patch builder, card-script linter, look prototyping) each have a README in their folder; [internals 10](internals/10-emulator-and-tooling.md) gives the overview. Host tools that talk to the camera are in [host tools](host-tools.md).
-
-## Battery log
 
 Decode a card battery log with `python3 tools/koma_battlog_decode.py KOMABATT.TXT`.

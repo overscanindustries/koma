@@ -204,7 +204,7 @@ class AppE2E(unittest.TestCase):
         pg = self.page(br)
         self.text(pg, "Connect your GR")
         self.text(pg, "Turn the camera on")
-        self.text(pg, "Then plug in the USB cable")
+        self.text(pg, "Plug in the USB cable")
         self.text(pg, "Looking for the camera")
         self.assertEqual(pg.locator("nav[aria-label=Main]").count(), 0)  # full screen, no app yet
         br.body.plug()

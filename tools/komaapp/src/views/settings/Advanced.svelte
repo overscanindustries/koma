@@ -17,7 +17,7 @@
     {label: 'Space', value: 'Takes a photo on Shoot'},
     {label: 'Cmd+Z or Ctrl+Z', value: 'Undoes the last change waiting to be applied'},
     {label: 'Esc', value: 'Closes a sheet. With Remote open on Shoot, presses DISP'},
-    {label: 'Arrow keys', value: "With Remote open on Shoot, press the camera's arrow buttons"},
+    {label: 'Arrow keys', value: "With Remote open on Shoot, presses the camera's arrow buttons"},
     {label: 'Enter', value: 'With Remote open on Shoot, presses MENU OK'},
   ];
 

@@ -124,7 +124,7 @@
 
 {#if !on && !lost}
   <div class="off">
-    <EmptyState label="No camera" text="Shooting needs the camera on USB. Turn it on, then plug in the cable."
+    <EmptyState label="No camera" text="Turn the camera on, then plug in the USB cable."
       action={S.source === 'card' ? {label: 'Back to the settings file', onclick: () => go('settings/camera'), kind: 'link'} : null} />
   </div>
 {:else}
@@ -248,7 +248,6 @@
             {#if sh.x.msg}<p class="small muted" role="status">{sh.x.msg}</p>{/if}
             {#if sh.x.err && sh.x.cam}<StatusLine tone="bad" text={sh.x.err} />{/if}
             <p class="small muted">Changes apply at once and stay after a normal power-off.</p>
-            <Details><p class="small muted">Exposure compensation was tested on the camera; ISO, white balance and metering were not.</p></Details>
           </div>
         {/if}
       </section>
@@ -313,7 +312,6 @@
             </div>
             <p class="small muted">PLAY and ADJ stay on the camera: PLAY can turn it off, ADJ can change its USB mode.</p>
             <!-- the keyboard keys for these are listed once, under Settings > Advanced -->
-            <Details><p class="small muted">The camera accepts these presses. What its menus do with each has not been seen on hardware.</p></Details>
           </div>
         {/if}
       </section>

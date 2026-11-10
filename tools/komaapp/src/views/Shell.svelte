@@ -75,7 +75,7 @@
     {#if !screen.phone}
       <div class="nav-foot">
         <ThemeToggle />
-        <p>Project Koma. Community firmware for the GR DIGITAL.</p>
+        <p>Project Koma. New firmware for the 2005 GR DIGITAL.</p>
       </div>
     {/if}
   </nav>

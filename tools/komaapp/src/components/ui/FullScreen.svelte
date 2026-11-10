@@ -16,7 +16,7 @@
     <div class="col">{@render children?.()}</div>
     {#if aside}<div class="aside">{@render aside()}</div>{/if}
   </main>
-  <footer class="foot">Project Koma. Community firmware for the GR DIGITAL.</footer>
+  <footer class="foot">Project Koma. New firmware for the 2005 GR DIGITAL.</footer>
 </div>
 
 <style>

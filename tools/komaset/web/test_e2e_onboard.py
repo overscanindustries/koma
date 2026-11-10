@@ -201,7 +201,7 @@ class OnboardE2E(unittest.TestCase):
     def choose_card(self, pg):
         self.wait(pg, "() => { const b = document.querySelector('[data-testid=setup-choose]'); return b && !b.disabled; }", 20, "the files ready")
         pg.click("[data-testid=setup-choose]")
-        self.wait(pg, "() => /Read back matches/.test(document.querySelector('[data-testid=card-status]')?.innerText || '')", 30, "read back")
+        self.wait(pg, "() => /The card is ready/.test(document.querySelector('[data-testid=card-status]')?.innerText || '')", 30, "read back")
 
     def walk_presses(self, pg, official=False):
         """The eight screens of the keyed power-on. Stop here and Exit until MENU/OK; on MENU/OK, the point of no
@@ -290,7 +290,7 @@ class OnboardE2E(unittest.TestCase):
         self.step(pg, "install-8")
         self.assertEqual(pg.inner_text("[data-testid=step-index]").strip(), "4 / 7")
         self.assertEqual(pg.inner_text("[data-testid=step-sub]").strip().upper(), "9 OF 10")
-        self.assertEqual(self.lead(pg), "Put the card in this computer again. Koma’s file goes on it now.")
+        self.assertEqual(self.lead(pg), "Put the card in this computer again.")
         facts = pg.inner_text("[data-testid=card-facts]")
         self.assertIn("Koma 1.0", facts)
         self.assertIn("The firmware update file", facts)
@@ -595,7 +595,7 @@ class OnboardE2E(unittest.TestCase):
         br = self.bridge(body)
         pg = self.page(br, "#/setup", setup=setup_state(step=1))
         self.step(pg, "camera")
-        self.wait(pg, "() => /could not read this one/.test(document.querySelector('[data-testid=camera-status]')?.innerText || '')", 30)
+        self.wait(pg, "() => /could not read the firmware from the newest photo/.test(document.querySelector('[data-testid=camera-status]')?.innerText || '')", 30)
         self.assertEqual(self.lead(pg), "Take a new photo with the camera.")
         self.assertTrue(self.hidden_primary(pg))
         F.add_photo(br.body, "RIMG0006.JPG", "Rev0240", "2030:01:01 00:00:00")
@@ -680,7 +680,7 @@ class OnboardE2E(unittest.TestCase):
             with pg.expect_file_chooser() as fc:
                 pg.click("[data-testid=setup-check]")
             fc.value.set_files(str(card))
-            self.wait(pg, "() => /Read back matches/.test(document.querySelector('[data-testid=card-status]')?.innerText || '')", 20)
+            self.wait(pg, "() => /The card is ready/.test(document.querySelector('[data-testid=card-status]')?.innerText || '')", 20)
 
     def test_exit_then_resume_from_settings(self):
         br = self.bridge(F.koma_body(F.OLDER_BUILD))

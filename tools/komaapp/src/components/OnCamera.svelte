@@ -5,7 +5,7 @@
 <ol class="oncam">
   <li>Put the saved file on the memory card, at the top level, not inside a folder.</li>
   <li>Put the card back in the camera.</li>
-  <li>Turn the camera on. It reads the new settings as it starts.</li>
+  <li>Turn the camera on.</li>
   <li>Turn the camera off. This stores them.</li>
   <li>Turn it on again. The new settings are in use.</li>
 </ol>

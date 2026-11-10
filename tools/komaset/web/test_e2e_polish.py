@@ -342,7 +342,7 @@ class PolishE2E(unittest.TestCase):
         pg.clock.install()
         pg.goto(off.url)
         self.text(pg, "Looking for the camera.")
-        self.text(pg, "Then plug in the USB cable")
+        self.text(pg, "Plug in the USB cable")
         self.assertNotIn("Still looking", pg.inner_text("body"))                              # never a wall of tips at rest
         pg.clock.fast_forward(19000)
         self.assertNotIn("Still looking", pg.inner_text("body"))
@@ -473,7 +473,7 @@ class PolishE2E(unittest.TestCase):
         tmp = Path(tempfile.mkdtemp()) / "GR-settings-test.dat"
         tmp.write_bytes(bytes(cur))
         pg.set_input_files("[data-testid=restore-file]", str(tmp))
-        self.text(pg, "Writes 1 setting to this camera and restarts it.")
+        self.text(pg, "Writes 1 setting to this camera.")
         self.text(pg, "ISO SETTING")
 
     def test_appearance_and_theme_tokens(self):
@@ -519,7 +519,7 @@ class PolishE2E(unittest.TestCase):
             return over;
         }""", list(cur))
         self.assertTrue(over, "the row marks the drag")
-        self.text(pg, "Writes 1 setting to this camera and restarts it.")
+        self.text(pg, "Writes 1 setting to this camera.")
         self.assertIn("saved as a backup", pg.inner_text("main"))
         self.assertNotRegex(self.visible_text(pg), FILE_TEXT)
 

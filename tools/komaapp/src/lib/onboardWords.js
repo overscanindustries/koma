@@ -30,7 +30,7 @@ export const W = {
 
   // Welcome, by what the camera runs (st.cam.kind): stock (or no camera yet), the Koma firmware without Koma's file, Koma
   welcome: {
-    lead: 'Koma adds looks and a KOMA menu to the' + NB + 'GR' + NB + 'DIGITAL.',
+    lead: 'Koma gives the' + NB + 'GR' + NB + 'DIGITAL 21 looks, snap focus, focus peaking and large SD cards.',
     lines: ['The Koma firmware goes on the camera once. Everything else is one file on the card.',
       'The card goes in this computer twice. The camera writes for 2 to 3' + NB + 'minutes in between.'],
     linesKomaFw: ['The Koma firmware is already on this camera. Setup puts Koma’s file on the card.'],
@@ -59,10 +59,10 @@ export const W = {
     wrongFirmware: v => 'This camera reports firmware ' + v + '. Koma needs 2.40.',
     wrongFirmwareLine: 'Ricoh’s own update to 2.40 comes first.',
     noPhotoLead: 'Take one photo with the camera.',
-    noPhotoLines: ['Unplug the cable, take the photo, then plug the cable in again.', 'Koma reads the firmware from the photo.'],
+    noPhotoLines: ['Unplug the cable, take the photo, then plug the cable in again.'],
     noPhoto: 'The card holds no photo.',
     tagUnknownLead: 'Take a new photo with the camera.',
-    tagUnknown: 'Koma reads the firmware from the newest photo and could not read this one.',
+    tagUnknown: 'Koma could not read the firmware from the newest photo.',
     backupNote: 'The settings file is kept in this browser and saved as a download on Continue.',
   },
 
@@ -82,7 +82,7 @@ export const W = {
     whereIrom: {label: 'In the camera', text: 'Koma starts with any card, 64' + NNB + 'GB too. One more card trip.'},
     stays: 'Photos and other files',
     phases: {backup: 'Backing up settings', write: 'Writing card', verify: 'Reading back'},
-    ready: 'The card is ready. Read back matches.',
+    ready: 'The card is ready.',
     readyIrom: 'Koma is in the camera. The installer is off the card.',
     whyNot: {
       dcim: 'This is the DCIM folder. Choose the top level of the card.',
@@ -105,7 +105,7 @@ export const W = {
     save: 'Save the file',
     check: 'Check the card',
     clearLead: 'Delete GRMOD.BIN and KOMAPKG.BIN from the card, then check the card.',
-    checkLine: 'Then choose the card. Koma reads the file back.',
+    checkLine: 'Then choose the card.',
     stillCheck: names => 'The card still holds ' + names.join(' and ') + '. Delete it, then check the card again.',
     // Ricoh's file, when the bridge has none
     stockLead: {install: 'Koma builds the Koma firmware from Ricoh’s 2.40 update file.',
@@ -132,10 +132,10 @@ export const W = {
       {lead: 'Do not touch the camera while the lamp blinks.', lines: []},
       {lead: 'When the lamp has stopped, turn the camera off.', lines: ['Set the mode dial back to Still Image.']},
     ],
-    card: {lead: 'Put the card in this computer again. Koma’s file goes on it now.', lines: []},
-    card3: {lead: 'Put the card in this computer again.', lines: ['Koma reads the installer’s record, then takes the installer off the card.']},
+    card: {lead: 'Put the card in this computer again.', lines: []},
+    card3: {lead: 'Put the card in this computer again.', lines: []},
     run: {lead: 'Put the card in the camera. Turn it on, wait 1' + NB + 'minute, then turn it off.',
-      lines: ['Keep the USB cable out. The installer copies Koma into the camera.']},
+      lines: ['Keep the USB cable out.']},
     back: {lead: 'Put the card back in the camera.', lines: ['Keep the camera off.']},
     backIrom: {lead: 'Put a card in the camera.', lines: ['Keep the camera off. Koma now starts from the camera’s internal memory.']},
     // the write, named as its phase on the status line (with its elapsed counter)
@@ -153,13 +153,11 @@ export const W = {
     lead: PLUG,
     line: 'Plugged in while off, the camera starts in a mode Koma cannot use.',
     leadOfficial: 'Turn the camera on and take one photo.',
-    lineOfficial: 'Then plug in the USB cable. Koma reads the firmware from the photo.',
+    lineOfficial: 'Then plug in the USB cable.',
     phases: {wait: 'Waiting for the camera', confirm: 'Confirming'},
     late: 'The camera has not come back. Reconnect it and keep waiting.',
     running: v => (v || 'Koma') + ' is running.',   // v: komaVersionText of the package
-    runningLine: 'The camera reported it over USB. Read back matches.',
     official: 'The official firmware is running.',
-    officialLine: 'The newest photo was made by the official firmware.',
     noKoma: 'Koma did not start on the camera. Check that the card is in it, then turn the camera off and on.',
     otherBuild: 'The camera started another Koma build. Check that the card is in it, then turn the camera off and on.',
     incomplete: 'Koma’s start record on the card is incomplete. Turn the camera off and on.',

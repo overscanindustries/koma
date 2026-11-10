@@ -1,12 +1,12 @@
 # Koma module build system (`tools/koma/`)
 
-The module loader reads exactly one `GRMOD.BIN` from the card root. Koma links any set of **features** into that one file: one installer, one all-or-nothing apply, one resident block, and one manifest with a version string the menu can show.
+The module loader reads exactly one `GRMOD.BIN` from the card root. Koma links any set of features into that one file: one installer, one all-or-nothing apply, one resident block, and one manifest with a version string the menu can show.
 
-The tool runs on the host only. Nothing here touches a camera, card or USB. For the walkthrough see [`docs/building.md`](../../docs/building.md); for flashing, [`docs/install.md`](../../docs/install.md).
+The tool runs on the host only and never touches a camera, card or USB. For a walkthrough see [`docs/building.md`](../../docs/building.md); for flashing, [`docs/install.md`](../../docs/install.md).
 
 ## Your firmware
 
-Koma's source holds no Ricoh bytes. Every command except `make-loader` reads a Ricoh 2.40 file, found in this order: `--firmware PATH` (before or after the command), then `KOMA_FIRMWARE=PATH`. If neither is set, the command prints an error. PATH can be `qrflect3`, Ricoh's `gr-240.exe`, a zip holding `qrflect3`, or the bare payload; each is checked by sha256. `smoke` needs the full `qrflect3`, not the bare payload. The unit tests need `KOMA_FIRMWARE` too.
+Koma's source holds no Ricoh bytes. Every command except `make-loader` reads a Ricoh 2.40 file, given by `--firmware PATH` (before or after the command) or, failing that, `KOMA_FIRMWARE=PATH`. With neither set, the command stops with an error. PATH can be `qrflect3`, Ricoh's `gr-240.exe`, a zip holding `qrflect3`, or the bare payload; each is checked by sha256. `smoke` needs the full `qrflect3`, not the bare payload. The unit tests need `KOMA_FIRMWARE` too.
 
 The assembler is LLVM 20. It is found through `KOMA_LLVM` (the directory holding `llvm-mc`), then Homebrew `llvm@20`, then `PATH`.
 
@@ -33,13 +33,21 @@ KOMA_FIRMWARE=<file> .venv/bin/python tools/koma/tests/run_tests.py [-k text]
 | `smoke` | One emulator boot and one shot; PASS or FAIL per feature. About 2 minutes, simulated, not hardware evidence |
 | `make-loader` | Builds the generation 1 image from your stock 2.40 file; needs no `--firmware` |
 
-**Build options.** `--features` takes feature names or a named set. `--opt FEATURE.OPTION=VALUE` is repeatable and the feature must be in the list. **Camera builds must pass `--opt telemetry.cp15=off`**: reading CP15 hangs the camera's core at boot. Copy the module to the card root as `GRMOD.BIN`.
+### Build options
 
-**Features** are registered in `features/__init__.py`; `koma list` prints them with their options. They include `menu5`, `snapdist`, `fullpress`, `fastkeys`, `autoiso`, `longexp`, `hlalert`, `bwrecipes`, `selcolour`, `fx`, `preview`, `peaking`, `ksettings`, `settingsio`, `tether`, `liveview`, `stallfix`, `rootlist` (FAT32 card-root listing fix), `clockkeep` (restores a lost clock from `/ATA1/KOMATIME.TXT`, transient), `waitdiag`, `telemetry`, `adjdiag` (diagnostic), plus `tone-r3`, `snap15`, `recipe-slots` (older, superseded) and `colourprobe` (hardware probe).
+`--features` takes feature names or a named set. `--opt FEATURE.OPTION=VALUE` is repeatable and the feature must be in the list. Camera builds must pass `--opt telemetry.cp15=off`: reading CP15 hangs the camera's core at boot. Copy the module to the card root as `GRMOD.BIN`.
 
-**Named sets:** `koma04` and `koma04-lite` (the full package, which includes `rootlist` and `clockkeep`, and a smaller variant), `koma03`, `koma03sio`, `koma03io`, `koma03lv` (the same set with settings I/O and live view variants), `koma03clock` (koma03 with `clockkeep` before `telemetry`; add `--opt telemetry.clock=on` for the KOMALOG `CLOCK` line), `koma02`, `koma01`, `drop1`, `drop2`, `drop3` (earlier drops; `drop3` equals `koma01`), and `probe` (`colourprobe` plus `telemetry`, not a package). `koma list` shows each set's members. With no `--features`, `build` uses the default `tone-r3,snap15,recipe-slots`; every build stamps a version string that ends in its build id, whatever the feature list.
+### Features
 
-**Loader image.** `make-loader` accepts only the stock 2.40 file (`qrflect3`, 2,202,472 bytes). It adds the 344-byte module loader at `0x57f74`, the hook at `0x281ee` and the `Rev024M` marker, recomputes the container checksum, and writes the output only if its sha256 matches the known the generation 1 image. Reading the `.exe` needs `bsdtar`.
+Features are registered in `features/__init__.py`; `koma list` prints them with their options. They include `menu5`, `snapdist`, `fullpress`, `fastkeys`, `autoiso`, `longexp`, `hlalert`, `bwrecipes`, `selcolour`, `fx`, `preview`, `peaking`, `ksettings`, `settingsio`, `tether`, `liveview`, `stallfix`, `rootlist` (FAT32 card-root listing fix), `clockkeep` (restores a lost clock from `/ATA1/KOMATIME.TXT`, transient), `waitdiag`, `telemetry`, `adjdiag` (diagnostic), plus `tone-r3`, `snap15`, `recipe-slots` (older, superseded) and `colourprobe` (hardware probe).
+
+### Named sets
+
+`koma04` and `koma04-lite` (the full package, which includes `rootlist` and `clockkeep`, and a smaller variant), `koma03`, `koma03sio`, `koma03io`, `koma03lv` (the same set with settings I/O and live view variants), `koma03clock` (koma03 with `clockkeep` before `telemetry`; add `--opt telemetry.clock=on` for the KOMALOG `CLOCK` line), `koma02`, `koma01`, `drop1`, `drop2`, `drop3` (earlier drops; `drop3` equals `koma01`), and `probe` (`colourprobe` plus `telemetry`, not a package). `koma list` shows each set's members. With no `--features`, `build` uses the default `tone-r3,snap15,recipe-slots`; every build stamps a version string that ends in its build id, whatever the feature list.
+
+### Loader image
+
+`make-loader` accepts only the stock 2.40 file (`qrflect3`, 2,202,472 bytes). It adds the 344-byte module loader at `0x57f74`, the hook at `0x281ee` and the `Rev024M` marker, recomputes the container checksum, and writes the output only if its sha256 matches the known generation 1 image. Reading the `.exe` needs `bsdtar`.
 
 ## What a build contains
 
@@ -53,9 +61,9 @@ body 0x00   'KMOD' boot header: offsets of records / inits / resident segment / 
             relocation table (transient)
 ```
 
-The installer checks the ABI and image version, verifies **every** before-byte first (a mismatch writes nothing), allocates the resident block, range-checks the hooks, relocates, runs the inits, then applies all records with IRQs masked and sets manifest status 1. It always returns 0 so the loader frees the transient part. The module body is capped at 64 KiB by the loader.
+The installer checks the ABI and image version, verifies every before-byte first (a mismatch writes nothing), allocates the resident block, range-checks the hooks, relocates, runs the inits, then applies all records with IRQs masked and sets manifest status 1. It always returns 0 so the loader frees the transient part. The module body is capped at 64 KiB by the loader.
 
-The build id is the first 8 hex digits of the sha256 of the body with the id fields zeroed. It and the version string (`KOMA V1.0.0 1A2B3C4D G1`: the package release `linker.KOMA_VERSION`, the build id, and the internal minimum Koma firmware generation `linker.MIN_FIRMWARE_GEN`) are in `OUT.json` as `version_string`, `version_short`, `menu_version` (the KOMA menu row, `2.40K1.0`), `photo_tag` (`240K1.0`), `min_firmware_gen` and `build_id`; a feature reads the string through `$koma.version`. See `docs/versioning.md` and `archive/design/VERSIONING.md`.
+The build id is the first 8 hex digits of the sha256 of the body with the id fields zeroed. It and the version string (`KOMA V1.0.0 1A2B3C4D G1`: the package release `linker.KOMA_VERSION`, the build id, and the internal minimum Koma firmware generation `linker.MIN_FIRMWARE_GEN`) are in `OUT.json` as `version_string`, `version_short`, `menu_version` (the KOMA menu row, `2.40K1.0`), `photo_tag` (`240K1.0`), `min_firmware_gen` and `build_id`; a feature reads the string through `$koma.version`. See [`docs/versioning.md`](../../docs/versioning.md).
 
 ## Writing a feature
 
@@ -76,12 +84,12 @@ Settings rows use bytes `0x1b8b5..0x1b8cf` of the persisted settings block. A ro
 
 ## What the linker enforces
 
-`link()` refuses a build and lists every problem at once. Beyond the conflict checks (overlapping writes, before-bytes that disagree with the 2.40 image or each other, a hook site that is not `bl target`, dependency and conflict declarations, the 64 KiB limit), it lints:
+`link()` refuses a build and lists every problem at once. Besides the conflict checks (overlapping writes, before-bytes that disagree with the 2.40 image or each other, a hook site that is not `bl target`, dependency and conflict declarations, the 64 KiB limit), it lints:
 
-- **Flash and store writes.** Source that loads or holds the address of a flash or store-write routine (`ldr =`, `.word`, `.equ`), a patch whose bytes form a `bl` to one, or a hook that wraps a call to one. The list is `linker.FORBIDDEN_CALLS`.
-- **Early sites.** Any patch, hook, redirect or pointer on a 32-byte line executed before the loader hook `0x281ee`. The line set is `data/phase-a-lines32.json`.
-- **Stock writes without values.** `Settings(owned=False)` with no `values`.
+- Flash and store writes: source that loads or holds the address of a flash or store-write routine (`ldr =`, `.word`, `.equ`), a patch whose bytes form a `bl` to one, or a hook that wraps a call to one. The list is `linker.FORBIDDEN_CALLS`.
+- Early sites: any patch, hook, redirect or pointer on a 32-byte line executed before the loader hook `0x281ee`. The line set is `data/phase-a-lines32.json`.
+- Stock writes without values: `Settings(owned=False)` with no `values`.
 
 ## Layout
 
-`features/` the features. `vendor/` assembler wrapper, module writer and menu builder code. `data/` tables the features read. `emu/` the emulator pieces `smoke` drives; the image and card files stay in memory, so no `GRMOD.BIN` or image file is written to disk. `tests/` the unit tests. They run the real installer under Unicorn on the 2.40 payload.
+`features/` the features. `vendor/` assembler wrapper, module writer and menu builder code. `data/` tables the features read. `emu/` the emulator pieces `smoke` drives; the image and card files stay in memory, so no `GRMOD.BIN` or image file is written to disk. `tests/` the unit tests, which run the real installer under Unicorn on the 2.40 payload.

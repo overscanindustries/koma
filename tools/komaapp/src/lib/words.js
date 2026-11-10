@@ -208,14 +208,14 @@ export const CONNECT = {
   looking: 'Looking for the camera.',
   plugOrder: [
     {lead: 'Turn the camera on', small: 'Wait for the lens to come out.'},
-    {lead: 'Then plug in the USB cable', small: 'The camera must be on first.'},
+    {lead: 'Plug in the USB cable', small: 'The camera must be on first.'},
   ],
   ladder: [
     "USB CONNECTION must be set to ORIGINAL in the camera's SETUP menu.",
     'Try another USB cable.',
     'Plug it into this computer directly, not through a hub.',
     'Unplug, turn the camera on, then plug in again.',
-    'Another app may be using the camera. Quit it.',
+    'Quit any other app using the camera.',
     'Quit Koma and start it again.',
   ],
   pendingWaits: n => plural(n, 'change waits', 'changes wait') + ' to be applied.',
